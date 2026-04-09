@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  --color-latam-indigo: #002169;
+  --color-latam-crimson: #E60000;
+  --font-latam: var(--font-sans), system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply font-latam text-slate-900;
+  }
+}
+
+.glass {
+  @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-xl;
+}
+
+.glass-dark {
+  @apply bg-black/30 backdrop-blur-xl border border-white/10 shadow-2xl;
+}
