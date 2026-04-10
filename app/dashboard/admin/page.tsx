@@ -151,6 +151,11 @@ export default function AdminDashboard() {
       if (session?.user) {
         setCurrentUser(session.user);
         console.log('User email from session:', session.user.email);
+        
+        // Auto-sync for Bernardo if he's the one logged in
+        if (session.user.email?.toLowerCase() === 'bernardo.real@latam.com') {
+          console.log('Bernardo detected, ensuring profile is synced...');
+        }
       }
 
       const [usersRes, basesRes, logsRes, rolesRes, llmRes] = await Promise.all([
@@ -193,7 +198,20 @@ export default function AdminDashboard() {
         await supabase.from('roles').insert([{ name: 'admin_employee', description: 'Admin com função de Colaborador (Híbrido)' }]);
       }
 
-      if (usersRes.data) setUsers(usersRes.data);
+      if (usersRes.data) {
+        setUsers(usersRes.data);
+        
+        // Auto-sync for Bernardo if he's not in the list
+        const email = session?.user?.email?.toLowerCase();
+        if (email === 'bernardo.real@latam.com') {
+          const isBernardoInList = usersRes.data.some(u => u.email.toLowerCase() === email);
+          if (!isBernardoInList) {
+            console.log('Bernardo not found in users list, triggering self-sync...');
+            // We use a small delay to ensure state is ready
+            setTimeout(() => handleSelfSync(), 1000);
+          }
+        }
+      }
       if (basesRes.data) setBases(basesRes.data);
       if (logsRes.data) setLogs(logsRes.data);
     } catch (error) {
@@ -561,11 +579,14 @@ export default function AdminDashboard() {
     if (!currentUser) return;
     setLoading(true);
     try {
+      const email = currentUser.email?.toLowerCase();
+      if (!email) throw new Error('E-mail não encontrado na sessão');
+
       // 1. Ensure user exists in 'users' table
       const { data: existingUser } = await supabase
         .from('users')
         .select('*')
-        .eq('email', currentUser.email)
+        .ilike('email', email)
         .maybeSingle();
 
       let userToSync = existingUser;
@@ -576,7 +597,7 @@ export default function AdminDashboard() {
           .insert([{
             id: currentUser.id,
             bp: '4598394', // Default Admin BP
-            email: currentUser.email,
+            email: email,
             name: currentUser.user_metadata?.name || 'Bernardo Admin',
             roles: ['admin', 'employee'],
             is_active: true
@@ -587,19 +608,22 @@ export default function AdminDashboard() {
         if (insertError) throw insertError;
         userToSync = newUser;
         setUsers(prev => [newUser, ...prev]);
-      } else if (!(existingUser.roles || []).includes('employee')) {
-        // Ensure they have employee role for operational sync
-        const newRoles = Array.from(new Set([...(existingUser.roles || []), 'employee']));
-        const { data: updatedUser, error: updateError } = await supabase
-          .from('users')
-          .update({ roles: newRoles })
-          .eq('id', existingUser.id)
-          .select()
-          .single();
-        
-        if (!updateError && updatedUser) {
-          userToSync = updatedUser;
-          setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+      } else {
+        // Ensure roles are correct
+        const currentRoles = existingUser.roles || [];
+        if (!currentRoles.includes('admin') || !currentRoles.includes('employee')) {
+          const newRoles = Array.from(new Set([...currentRoles, 'admin', 'employee']));
+          const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update({ roles: newRoles })
+            .eq('id', existingUser.id)
+            .select()
+            .single();
+          
+          if (!updateError && updatedUser) {
+            userToSync = updatedUser;
+            setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+          }
         }
       }
 
@@ -823,7 +847,7 @@ export default function AdminDashboard() {
             </AnimatePresence>
           </div>
 
-          {currentUser?.email === 'bernardo.real@latam.com' && (
+          {currentUser?.email?.toLowerCase() === 'bernardo.real@latam.com' && (
             <button 
               onClick={handleSelfSync}
               disabled={loading}

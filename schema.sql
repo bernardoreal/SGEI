@@ -200,12 +200,12 @@ CREATE POLICY "Users can insert their own profile" ON users
 
 CREATE POLICY "Admins can view all users" ON users
     FOR SELECT USING (
-        (auth.jwt() ->> 'email' = 'bernardo.real@latam.com')
+        LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com'
     );
 
 CREATE POLICY "Admins can manage users" ON users
     FOR ALL USING (
-        (auth.jwt() ->> 'email' = 'bernardo.real@latam.com')
+        LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com'
     );
 
 -- Base JPA Policies (Employees)
@@ -294,7 +294,7 @@ CREATE POLICY "Everyone can view system settings" ON system_settings
 
 CREATE POLICY "Admins can manage system settings" ON system_settings
     FOR ALL USING (
-        (auth.jwt() ->> 'email' = 'bernardo.real@latam.com') OR
+        (LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com') OR
         EXISTS (SELECT 1 FROM users WHERE email = auth.jwt() ->> 'email' AND 'admin' = ANY(roles))
     );
 
