@@ -71,6 +71,17 @@ export default function ScheduleGenerator() {
           const data = await response.json();
           if (data.error) throw new Error(data.error.message || 'Erro no OpenRouter');
           responseText = data.choices[0].message.content || '';
+
+          // Log usage (Client-side)
+          if (data.usage) {
+            await supabase.from('ai_usage_logs').insert([{
+              model: llmConfig.model,
+              provider: 'openrouter',
+              prompt_tokens: data.usage.prompt_tokens,
+              completion_tokens: data.usage.completion_tokens,
+              total_tokens: data.usage.total_tokens
+            }]);
+          }
         } else {
           // Fallback para Server Action
           responseText = await generateWithOpenRouter(prompt, llmConfig.model);
@@ -82,6 +93,18 @@ export default function ScheduleGenerator() {
           contents: prompt,
         });
         responseText = response.text || '';
+
+        // Log usage (Gemini)
+        const usage = (response as any).usageMetadata;
+        if (usage) {
+          await supabase.from('ai_usage_logs').insert([{
+            model: llmConfig.model || "gemini-3-flash-preview",
+            provider: 'gemini',
+            prompt_tokens: usage.promptTokenCount,
+            completion_tokens: usage.candidatesTokenCount,
+            total_tokens: usage.totalTokenCount
+          }]);
+        }
       }
 
       setResult(responseText || 'Não foi possível gerar a escala.');

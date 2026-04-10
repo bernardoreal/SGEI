@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   Sparkles,
   Cpu,
+  Settings,
   Bell,
   Eye,
   ChevronDown,
@@ -96,6 +97,8 @@ export default function AdminDashboard() {
   const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-3-flash-preview' });
   const [savingLlm, setSavingLlm] = useState(false);
   const [openRouterInfo, setOpenRouterInfo] = useState<any>(null);
+  const [tokenStats, setTokenStats] = useState({ prompt: 0, completion: 0, total: 0 });
+  const [loadingStats, setLoadingStats] = useState(false);
   const [notifications, setNotifications] = useState<{ id: string; message: string }[]>([]);
   const [viewMode, setViewMode] = useState<'admin' | 'manager' | 'coordinator' | 'supervisor' | 'employee'>('admin');
   const [showViewDropdown, setShowViewDropdown] = useState(false);
@@ -153,6 +156,24 @@ export default function AdminDashboard() {
 
       if (llmRes.data) {
         setLlmConfig(llmRes.data.value);
+      }
+
+      // Buscar estatísticas de tokens
+      try {
+        const { data: usageData } = await supabase
+          .from('ai_usage_logs')
+          .select('prompt_tokens, completion_tokens, total_tokens');
+        
+        if (usageData) {
+          const stats = usageData.reduce((acc, curr) => ({
+            prompt: acc.prompt + (curr.prompt_tokens || 0),
+            completion: acc.completion + (curr.completion_tokens || 0),
+            total: acc.total + (curr.total_tokens || 0)
+          }), { prompt: 0, completion: 0, total: 0 });
+          setTokenStats(stats);
+        }
+      } catch (err) {
+        console.error('Error fetching token stats:', err);
       }
 
       const orInfo = await getOpenRouterKeyInfo();
@@ -1454,145 +1475,151 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
           <Cpu size={20} className="text-indigo-600" />
           Configurações de Inteligência Artificial
         </h2>
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Card 1: Configuração do Motor */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
             <div className="space-y-4">
+              <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                <Settings size={18} className="text-indigo-600" />
+                Motor de Escalas
+              </h3>
+              
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Provedor de IA</label>
-                <div className="flex gap-4">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Provedor</label>
+                <div className="flex gap-2">
                   <button 
                     onClick={() => setLlmConfig({ ...llmConfig, provider: 'gemini' })}
-                    className={`flex-1 p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${llmConfig.provider === 'gemini' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-100 hover:border-gray-200'}`}
+                    className={`flex-1 py-2 rounded-lg border transition-all text-xs font-bold ${llmConfig.provider === 'gemini' ? 'border-indigo-600 bg-indigo-50 text-indigo-900' : 'border-gray-100 text-gray-400'}`}
                   >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${llmConfig.provider === 'gemini' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
-                      G
-                    </div>
-                    <span className={`text-sm font-bold ${llmConfig.provider === 'gemini' ? 'text-indigo-900' : 'text-gray-500'}`}>Google Gemini</span>
+                    Gemini
                   </button>
                   <button 
                     onClick={() => setLlmConfig({ ...llmConfig, provider: 'openrouter' })}
-                    className={`flex-1 p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${llmConfig.provider === 'openrouter' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-100 hover:border-gray-200'}`}
+                    className={`flex-1 py-2 rounded-lg border transition-all text-xs font-bold ${llmConfig.provider === 'openrouter' ? 'border-indigo-600 bg-indigo-50 text-indigo-900' : 'border-gray-100 text-gray-400'}`}
                   >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${llmConfig.provider === 'openrouter' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
-                      O
-                    </div>
-                    <span className={`text-sm font-bold ${llmConfig.provider === 'openrouter' ? 'text-indigo-900' : 'text-gray-500'}`}>OpenRouter</span>
+                    OpenRouter
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Modelo Selecionado</label>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Modelo</label>
                 <select 
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
                   value={llmConfig.model}
                   onChange={(e) => setLlmConfig({ ...llmConfig, model: e.target.value })}
                 >
                   {llmConfig.provider === 'gemini' ? (
                     <>
-                      <option value="gemini-3-flash-preview">Gemini 3 Flash Preview (Recomendado)</option>
+                      <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
                       <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                      <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
                     </>
                   ) : (
                     <>
-                      <option value="anthropic/claude-3-opus">Claude 3 Opus</option>
-                      <option value="anthropic/claude-3-sonnet">Claude 3 Sonnet</option>
-                      <option value="anthropic/claude-3-haiku">Claude 3 Haiku</option>
-                      <option value="openai/gpt-4-turbo">GPT-4 Turbo</option>
-                      <option value="openai/gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                      <option value="meta-llama/llama-3-70b-instruct">Llama 3 70B</option>
-                      <option value="mistralai/mixtral-8x7b-instruct">Mixtral 8x7B</option>
-                      <option value="google/gemini-pro-1.5">Gemini Pro 1.5 (via OpenRouter)</option>
-                      <option disabled className="bg-gray-100 font-bold text-gray-400">--- MODELOS GRATUITOS ---</option>
-                      <option value="google/gemma-4-31b-it:free">Gemma 4 31B IT (FREE)</option>
-                      <option value="google/gemma-4-26b-a4b-it:free">Gemma 4 26B A4B IT (FREE)</option>
-                      <option value="google/gemma-3-27b-it:free">Gemma 3 27B IT (FREE)</option>
+                      <option value="google/gemma-3-27b-it:free">Gemma 3 27B (FREE)</option>
                       <option value="openai/gpt-oss-120b:free">GPT-OSS 120B (FREE)</option>
-                      <option value="openai/gpt-oss-20b:free">GPT-OSS 20B (FREE)</option>
+                      <option value="anthropic/claude-3-haiku">Claude 3 Haiku</option>
                     </>
                   )}
                 </select>
-                <p className="text-xs text-gray-500 mt-2 italic">
-                  * Certifique-se de que as chaves de API correspondentes estejam configuradas no ambiente.
-                </p>
               </div>
-
-              <button 
-                onClick={() => handleUpdateLlmConfig(llmConfig.provider, llmConfig.model)}
-                disabled={savingLlm}
-                className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {savingLlm ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle size={18} />
-                    Salvar Configuração de IA
-                  </>
-                )}
-              </button>
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-6 border border-gray-100">
-              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <Activity size={18} className="text-indigo-600" />
-                Status do Motor de Escalas
-              </h3>
+            <button 
+              onClick={() => handleUpdateLlmConfig(llmConfig.provider, llmConfig.model)}
+              disabled={savingLlm}
+              className="mt-6 w-full py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {savingLlm ? 'Salvando...' : 'Salvar Motor'}
+            </button>
+          </div>
+
+          {/* Card 2: Controle de Custos (OpenRouter) */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Activity size={18} className="text-indigo-600" />
+              Controle Financeiro
+            </h3>
+            
+            {openRouterInfo ? (
               <div className="space-y-4">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">Provedor Ativo:</span>
-                  <span className="font-mono font-bold text-indigo-600 uppercase">{llmConfig.provider}</span>
+                <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                  <div className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Saldo Disponível</div>
+                  <div className="text-3xl font-black text-emerald-700">
+                    {openRouterInfo.limit ? `$${(openRouterInfo.limit - openRouterInfo.usage).toFixed(2)}` : 'Ilimitado'}
+                  </div>
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">Modelo:</span>
-                  <span className="font-mono text-xs bg-white px-2 py-1 rounded border border-gray-200">{llmConfig.model}</span>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div className="text-[10px] font-bold text-gray-400 uppercase">Uso Total</div>
+                    <div className="text-lg font-bold text-gray-900">${openRouterInfo.usage.toFixed(4)}</div>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <div className="text-[10px] font-bold text-gray-400 uppercase">Limite</div>
+                    <div className="text-lg font-bold text-gray-900">{openRouterInfo.limit ? `$${openRouterInfo.limit}` : 'N/A'}</div>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">Latência Média:</span>
-                  <span className="text-gray-900">~2.5s</span>
-                </div>
-                {openRouterInfo && (
-                  <div className="pt-4 border-t border-gray-200 space-y-3">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600">Uso Acumulado:</span>
-                      <span className="font-bold text-gray-900">${openRouterInfo.usage.toFixed(4)}</span>
+
+                {openRouterInfo.limit && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px] font-bold uppercase text-gray-400">
+                      <span>Consumo do Limite</span>
+                      <span>{((openRouterInfo.usage / openRouterInfo.limit) * 100).toFixed(1)}%</span>
                     </div>
-                    {openRouterInfo.limit !== null && (
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[10px] font-bold uppercase text-gray-400">
-                          <span>Limite de Créditos</span>
-                          <span>{((openRouterInfo.usage / openRouterInfo.limit) * 100).toFixed(1)}%</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-indigo-500 transition-all duration-500" 
-                            style={{ width: `${Math.min((openRouterInfo.usage / openRouterInfo.limit) * 100, 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                    <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                        <span className="text-xs font-bold text-emerald-700">Saldo Disponível</span>
-                      </div>
-                      <span className="text-sm font-black text-emerald-700">
-                        {openRouterInfo.limit ? `$${(openRouterInfo.limit - openRouterInfo.usage).toFixed(2)}` : 'Ilimitado'}
-                      </span>
+                    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-indigo-500 transition-all duration-500" 
+                        style={{ width: `${Math.min((openRouterInfo.usage / openRouterInfo.limit) * 100, 100)}%` }}
+                      />
                     </div>
                   </div>
                 )}
-                <div className="pt-4 border-t border-gray-200">
-                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-                    <p className="text-[10px] text-blue-700 leading-relaxed">
-                      <strong>Nota:</strong> O OpenRouter permite acesso a modelos da Anthropic, OpenAI e Meta. 
-                      Para deploy no Cloudflare Pages, utilize a variável <code className="bg-blue-100 px-1 rounded">NEXT_PUBLIC_OPENROUTER_API_KEY</code>.
-                    </p>
+              </div>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-400 text-sm italic">
+                Aguardando conexão com OpenRouter...
+              </div>
+            )}
+          </div>
+
+          {/* Card 3: Controle de Tokens */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Sparkles size={18} className="text-indigo-600" />
+              Estatísticas de Tokens
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
+                <div className="text-[10px] font-bold text-indigo-600 uppercase mb-1">Total de Tokens</div>
+                <div className="text-3xl font-black text-indigo-700">
+                  {tokenStats.total.toLocaleString()}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                    <span className="text-xs font-bold text-gray-600 uppercase">Input (Prompt)</span>
                   </div>
+                  <span className="font-mono font-bold text-gray-900">{tokenStats.prompt.toLocaleString()}</span>
+                </div>
+
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                    <span className="text-xs font-bold text-gray-600 uppercase">Output (Completion)</span>
+                  </div>
+                  <span className="font-mono font-bold text-gray-900">{tokenStats.completion.toLocaleString()}</span>
+                </div>
+
+                <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                  <p className="text-[10px] text-blue-700 leading-relaxed italic">
+                    * Tokens do sistema são contabilizados em cada requisição para monitoramento de eficiência.
+                  </p>
                 </div>
               </div>
             </div>

@@ -1,6 +1,7 @@
 'use server';
 
 import { GoogleGenAI } from "@google/genai";
+import { supabase } from "@/lib/supabase";
 
 export async function generateWithOpenRouter(prompt: string, model: string) {
   const apiKey = process.env.OPENROUTER_API_KEY || process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
@@ -35,7 +36,26 @@ export async function generateWithOpenRouter(prompt: string, model: string) {
       throw new Error(data.error.message || 'Error calling OpenRouter');
     }
 
-    return data.choices[0].message.content || '';
+    const content = data.choices[0].message.content || '';
+    const usage = data.usage;
+
+    // Log usage to Supabase
+    if (usage) {
+      try {
+        await supabase.from('ai_usage_logs').insert([{
+          model: model,
+          provider: 'openrouter',
+          prompt_tokens: usage.prompt_tokens,
+          completion_tokens: usage.completion_tokens,
+          total_tokens: usage.total_tokens,
+          cost: data.usage.cost || 0 // OpenRouter sometimes provides cost
+        }]);
+      } catch (e) {
+        console.error('Error logging AI usage:', e);
+      }
+    }
+
+    return content;
   } catch (error: any) {
     console.error('OpenRouter Error:', error);
     throw new Error(error.message || 'Failed to generate content with OpenRouter');
