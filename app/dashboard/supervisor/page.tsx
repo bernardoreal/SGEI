@@ -15,9 +15,10 @@ import {
   Edit2,
   Save,
   FileText,
-  Download
+  Download,
+  X
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import LATAMScheduleTable from '@/components/LATAMScheduleTable';
 import { GoogleGenAI } from "@google/genai";
 import { generateWithOpenRouter } from '@/app/actions/ai';
@@ -64,6 +65,11 @@ export default function SupervisorDashboard() {
   }, []);
 
   const generateScheduleAI = async () => {
+    if (employees.length === 0) {
+      setError('Não há colaboradores cadastrados na base JPA para gerar a escala. Por favor, adicione colaboradores primeiro.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -151,18 +157,17 @@ export default function SupervisorDashboard() {
           responseText = await generateWithOpenRouter(prompt, llmConfig.model);
         }
       } else {
-        const response = await ai.models.generateContent({
-          model: llmConfig.model || "gemini-3-flash-preview",
-          contents: prompt,
-        });
+        const model = ai.getGenerativeModel({ model: llmConfig.model || "gemini-2.0-flash-exp" });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
         
-        responseText = response.text || '';
+        responseText = response.text() || '';
 
         // Log usage (Gemini)
-        const usage = (response as any).usageMetadata;
+        const usage = response.usageMetadata;
         if (usage) {
           await supabase.from('ai_usage_logs').insert([{
-            model: llmConfig.model || "gemini-3-flash-preview",
+            model: llmConfig.model || "gemini-2.0-flash-exp",
             provider: 'gemini',
             prompt_tokens: usage.promptTokenCount,
             completion_tokens: usage.candidatesTokenCount,
@@ -192,6 +197,36 @@ export default function SupervisorDashboard() {
   const handleFeedback = async (type: 'boa' | 'ruim') => {
     setFeedbackGiven(true);
     alert(`Feedback enviado: ${type}. A IA aprenderá com isso!`);
+  };
+
+  const [editingEmployee, setEditingEmployee] = useState<any | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const handleUpdateEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('base_jpa')
+        .update({
+          fixed_days_off: editingEmployee.fixed_days_off,
+          hour_compensation: editingEmployee.hour_compensation,
+          vacation_period: editingEmployee.vacation_period,
+          cat_6: editingEmployee.cat_6
+        })
+        .eq('bp', editingEmployee.bp);
+
+      if (error) throw error;
+
+      setEmployees(prev => prev.map(emp => emp.bp === editingEmployee.bp ? editingEmployee : emp));
+      setEditingEmployee(null);
+      alert('Dados do colaborador atualizados com sucesso!');
+    } catch (err: any) {
+      console.error('Erro ao atualizar colaborador:', err);
+      alert('Erro ao atualizar: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -265,6 +300,96 @@ export default function SupervisorDashboard() {
         </motion.div>
       )}
 
+      <div className="grid grid-cols-1 gap-8">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Users className="text-indigo-600" /> Gestão Detalhada de Equipe
+            </h2>
+            <div className="flex gap-2">
+              <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                {employees.length} Colaboradores
+              </span>
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-separate border-spacing-y-2">
+              <thead className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                <tr>
+                  <th className="px-4 pb-2">Colaborador</th>
+                  <th className="px-4 pb-2">Regime</th>
+                  <th className="px-4 pb-2">Folgas Fixas</th>
+                  <th className="px-4 pb-2">Compensas</th>
+                  <th className="px-4 pb-2">Férias</th>
+                  <th className="px-4 pb-2">DG6 (CAT 6)</th>
+                  <th className="px-4 pb-2 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                {employees.map(emp => (
+                  <tr key={emp.bp} className="group hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-4 bg-white border-y border-l border-gray-100 first:rounded-l-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-latam-indigo/5 flex items-center justify-center text-latam-indigo font-bold text-xs">
+                          {emp.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                        </div>
+                        <div>
+                          <div className="font-bold text-gray-900">{emp.name}</div>
+                          <div className="text-[10px] text-gray-400 font-mono">{emp.bp}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 bg-white border-y border-gray-100">
+                      <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold">
+                        5x1
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 bg-white border-y border-gray-100">
+                      <div className="text-xs text-gray-600 font-medium">
+                        {emp.fixed_days_off || 'Sáb/Dom'}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 bg-white border-y border-gray-100">
+                      <div className="flex items-center gap-1 text-amber-600 font-bold">
+                        <Clock size={14} />
+                        {emp.hour_compensation || '0h'}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 bg-white border-y border-gray-100">
+                      <div className="flex items-center gap-1 text-gray-600">
+                        <Calendar size={14} />
+                        <span className="text-xs">
+                          {emp.vacation_period || 'Nenhum'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 bg-white border-y border-gray-100">
+                      {emp.cat_6 ? (
+                        <span className="flex items-center gap-1 text-emerald-600 font-bold text-xs">
+                          <CheckCircle size={14} /> Sim
+                        </span>
+                      ) : (
+                        <span className="text-gray-300 text-xs">Não</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4 bg-white border-y border-r border-gray-100 last:rounded-r-xl text-right">
+                      <button 
+                        onClick={() => setEditingEmployee({ ...emp })}
+                        className="p-2 text-slate-400 hover:text-latam-indigo hover:bg-indigo-50 rounded-lg transition-all"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
@@ -308,6 +433,97 @@ export default function SupervisorDashboard() {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {editingEmployee && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden"
+            >
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 className="text-lg font-bold text-slate-900">Editar Colaborador</h3>
+                <button onClick={() => setEditingEmployee(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+              </div>
+              <form onSubmit={handleUpdateEmployee} className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase">Regime de Trabalho</label>
+                    <div className="w-full p-2 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-500">
+                      5x1 (Fixo LATAM)
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase">Aceitador DG6 (CAT 6)</label>
+                    <div className="flex items-center gap-2 h-10">
+                      <input 
+                        type="checkbox" 
+                        checked={editingEmployee.cat_6}
+                        onChange={e => setEditingEmployee({...editingEmployee, cat_6: e.target.checked})}
+                        className="w-5 h-5 rounded border-slate-300 text-latam-indigo focus:ring-latam-indigo"
+                      />
+                      <span className="text-sm font-medium">Habilitado</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Folgas Fixas</label>
+                  <input 
+                    type="text"
+                    value={editingEmployee.fixed_days_off || ''}
+                    onChange={e => setEditingEmployee({...editingEmployee, fixed_days_off: e.target.value})}
+                    placeholder="Ex: Sábados e Domingos"
+                    className="w-full p-2 border rounded-xl text-sm"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase">Compensa de Horas</label>
+                    <input 
+                      type="text"
+                      value={editingEmployee.hour_compensation || ''}
+                      onChange={e => setEditingEmployee({...editingEmployee, hour_compensation: e.target.value})}
+                      placeholder="Ex: 12h"
+                      className="w-full p-2 border rounded-xl text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase">Período de Férias</label>
+                    <input 
+                      type="text"
+                      value={editingEmployee.vacation_period || ''}
+                      onChange={e => setEditingEmployee({...editingEmployee, vacation_period: e.target.value})}
+                      placeholder="Ex: 01/05 a 30/05"
+                      className="w-full p-2 border rounded-xl text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 flex gap-3">
+                  <button 
+                    type="button"
+                    onClick={() => setEditingEmployee(null)}
+                    className="flex-1 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={saving}
+                    className="flex-1 bg-latam-indigo text-white py-3 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-100 disabled:bg-slate-300"
+                  >
+                    {saving ? 'Salvando...' : 'Salvar Alterações'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

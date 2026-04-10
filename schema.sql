@@ -38,6 +38,10 @@ CREATE TABLE base_jpa (
     position VARCHAR(100),
     cargo VARCHAR(100),
     cat_6 BOOLEAN DEFAULT false,
+    work_regime VARCHAR(20) DEFAULT '5x1',
+    fixed_days_off TEXT,
+    hour_compensation VARCHAR(20) DEFAULT '0h',
+    vacation_period TEXT,
     phone VARCHAR(20),
     email VARCHAR(255),
     date_of_birth DATE,
@@ -196,14 +200,12 @@ CREATE POLICY "Users can insert their own profile" ON users
 
 CREATE POLICY "Admins can view all users" ON users
     FOR SELECT USING (
-        (auth.jwt() ->> 'email' = 'bernardo.real@latam.com') OR
-        EXISTS (SELECT 1 FROM users WHERE email = auth.jwt() ->> 'email' AND 'admin' = ANY(roles))
+        (auth.jwt() ->> 'email' = 'bernardo.real@latam.com')
     );
 
 CREATE POLICY "Admins can manage users" ON users
     FOR ALL USING (
-        (auth.jwt() ->> 'email' = 'bernardo.real@latam.com') OR
-        EXISTS (SELECT 1 FROM users WHERE email = auth.jwt() ->> 'email' AND 'admin' = ANY(roles))
+        (auth.jwt() ->> 'email' = 'bernardo.real@latam.com')
     );
 
 -- Base JPA Policies (Employees)
@@ -292,6 +294,7 @@ CREATE POLICY "Everyone can view system settings" ON system_settings
 
 CREATE POLICY "Admins can manage system settings" ON system_settings
     FOR ALL USING (
+        (auth.jwt() ->> 'email' = 'bernardo.real@latam.com') OR
         EXISTS (SELECT 1 FROM users WHERE email = auth.jwt() ->> 'email' AND 'admin' = ANY(roles))
     );
 
