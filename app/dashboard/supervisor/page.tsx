@@ -157,17 +157,18 @@ export default function SupervisorDashboard() {
           responseText = await generateWithOpenRouter(prompt, llmConfig.model);
         }
       } else {
-        const model = ai.getGenerativeModel({ model: llmConfig.model || "gemini-2.0-flash-exp" });
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
+        const response = await ai.models.generateContent({
+          model: llmConfig.model || "gemini-3-flash-preview",
+          contents: prompt,
+        });
         
-        responseText = response.text() || '';
+        responseText = response.text || '';
 
         // Log usage (Gemini)
         const usage = response.usageMetadata;
         if (usage) {
           await supabase.from('ai_usage_logs').insert([{
-            model: llmConfig.model || "gemini-2.0-flash-exp",
+            model: llmConfig.model || "gemini-3-flash-preview",
             provider: 'gemini',
             prompt_tokens: usage.promptTokenCount,
             completion_tokens: usage.candidatesTokenCount,
