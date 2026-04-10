@@ -208,16 +208,15 @@ export default function AdminDashboard() {
     users.forEach(user => {
       if (user.base_id && stats[user.base_id]) {
         const userRoles = user.roles || [];
-        if (user.base_id) {
-          if (userRoles.length === 0 || (userRoles.length === 1 && userRoles[0] === 'pending')) {
-            stats[user.base_id]['pending'] = (stats[user.base_id]['pending'] || 0) + 1;
-          } else {
-            userRoles.forEach(role => {
-              if (stats[user.base_id] && stats[user.base_id][role] !== undefined) {
-                stats[user.base_id][role] = (stats[user.base_id][role] || 0) + 1;
-              }
-            });
-          }
+        const baseId = user.base_id;
+        if (userRoles.length === 0 || (userRoles.length === 1 && userRoles[0] === 'pending')) {
+          stats[baseId]['pending'] = (stats[baseId]['pending'] || 0) + 1;
+        } else {
+          userRoles.forEach(role => {
+            if (stats[baseId] && stats[baseId][role] !== undefined) {
+              stats[baseId][role] = (stats[baseId][role] || 0) + 1;
+            }
+          });
         }
       }
     });
