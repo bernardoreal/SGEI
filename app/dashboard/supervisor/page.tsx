@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import LATAMScheduleTable from '@/components/LATAMScheduleTable';
-import { generateWithGemini } from '@/app/actions/ai';
+import { GoogleGenAI } from "@google/genai";
 
 export default function SupervisorDashboard() {
   const [loading, setLoading] = useState(false);
@@ -89,21 +89,29 @@ export default function SupervisorDashboard() {
         Gere a escala completa para todos os colaboradores listados, garantindo cobertura em todos os turnos e respeitando a folga 5x1.
       `;
 
-      const response = await generateWithGemini(prompt, "gemini-1.5-flash");
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+      });
       
+      const responseText = response.text;
+      if (!responseText) throw new Error('Resposta vazia da IA');
+
       // Limpar a resposta caso a IA coloque markdown
-      const jsonStr = response.replace(/```json|```/g, '').trim();
+      const jsonStr = responseText.replace(/```json|```/g, '').trim();
       const parsedData = JSON.parse(jsonStr);
       
       setAiSchedule(parsedData);
       setFeedbackGiven(false);
     } catch (err: any) {
       console.error('Erro ao gerar escala:', err);
-      setError('Falha ao gerar escala com IA. Verifique as configurações da API.');
+      setError(`Falha ao gerar escala com IA: ${err.message || 'Erro desconhecido'}`);
     } finally {
       setLoading(false);
     }
   };
+
+  const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || '' });
 
   const handleFeedback = async (type: 'boa' | 'ruim') => {
     setFeedbackGiven(true);

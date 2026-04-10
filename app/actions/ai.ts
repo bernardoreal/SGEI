@@ -42,26 +42,6 @@ export async function generateWithOpenRouter(prompt: string, model: string) {
   }
 }
 
-export async function generateWithGemini(prompt: string, model: string): Promise<string> {
-  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not configured');
-  }
-
-  try {
-    const ai = new GoogleGenAI({ apiKey });
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: prompt,
-    });
-    return response.text || '';
-  } catch (error: any) {
-    console.error('Gemini Error:', error);
-    throw new Error(error.message || 'Failed to generate content with Gemini');
-  }
-}
-
 export async function getOpenRouterKeyInfo() {
   const apiKey = process.env.OPENROUTER_API_KEY;
   
