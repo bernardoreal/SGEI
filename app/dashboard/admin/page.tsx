@@ -307,6 +307,15 @@ export default function AdminDashboard() {
       
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, roles: newRoles } : u));
       
+      // If adding 'employee' to a privileged user, suggest operational sync
+      if (!currentRoles.includes('employee') && newRoles.includes('employee') && newRoles.some(r => ['admin', 'manager', 'coordinator', 'supervisor'].includes(r))) {
+        const confirmSync = confirm(`Você adicionou a função de Colaborador a um usuário com privilégios. Deseja sincronizá-lo agora com a base operacional para que ele apareça nas escalas?`);
+        if (confirmSync) {
+          const updatedUser = { ...user, roles: newRoles };
+          handleSyncToOperational(updatedUser);
+        }
+      }
+
       await supabase.from('audit_log').insert({
         action: `Alteração de roles para: ${newRoles.join(', ')}`,
         table_name: 'users',
@@ -1001,6 +1010,14 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                       </div>
                       
                       <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                          {user.roles && user.roles.includes('employee') && user.roles.some((r: string) => ['admin', 'manager', 'coordinator', 'supervisor'].includes(r)) && (
+                            <div className="flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded-lg text-[10px] font-bold border border-amber-200">
+                              <Sparkles size={10} />
+                              HÍBRIDO
+                            </div>
+                          )}
+                        </div>
                         <div className="flex flex-wrap gap-1">
                           {['employee', 'supervisor', 'manager', 'coordinator', 'admin'].map(role => (
                             <button
@@ -1101,6 +1118,12 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                       </div>
                       
                       <div className="flex items-center gap-2">
+                        {user.roles && user.roles.includes('employee') && user.roles.some((r: string) => ['admin', 'manager', 'coordinator', 'supervisor'].includes(r)) && (
+                          <div className="flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded-lg text-[10px] font-bold border border-amber-200">
+                            <Sparkles size={10} />
+                            HÍBRIDO
+                          </div>
+                        )}
                         <button 
                           onClick={() => handleSyncToOperational(user)}
                           disabled={syncingUserId === user.id}
@@ -1108,7 +1131,7 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                           title="Vincular como Colaborador Operacional (Híbrido)"
                         >
                           {syncingUserId === user.id ? '...' : <Sparkles size={14} />}
-                          Híbrido
+                          Sincronizar
                         </button>
                         <div className="flex flex-wrap gap-1">
                           {['employee', 'supervisor', 'manager', 'coordinator', 'admin'].map(role => (

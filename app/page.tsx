@@ -24,7 +24,8 @@ export default function LoginPage() {
   const [forgotLoading, setForgotLoading] = useState(false);
 
   const handleForgotPassword = async () => {
-    if (!email) {
+    const cleanInput = email.trim();
+    if (!cleanInput) {
       setError('Por favor, digite seu E-mail ou BP primeiro.');
       return;
     }
@@ -35,23 +36,34 @@ export default function LoginPage() {
     try {
       let query = supabase.from('users').select('password_plain');
       
-      if (email.includes('@')) {
-        query = query.eq('email', email);
+      if (cleanInput.includes('@')) {
+        query = query.eq('email', cleanInput);
       } else {
-        query = query.eq('bp', email);
+        query = query.eq('bp', cleanInput);
       }
 
       const { data, error: fetchError } = await query.maybeSingle();
 
-      if (fetchError || !data) {
-        setError('Usuário não encontrado para recuperar a senha.');
-        setForgotLoading(false);
+      if (fetchError) {
+        console.error('Erro ao buscar usuário:', fetchError);
+        setError(`Erro técnico: ${fetchError.message}`);
+        return;
+      }
+
+      if (!data) {
+        setError('Usuário não encontrado para recuperar a senha. Verifique se digitou corretamente.');
+        return;
+      }
+
+      if (!data.password_plain) {
+        setError('Este usuário não possui uma senha simples cadastrada para recuperação direta.');
         return;
       }
 
       setRetrievedPassword(data.password_plain);
       setShowForgotModal(true);
     } catch (err) {
+      console.error('Erro inesperado:', err);
       setError('Erro ao recuperar senha.');
     } finally {
       setForgotLoading(false);
