@@ -103,44 +103,6 @@ export default function AdminDashboard() {
       supabase.removeChannel(channel);
     };
   }, []);
-  const [notifications, setNotifications] = useState<{ id: string; message: string }[]>([]);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel('users-insert')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'users' }, (payload) => {
-        const newUser = payload.new as User;
-        const notification = { id: Date.now().toString(), message: `Novo usuário cadastrado: ${newUser.name || newUser.email}` };
-        setNotifications(prev => [...prev, notification]);
-        setTimeout(() => {
-          setNotifications(prev => prev.filter(n => n.id !== notification.id));
-        }, 5000);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-  const [notifications, setNotifications] = useState<{ id: string; message: string }[]>([]);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel('users-insert')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'users' }, (payload) => {
-        const newUser = payload.new as any;
-        const notification = { id: Date.now().toString(), message: `Novo usuário cadastrado: ${newUser.name || newUser.email}` };
-        setNotifications(prev => [...prev, notification]);
-        setTimeout(() => {
-          setNotifications(prev => prev.filter(n => n.id !== notification.id));
-        }, 5000);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
   
   const [newUserForm, setNewUserForm] = useState({
     bp: '',
