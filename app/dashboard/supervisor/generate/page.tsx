@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { generateWithOpenRouter, generateWithGemini } from '@/app/actions/ai';
+import { generateWithOpenRouter } from '@/app/actions/ai';
 import { Cpu, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { GoogleGenAI } from "@google/genai";
 
 export default function ScheduleGenerator() {
   const [loading, setLoading] = useState(false);
@@ -52,7 +53,12 @@ export default function ScheduleGenerator() {
       if (llmConfig.provider === 'openrouter') {
         responseText = await generateWithOpenRouter(prompt, llmConfig.model);
       } else {
-        responseText = await generateWithGemini(prompt, llmConfig.model);
+        const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || '' });
+        const response = await ai.models.generateContent({
+          model: llmConfig.model || "gemini-3-flash-preview",
+          contents: prompt,
+        });
+        responseText = response.text || '';
       }
 
       setResult(responseText || 'Não foi possível gerar a escala.');
