@@ -11,7 +11,9 @@ import {
   User, 
   Hash, 
   MapPin, 
-  ArrowRight
+  ArrowRight,
+  Phone,
+  Briefcase
 } from 'lucide-react';
 
 const LATAM_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJwAAACUCAMAAABRNbASAAAA8FBMVEUbAIj////sFVAAAIsAAIAAAIObmMLuFU/yFk3wFU6uEGkAAH0RAIYOAIn0FkyTDXDMyt4eGIn4FkrkFFPsAEf19Pnb2ekvI46PDXFwCnkvA4U5BYTAEWHsAEHl5O9sZatUB3/aE1dgCH2HDHPFEV5NB4G2EGWlDmrVE1nPElu4ttPrADhPTJrGw9324ulsaqeDgrOsp81ZWJ6bDW16C3ZVJIviRXJyerPrO2LvoLDwX3ryw9AXDYjsbojtqbj11d7uiJ45OI/tk6jsS233vcYxKo7xgJaVPon2ADHChKlHL4zpXoGnLnlXO5TdnrgxL4ulBBJCAAAHIklEQVR4nO2be3uaSBTGlTthJApiokYiajQSFNHsmqa52TTdbrvbfP9vsweNRmS4dHeQ6T6+/yYP/fHOzHvOGdJC4aCDDjrooF9QpbwB4tQusbTysdeiNWuydPKxx5qoasNT8C9vlLDYY5VhGFnVe90Sdf6t4BhGBP96dVjfvIG2tYZjlv5ZR9c0HY9tOPBPkvWjdoEWviDckk8bDjp0+BeCW/Lpl8cNCo4HexqG8/k0bdi9yPt4sHUNB7eKl7Mumy9fU46AA/tkVco3Xkp97LquJWnWUT237Ve6sKK9W/kn6oN2oZQLH3thRW27DR/Eyyz7eMG9f6kxUyVRjOeTM4+XUrOD3d5s4XSoq/GrC/5B99LNrnthZ5LV72BeH1asfWppaoJ9mcYLeyRBPMiDTgPHxzYHl4yUwCfKknRWb2bgH8Atl0caDtqY1y+xqD6wNCnBPkZSrX6d+PFYwS23N2MdNzHdB1tqdPp+eiT4JzF+vBDl28D5z9ekHrZ6wopdn+la4vGQtMvZb3w2cEv/9LNrOB677w8r1uwOtaTtx8ja73NydDtw/vbWtD6uesLxKJz29NjjK7ZuxjaXHZwvSb2MiJdC5zgyXkT5SvwwLtooW7hlPDCDdlS8WOF4EavVm9uPRrFYHN2RgzuO2uaiqg5nKeNFvKreP4yLS5UrxOBK7Zg9JMsMVE9cvLCNel+WV/EiV+XnNRlZuALbi01YUVPx8cKu4kVqtW4/PBa3RBKudMEk5Jck6T1cc+nHy/Xw6dEoFrOCg+ZtmNR9QLyooXhBHD+d1IohEYWD5g26j8R4VaXLo/d4QbzCCyMjjEb0tC7Fsp2+LqboPvTBhR8vPL84L2PJfDhyObfBa1z3meTqqcrD4w6a22YEGcgmWFzXgvSH7S3K8XxytfX8I4bMhyNXvgIC/2Y9JrJ6iq3qTmzgNMnAuZWW1VPHHQ+xelX9tBsbOJ0Q33MBPvZit3qCZ89fEj3zZbgkV5XFxmujfrRpLn3PvnweJ4MVizXBIbmobL3XbaIQXwlUP9Ohelar+vfPKVazWDS9lzue6JqyR5rG9LuY5gg8bXb7+v1DKs9Mb84rpHeb38/5N6tnHd+swI8Qf+d441Smfb79/ZojP/u/NZtQPZlBfcs/pKBzIT7Q3jT+eN+6kv3q2yV9NfbeCcNsdzm4WL4+VM47r5bKs8cvN9XW6gGSZJ11WJJLG2jTYbazZu0GciapPDMen+Agb0UO+C/+8ZIRHKj6Vf8T322EPHu6bbVCYX315GUzff1EbIwfbqA7D1cR5olk4X+Hg8EuZWyMH+AIhAtc9erm6ZFoy/QGJ8Nk95AuNkbut66l7lydgOnV76sqUiY4Gvo51xJvP6XyzBhNkMIjv/oOt7oXucXcf1g/gGCbzv519ZVJ1W1A5Zw4iFstGlTfzmDVvYitrzcPWw8gCMcLj+k8qwl3SqBylvzm3qqKz0/BBxCEQydpTDM9l+dCGx2y+u8fH3d/l+T0hRZJsWbYToUP5QNU3sUEV0WIjoZIqUzsSD7TniNMt8ErL5OIlyI8GiKed+aY8RhccBdhz2Ay5KejyAI3Ij5D+KVeCI6iRnlSUMLNI+Iqcy9uI2QxGsK/iqbvTZI5mfLhIok4ZWFjPd6Cy2g0BP++eaZhmEIF75kjJJ9tgnfCIQKlMp1ijgBwL4TIK4gtmVlOhgWEMGT8q5uGDKrIIlO4kHjlJCZrAmT2OfEhJ06I55zo2AjIdl8wuZMdGVdxY2NjI7PscspeyZSFlxAbbyrPHW6/nqWdcmoC4sgO+vGCypkqNvzLkSmXUehGqJIyNgzPOdmnZ744IQ2ZaZ9ze82N9HA2tl2hAM4YzcGz/ZuWAq6GbVcogIPYqOw1NtLD1bxzzJRDA9wyNnI5Aklwpu3mERs47cKVXYcGz1bahoMpR8F07PnpHW4ZGxSRFdZwMOW8YmIDZrRcl9iHq3ku5rMCtHiOMBLypOOE0RTTcMOU8zJfXo7kah3uUwyvvE7st62Y6XfBnxZSlO0phyI4nntxvUDw0QLnH4HQlHOSN5UvxFcc3Pev/J1bXY5gWoDc4SA2TtzIL3O5wqGt2KANDi0SLkfyQ0sxfeU4QiTCZXWvSgKu5uR5HmLhysJd7i0TXoY33fvlSDo4/041/ykHCzdyF/u8H4xUCM4su0pulyM72oEbTZx93vYmaAvOMCevPE2T4TtczXMUyibD9WgIsUHFEQiK8/zLEQpiAyf+fEJHbGDFUxIbB2UkmHLybN5ihHiOm9dsJW8OjHhuMR/5gfdK2+lAiuKu/3L/nK5UQS/TrU/AdMHxbuByhC64nZbpAJdaB7h/q18Jjuh/v/jP2oGrUFUhgnAmXbU1AGfStaqB0VBY0MW2gavZ9E2GKzjDc08oGvQ34gSjPOXoGvQ3Qs4rjZ696TAZHnTQQQf9z/UPh4+kuHfcJesAAAAASUVORK5CYII=";
@@ -28,6 +30,9 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [selectedBaseId, setSelectedBaseId] = useState('');
+  const [cat6, setCat6] = useState(false);
+  const [cargo, setCargo] = useState('');
+  const [phone, setPhone] = useState('');
   const [baseSearch, setBaseSearch] = useState('');
   const [showBaseDropdown, setShowBaseDropdown] = useState(false);
   const [bases, setBases] = useState<Base[]>([]);
@@ -139,6 +144,9 @@ export default function RegisterPage() {
       name,
       password_plain: password, // Salvando a senha conforme solicitado
       base_id: selectedBaseId,
+      cat6,
+      cargo,
+      phone,
       roles: isBernardo ? ['admin', 'employee'] : ['pending'], // Atribuindo múltiplos papéis para o admin
     });
     console.log('users.insert result:', { dbError });
@@ -214,6 +222,41 @@ export default function RegisterPage() {
                   className="w-full pl-12 pr-4 py-4 bg-white/50 border border-white/50 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white outline-none transition-all text-latam-indigo font-medium placeholder:text-slate-400"
                   required
                 />
+              </div>
+              <div className="relative group">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 group-focus-within:text-latam-indigo transition-colors" size={18} />
+                <input 
+                  type="tel" 
+                  placeholder="Telefone (Opcional)" 
+                  value={phone} 
+                  onChange={(e) => setPhone(e.target.value)} 
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 border border-white/50 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white outline-none transition-all text-latam-indigo font-medium placeholder:text-slate-400"
+                />
+              </div>
+              <div className="relative group">
+                <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 group-focus-within:text-latam-indigo transition-colors" size={18} />
+                <select 
+                  value={cargo} 
+                  onChange={(e) => setCargo(e.target.value)} 
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 border border-white/50 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white outline-none transition-all text-latam-indigo font-medium placeholder:text-slate-400"
+                  required
+                >
+                  <option value="" disabled>Selecione o Cargo</option>
+                  <option value="Auxiliar de Cargas">Auxiliar de Cargas</option>
+                  <option value="Despachante">Despachante</option>
+                  <option value="Supervisor">Supervisor</option>
+                  <option value="Coordenador">Coordenador</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2 ml-1">
+                <input 
+                  type="checkbox" 
+                  id="cat6"
+                  checked={cat6}
+                  onChange={(e) => setCat6(e.target.checked)}
+                  className="w-5 h-5 rounded border-white/50 text-latam-indigo focus:ring-latam-indigo"
+                />
+                <label htmlFor="cat6" className="text-sm font-medium text-latam-indigo">Possui CAT 6</label>
               </div>
             </div>
 
