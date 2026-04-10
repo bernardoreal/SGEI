@@ -51,7 +51,30 @@ export default function ScheduleGenerator() {
       
       let responseText = '';
       if (llmConfig.provider === 'openrouter') {
-        responseText = await generateWithOpenRouter(prompt, llmConfig.model);
+        const clientApiKey = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
+        
+        if (clientApiKey) {
+          // Chamada direta pelo cliente (Lógica Cloudflare Pages)
+          const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${clientApiKey}`,
+              "HTTP-Referer": window.location.origin,
+              "X-Title": "LATAM SGEI",
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              "model": llmConfig.model,
+              "messages": [{ "role": "user", "content": prompt }]
+            })
+          });
+          const data = await response.json();
+          if (data.error) throw new Error(data.error.message || 'Erro no OpenRouter');
+          responseText = data.choices[0].message.content || '';
+        } else {
+          // Fallback para Server Action
+          responseText = await generateWithOpenRouter(prompt, llmConfig.model);
+        }
       } else {
         const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || '' });
         const response = await ai.models.generateContent({

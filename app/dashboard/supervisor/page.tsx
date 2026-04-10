@@ -20,6 +20,7 @@ import {
 import { motion } from 'motion/react';
 import LATAMScheduleTable from '@/components/LATAMScheduleTable';
 import { GoogleGenAI } from "@google/genai";
+import { generateWithOpenRouter } from '@/app/actions/ai';
 
 export default function SupervisorDashboard() {
   const [loading, setLoading] = useState(false);
@@ -28,6 +29,7 @@ export default function SupervisorDashboard() {
   const [aiSchedule, setAiSchedule] = useState<any | null>(null);
   const [feedbackGiven, setFeedbackGiven] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-3-flash-preview' });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,6 +37,17 @@ export default function SupervisorDashboard() {
       const { data: reqData } = await supabase.from('shift_requests').select('*');
       if (empData) setEmployees(empData);
       if (reqData) setShiftRequests(reqData);
+
+      // Buscar configuração de IA
+      const { data: configData } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'llm_config')
+        .maybeSingle();
+      
+      if (configData) {
+        setLlmConfig(configData.value);
+      }
     };
     fetchData();
   }, []);
@@ -89,12 +102,41 @@ export default function SupervisorDashboard() {
         Gere a escala completa para todos os colaboradores listados, garantindo cobertura em todos os turnos e respeitando a folga 5x1.
       `;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-      });
+      let responseText = '';
+      if (llmConfig.provider === 'openrouter') {
+        const clientApiKey = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
+        
+        if (clientApiKey) {
+          // Chamada direta pelo cliente (Lógica Cloudflare Pages)
+          const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${clientApiKey}`,
+              "HTTP-Referer": window.location.origin,
+              "X-Title": "LATAM SGEI",
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              "model": llmConfig.model,
+              "messages": [{ "role": "user", "content": prompt }]
+            })
+          });
+          const data = await response.json();
+          if (data.error) throw new Error(data.error.message || 'Erro no OpenRouter');
+          responseText = data.choices[0].message.content || '';
+        } else {
+          // Fallback para Server Action
+          responseText = await generateWithOpenRouter(prompt, llmConfig.model);
+        }
+      } else {
+        const response = await ai.models.generateContent({
+          model: llmConfig.model || "gemini-3-flash-preview",
+          contents: prompt,
+        });
+        
+        responseText = response.text || '';
+      }
       
-      const responseText = response.text;
       if (!responseText) throw new Error('Resposta vazia da IA');
 
       // Limpar a resposta caso a IA coloque markdown

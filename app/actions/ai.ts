@@ -3,7 +3,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 export async function generateWithOpenRouter(prompt: string, model: string) {
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY || process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
   
   if (!apiKey) {
     throw new Error('OPENROUTER_API_KEY is not configured');
@@ -43,7 +43,7 @@ export async function generateWithOpenRouter(prompt: string, model: string) {
 }
 
 export async function getOpenRouterKeyInfo() {
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY || process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
   
   if (!apiKey) {
     return null;

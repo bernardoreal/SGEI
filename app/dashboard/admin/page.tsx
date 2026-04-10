@@ -1504,6 +1504,12 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                       <option value="meta-llama/llama-3-70b-instruct">Llama 3 70B</option>
                       <option value="mistralai/mixtral-8x7b-instruct">Mixtral 8x7B</option>
                       <option value="google/gemini-pro-1.5">Gemini Pro 1.5 (via OpenRouter)</option>
+                      <option disabled className="bg-gray-100 font-bold text-gray-400">--- MODELOS GRATUITOS ---</option>
+                      <option value="google/gemma-4-31b-it:free">Gemma 4 31B IT (FREE)</option>
+                      <option value="google/gemma-4-26b-a4b-it:free">Gemma 4 26B A4B IT (FREE)</option>
+                      <option value="google/gemma-3-27b-it:free">Gemma 3 27B IT (FREE)</option>
+                      <option value="openai/gpt-oss-120b:free">GPT-OSS 120B (FREE)</option>
+                      <option value="openai/gpt-oss-20b:free">GPT-OSS 20B (FREE)</option>
                     </>
                   )}
                 </select>
@@ -1584,7 +1590,7 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                   <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
                     <p className="text-[10px] text-blue-700 leading-relaxed">
                       <strong>Nota:</strong> O OpenRouter permite acesso a modelos da Anthropic, OpenAI e Meta. 
-                      O uso do OpenRouter requer a variável <code className="bg-blue-100 px-1 rounded">OPENROUTER_API_KEY</code> configurada.
+                      Para deploy no Cloudflare Pages, utilize a variável <code className="bg-blue-100 px-1 rounded">NEXT_PUBLIC_OPENROUTER_API_KEY</code>.
                     </p>
                   </div>
                 </div>
