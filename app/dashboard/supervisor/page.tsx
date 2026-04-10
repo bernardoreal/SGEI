@@ -33,6 +33,17 @@ export default function SupervisorDashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        if (sessionError.message.includes('Refresh Token Not Found') || sessionError.message.includes('Invalid Refresh Token')) {
+          await supabase.auth.signOut();
+          window.location.href = '/';
+          return;
+        }
+      }
+
       const { data: empData } = await supabase.from('base_jpa').select('*');
       const { data: reqData } = await supabase.from('shift_requests').select('*');
       if (empData) setEmployees(empData);

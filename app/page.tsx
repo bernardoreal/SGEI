@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -22,6 +22,24 @@ export default function LoginPage() {
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [retrievedPassword, setRetrievedPassword] = useState<string | null>(null);
   const [forgotLoading, setForgotLoading] = useState(false);
+
+  // Limpar sessões expiradas/inválidas ao carregar a página
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.warn('Erro de sessão detectado, limpando storage:', sessionError.message);
+        // Se houver erro de refresh token, forçamos o logout para limpar o storage local
+        await supabase.auth.signOut();
+      } else if (session) {
+        // Se já existe uma sessão válida, redireciona para o dashboard
+        window.location.href = '/dashboard';
+      }
+    };
+    
+    checkSession();
+  }, []);
 
   const handleForgotPassword = async () => {
     const cleanInput = email.trim();

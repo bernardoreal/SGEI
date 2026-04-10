@@ -29,10 +29,16 @@ export default function DashboardPage() {
         console.log('--- Iniciando Verificação de Acesso ---');
         const { data: { session }, error: authError } = await supabase.auth.getSession();
         
-        if (!isMounted) return;
-
         if (authError) {
           console.error('Erro de autenticação Supabase:', authError);
+          
+          // Se o erro for de refresh token inválido, limpa e redireciona
+          if (authError.message.includes('Refresh Token Not Found') || authError.message.includes('Invalid Refresh Token')) {
+            await supabase.auth.signOut();
+            router.replace('/');
+            return;
+          }
+
           setStatus('error');
           setErrorDetails(`Falha na autenticação: ${authError.message}`);
           return;

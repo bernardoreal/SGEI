@@ -137,8 +137,17 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('Session:', session);
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        if (sessionError.message.includes('Refresh Token Not Found') || sessionError.message.includes('Invalid Refresh Token')) {
+          await supabase.auth.signOut();
+          window.location.href = '/';
+          return;
+        }
+      }
+
       if (session?.user) {
         setCurrentUser(session.user);
         console.log('User email from session:', session.user.email);
@@ -361,7 +370,15 @@ export default function AdminDashboard() {
 
       if (error) throw error;
       
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, base_id: baseId } : u));
+      const updatedUser = users.find(u => u.id === userId);
+      if (updatedUser && baseId) {
+        const userWithNewBase = { ...updatedUser, base_id: baseId };
+        setUsers(prev => prev.map(u => u.id === userId ? userWithNewBase : u));
+        // Sincronizar automaticamente com a base operacional
+        await handleSyncToOperational(userWithNewBase);
+      } else {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, base_id: baseId } : u));
+      }
       
       await supabase.from('audit_log').insert({
         action: `Atribuição de base: ${baseId || 'Nenhuma'}`,
@@ -425,7 +442,7 @@ export default function AdminDashboard() {
         .from('base_jpa')
         .select('bp')
         .eq('bp', user.bp)
-        .single();
+        .maybeSingle();
 
       const userData = {
         bp: user.bp,
@@ -603,7 +620,11 @@ export default function AdminDashboard() {
             }
           }
         }
-        await handleSyncToOperational(userToSync);
+        
+        // Final check: if we have a base_id now, sync it
+        if (userToSync.base_id) {
+          await handleSyncToOperational(userToSync);
+        }
       }
     } catch (error: any) {
       console.error('Error in self-sync:', error);
