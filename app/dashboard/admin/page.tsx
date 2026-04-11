@@ -240,9 +240,7 @@ export default function AdminDashboard() {
       // Auto-sync admin profile if it's Bernardo
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user?.email === 'bernardo.real@latam.com') {
-        // We don't call handleSelfSync directly to avoid redundant fetchData
-        // but we can run the logic or just call it and let it refresh
-        handleSelfSync();
+        handleSelfSync(session.user);
       }
     };
     init();
@@ -588,12 +586,13 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleSelfSync = async () => {
-    if (!currentUser) return;
-    console.log('Starting self-sync for:', currentUser.email);
+  const handleSelfSync = async (userOverride?: any) => {
+    const userToUse = userOverride || currentUser;
+    if (!userToUse) return;
+    console.log('Starting self-sync for:', userToUse.email);
     setLoading(true);
     try {
-      const email = currentUser.email?.toLowerCase();
+      const email = userToUse.email?.toLowerCase();
       if (!email) throw new Error('E-mail não encontrado na sessão');
 
       // 1. Ensure user exists in 'users' table
@@ -617,10 +616,10 @@ export default function AdminDashboard() {
         const { data: newUser, error: insertError } = await supabase
           .from('users')
           .insert([{
-            id: currentUser.id,
+            id: userToUse.id,
             bp: '4598394', // Default Admin BP
             email: email,
-            name: currentUser.user_metadata?.name || 'Bernardo Admin',
+            name: userToUse.user_metadata?.name || 'Bernardo Admin',
             roles: ['admin', 'employee'],
             is_active: true
           }])

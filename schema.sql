@@ -193,9 +193,25 @@ INSERT INTO bases (code_iata, name) VALUES
 ON CONFLICT (code_iata) DO NOTHING;
 
 -- Seed Admin User (Password should be updated by user)
-INSERT INTO users (bp, email, name, roles) 
-VALUES ('4598394', 'bernardo.real@latam.com', 'Bernardo de Mendonça Corte Real', ARRAY['admin', 'employee'])
-ON CONFLICT (email) DO NOTHING;
+INSERT INTO users (bp, email, name, roles, base_id) 
+VALUES (
+    '4598394', 
+    'bernardo.real@latam.com', 
+    'Bernardo de Mendonça Corte Real', 
+    ARRAY['admin', 'employee'],
+    (SELECT id FROM bases WHERE code_iata = 'JPA' LIMIT 1)
+)
+ON CONFLICT (email) DO UPDATE SET 
+    roles = ARRAY['admin', 'employee'],
+    base_id = (SELECT id FROM bases WHERE code_iata = 'JPA' LIMIT 1);
+
+-- Seed Bernardo into base_jpa (Operational Table)
+INSERT INTO base_jpa (bp, name, email, position, is_active)
+VALUES ('4598394', 'Bernardo de Mendonça Corte Real', 'bernardo.real@latam.com', 'Administrador / Colaborador', true)
+ON CONFLICT (bp) DO UPDATE SET
+    name = EXCLUDED.name,
+    email = EXCLUDED.email,
+    position = EXCLUDED.position;
 
 -- 11. RLS Policies
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -215,7 +231,8 @@ RETURNS BOOLEAN AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM public.users
-    WHERE id = auth.uid() AND 'admin' = ANY(roles)
+    WHERE (id = auth.uid() OR LOWER(email) = LOWER(auth.jwt() ->> 'email'))
+    AND 'admin' = ANY(roles)
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -225,7 +242,8 @@ RETURNS BOOLEAN AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM public.users
-    WHERE id = auth.uid() AND 'supervisor' = ANY(roles)
+    WHERE (id = auth.uid() OR LOWER(email) = LOWER(auth.jwt() ->> 'email'))
+    AND 'supervisor' = ANY(roles)
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
