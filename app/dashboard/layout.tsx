@@ -11,7 +11,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Dashboard Layout - Auth Error:', error.message);
+        if (error.message.includes('Refresh Token Not Found') || error.message.includes('Invalid Refresh Token')) {
+          await supabase.auth.signOut();
+          router.push('/');
+          return;
+        }
+      }
+
       if (!session) {
         router.push('/');
       } else {

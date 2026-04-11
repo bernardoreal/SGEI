@@ -1,16 +1,18 @@
 -- 1. Bases
-CREATE TABLE bases (
+CREATE TABLE IF NOT EXISTS bases (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     code_iata VARCHAR(3) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
-    supervisor_id UUID REFERENCES users(id),
-    coordinator_id UUID REFERENCES users(id),
-    manager_id UUID REFERENCES users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Ensure columns exist if table was created previously without them
+ALTER TABLE bases ADD COLUMN IF NOT EXISTS supervisor_id UUID;
+ALTER TABLE bases ADD COLUMN IF NOT EXISTS coordinator_id UUID;
+ALTER TABLE bases ADD COLUMN IF NOT EXISTS manager_id UUID;
+
 -- 2. Roles
-CREATE TABLE roles (
+CREATE TABLE IF NOT EXISTS roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(50) UNIQUE NOT NULL,
     description TEXT,
@@ -18,7 +20,7 @@ CREATE TABLE roles (
 );
 
 -- 3. Users
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     bp VARCHAR(20) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL CHECK (email ~* '^[a-z]+\.[a-z]+@latam\.com$'),
@@ -31,8 +33,25 @@ CREATE TABLE users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Ensure password_plain can be NULL if it was created as NOT NULL previously
+ALTER TABLE users ALTER COLUMN password_plain DROP NOT NULL;
+
+-- Add foreign keys to bases after users table exists
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'bases_supervisor_id_fkey') THEN
+        ALTER TABLE bases ADD CONSTRAINT bases_supervisor_id_fkey FOREIGN KEY (supervisor_id) REFERENCES users(id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'bases_coordinator_id_fkey') THEN
+        ALTER TABLE bases ADD CONSTRAINT bases_coordinator_id_fkey FOREIGN KEY (coordinator_id) REFERENCES users(id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'bases_manager_id_fkey') THEN
+        ALTER TABLE bases ADD CONSTRAINT bases_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES users(id);
+    END IF;
+END $$;
+
 -- 4. Base JPA Employees
-CREATE TABLE base_jpa (
+CREATE TABLE IF NOT EXISTS base_jpa (
     bp VARCHAR(20) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     position VARCHAR(100),
@@ -54,7 +73,7 @@ CREATE TABLE base_jpa (
 );
 
 -- 5. Schedules
-CREATE TABLE schedules (
+CREATE TABLE IF NOT EXISTS schedules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     base_id UUID REFERENCES bases(id),
     start_date DATE NOT NULL,
@@ -66,7 +85,7 @@ CREATE TABLE schedules (
 );
 
 -- 6. Schedule Details
-CREATE TABLE schedule_details (
+CREATE TABLE IF NOT EXISTS schedule_details (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     schedule_id UUID REFERENCES schedules(id),
     bp VARCHAR(20) REFERENCES base_jpa(bp),
@@ -77,7 +96,7 @@ CREATE TABLE schedule_details (
 );
 
 -- 7. Schedule Feedback
-CREATE TABLE schedule_feedback (
+CREATE TABLE IF NOT EXISTS schedule_feedback (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     schedule_id UUID REFERENCES schedules(id),
     base_id UUID REFERENCES bases(id),
@@ -85,10 +104,10 @@ CREATE TABLE schedule_feedback (
     supervisor_id UUID REFERENCES users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX idx_schedule_feedback_base_id ON schedule_feedback(base_id);
+CREATE INDEX IF NOT EXISTS idx_schedule_feedback_base_id ON schedule_feedback(base_id);
 
 -- 8. Shift Requests
-CREATE TABLE shift_requests (
+CREATE TABLE IF NOT EXISTS shift_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     base_id UUID REFERENCES bases(id),
     requester_bp VARCHAR(20) REFERENCES base_jpa(bp),
@@ -99,7 +118,7 @@ CREATE TABLE shift_requests (
 );
 
 -- 9. Audit Log
-CREATE TABLE audit_log (
+CREATE TABLE IF NOT EXISTS audit_log (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id),
     action TEXT NOT NULL,
@@ -109,11 +128,11 @@ CREATE TABLE audit_log (
     new_data JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX idx_audit_log_user_id ON audit_log(user_id);
-CREATE INDEX idx_audit_log_table_name ON audit_log(table_name);
+CREATE INDEX IF NOT EXISTS idx_audit_log_user_id ON audit_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_log_table_name ON audit_log(table_name);
 
 -- 10. Base Configuration
-CREATE TABLE base_configuration (
+CREATE TABLE IF NOT EXISTS base_configuration (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     base_id UUID REFERENCES bases(id),
     min_coverage_per_shift INT NOT NULL,
@@ -123,14 +142,14 @@ CREATE TABLE base_configuration (
 );
 
 -- 11. System Settings
-CREATE TABLE system_settings (
+CREATE TABLE IF NOT EXISTS system_settings (
     key TEXT PRIMARY KEY,
     value JSONB NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 12. AI Usage Logs
-CREATE TABLE ai_usage_logs (
+CREATE TABLE IF NOT EXISTS ai_usage_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id),
     model TEXT NOT NULL,
@@ -148,7 +167,8 @@ INSERT INTO roles (name, description) VALUES
 ('manager', 'Gerente Global'),
 ('coordinator', 'Coordenador Global'),
 ('supervisor', 'Supervisor de Base'),
-('employee', 'Colaborador');
+('employee', 'Colaborador')
+ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO bases (code_iata, name) VALUES 
 ('JPA', 'João Pessoa'),
@@ -169,11 +189,13 @@ INSERT INTO bases (code_iata, name) VALUES
 ('PLU', 'Belo Horizonte (Pampulha)'),
 ('UDI', 'Uberlândia'),
 ('VIX', 'Vitória'),
-('SDU', 'Rio de Janeiro (Santos Dumont)');
+('SDU', 'Rio de Janeiro (Santos Dumont)')
+ON CONFLICT (code_iata) DO NOTHING;
 
 -- Seed Admin User (Password should be updated by user)
 INSERT INTO users (bp, email, name, roles) 
-VALUES ('4598394', 'bernardo.real@latam.com', 'Bernardo de Mendonça Corte Real', ARRAY['admin', 'employee']);
+VALUES ('4598394', 'bernardo.real@latam.com', 'Bernardo de Mendonça Corte Real', ARRAY['admin', 'employee'])
+ON CONFLICT (email) DO NOTHING;
 
 -- 11. RLS Policies
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -187,79 +209,97 @@ ALTER TABLE shift_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE base_configuration ENABLE ROW LEVEL SECURITY;
 
+-- Security Definer Functions to avoid RLS recursion
+CREATE OR REPLACE FUNCTION public.check_is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.users
+    WHERE id = auth.uid() AND 'admin' = ANY(roles)
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.check_is_supervisor()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.users
+    WHERE id = auth.uid() AND 'supervisor' = ANY(roles)
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Users Policies
+DROP POLICY IF EXISTS "Allow public BP lookup" ON users;
 CREATE POLICY "Allow public BP lookup" ON users
     FOR SELECT TO anon
     USING (true);
 
+DROP POLICY IF EXISTS "Users can view their own profile" ON users;
 CREATE POLICY "Users can view their own profile" ON users
-    FOR SELECT USING (auth.jwt() ->> 'email' = email);
+    FOR SELECT USING (LOWER(auth.jwt() ->> 'email') = LOWER(email));
 
+DROP POLICY IF EXISTS "Users can insert their own profile" ON users;
 CREATE POLICY "Users can insert their own profile" ON users
     FOR INSERT WITH CHECK (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Admins can view all users" ON users;
 CREATE POLICY "Admins can view all users" ON users
     FOR SELECT USING (
-        LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com'
+        LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com' OR
+        check_is_admin()
     );
 
+DROP POLICY IF EXISTS "Admins can manage users" ON users;
 CREATE POLICY "Admins can manage users" ON users
     FOR ALL USING (
-        LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com'
+        LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com' OR
+        check_is_admin()
     );
 
 -- Base JPA Policies (Employees)
-CREATE POLICY "Supervisors can manage their base employees" ON base_jpa
+DROP POLICY IF EXISTS "Admins and Supervisors can manage base employees" ON base_jpa;
+CREATE POLICY "Admins and Supervisors can manage base employees" ON base_jpa
     FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM users 
-            WHERE email = auth.jwt() ->> 'email' 
-            AND 'supervisor' = ANY(roles)
-        )
+        check_is_admin() OR check_is_supervisor()
     );
 
-CREATE POLICY "Managers and Coordinators can view all employees" ON base_jpa
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM users 
-            WHERE email = auth.jwt() ->> 'email' 
-            AND (
-                'manager' = ANY(roles) OR 
-                'coordinator' = ANY(roles) OR 
-                'admin' = ANY(roles)
-            )
-        )
-    );
+DROP POLICY IF EXISTS "Everyone can view employees" ON base_jpa;
+CREATE POLICY "Everyone can view employees" ON base_jpa
+    FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Managers and Coordinators can view all employees" ON base_jpa;
 
 -- Schedules Policies
+DROP POLICY IF EXISTS "Employees can view their base schedules" ON schedules;
 CREATE POLICY "Employees can view their base schedules" ON schedules
     FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM users 
-            WHERE email = auth.jwt() ->> 'email' 
+            WHERE LOWER(email) = LOWER(auth.jwt() ->> 'email') 
             AND (
                 base_id = schedules.base_id OR 
                 'manager' = ANY(roles) OR 
                 'coordinator' = ANY(roles) OR 
-                'admin' = ANY(roles)
+                check_is_admin()
             )
         )
     );
 
+DROP POLICY IF EXISTS "Supervisors can manage their base schedules" ON schedules;
 CREATE POLICY "Supervisors can manage their base schedules" ON schedules
     FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM users 
-            WHERE email = auth.jwt() ->> 'email' 
-            AND 'supervisor' = ANY(roles)
-            AND base_id = schedules.base_id
-        )
+        check_is_supervisor() AND 
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND base_id = schedules.base_id)
     );
 
 -- Bases Policies
+DROP POLICY IF EXISTS "Everyone can view bases" ON bases;
 CREATE POLICY "Everyone can view bases" ON bases
     FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Admins can manage bases" ON bases;
 CREATE POLICY "Admins can manage bases" ON bases
     FOR ALL USING (
         (auth.jwt() ->> 'email' = 'bernardo.real@latam.com') OR
@@ -267,20 +307,24 @@ CREATE POLICY "Admins can manage bases" ON bases
     );
 
 -- Roles Policies
+DROP POLICY IF EXISTS "Everyone can view roles" ON roles;
 CREATE POLICY "Everyone can view roles" ON roles
     FOR SELECT USING (true);
 
 -- Audit Log Policies
+DROP POLICY IF EXISTS "Admins can view audit logs" ON audit_log;
 CREATE POLICY "Admins can view audit logs" ON audit_log
     FOR SELECT USING (
-        (auth.jwt() ->> 'email' = 'bernardo.real@latam.com') OR
-        EXISTS (SELECT 1 FROM users WHERE email = auth.jwt() ->> 'email' AND 'admin' = ANY(roles))
+        (LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com') OR
+        EXISTS (SELECT 1 FROM users WHERE LOWER(email) = LOWER(auth.jwt() ->> 'email') AND 'admin' = ANY(roles))
     );
 
 -- Base Configuration Policies
+DROP POLICY IF EXISTS "Admins and Managers can view base config" ON base_configuration;
 CREATE POLICY "Admins and Managers can view base config" ON base_configuration
     FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Admins can manage base config" ON base_configuration;
 CREATE POLICY "Admins can manage base config" ON base_configuration
     FOR ALL USING (
         EXISTS (SELECT 1 FROM users WHERE email = auth.jwt() ->> 'email' AND 'admin' = ANY(roles))
@@ -289,9 +333,11 @@ CREATE POLICY "Admins can manage base config" ON base_configuration
 -- System Settings Policies
 ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Everyone can view system settings" ON system_settings;
 CREATE POLICY "Everyone can view system settings" ON system_settings
     FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Admins can manage system settings" ON system_settings;
 CREATE POLICY "Admins can manage system settings" ON system_settings
     FOR ALL USING (
         (LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com') OR
@@ -300,4 +346,5 @@ CREATE POLICY "Admins can manage system settings" ON system_settings
 
 -- Initial System Settings
 INSERT INTO system_settings (key, value) VALUES 
-('llm_config', '{"provider": "gemini", "model": "gemini-3-flash-preview"}'::jsonb);
+('llm_config', '{"provider": "gemini", "model": "gemini-3-flash-preview"}'::jsonb)
+ON CONFLICT (key) DO NOTHING;

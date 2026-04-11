@@ -158,6 +158,7 @@ export default function AdminDashboard() {
         }
       }
 
+      console.log('Fetching admin data...');
       const [usersRes, basesRes, logsRes, rolesRes, llmRes] = await Promise.all([
         supabase.from('users').select('*').order('created_at', { ascending: false }),
         supabase.from('bases').select('*').order('code_iata'),
@@ -166,7 +167,19 @@ export default function AdminDashboard() {
         supabase.from('system_settings').select('value').eq('key', 'llm_config').maybeSingle()
       ]);
 
-      console.log('Users fetch result:', usersRes);
+      if (usersRes.error) {
+        console.error('Error fetching users:', usersRes.error);
+        setNotifications(prev => [...prev, { 
+          id: 'fetch-error-' + Date.now(), 
+          message: `Erro ao carregar usuários: ${usersRes.error.message}. Verifique as políticas de RLS.` 
+        }]);
+      }
+
+      console.log('Users fetch result:', { 
+        count: usersRes.data?.length || 0, 
+        error: usersRes.error,
+        status: usersRes.status
+      });
 
       if (llmRes.data) {
         setLlmConfig(llmRes.data.value);
@@ -577,21 +590,30 @@ export default function AdminDashboard() {
 
   const handleSelfSync = async () => {
     if (!currentUser) return;
+    console.log('Starting self-sync for:', currentUser.email);
     setLoading(true);
     try {
       const email = currentUser.email?.toLowerCase();
       if (!email) throw new Error('E-mail não encontrado na sessão');
 
       // 1. Ensure user exists in 'users' table
-      const { data: existingUser } = await supabase
+      const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('*')
         .ilike('email', email)
         .maybeSingle();
 
+      if (fetchError) {
+        console.error('Error fetching self during sync:', fetchError);
+        throw fetchError;
+      }
+
+      console.log('Existing user found:', existingUser);
+
       let userToSync = existingUser;
 
       if (!existingUser) {
+        console.log('User not found in "users" table, creating...');
         const { data: newUser, error: insertError } = await supabase
           .from('users')
           .insert([{
@@ -605,13 +627,18 @@ export default function AdminDashboard() {
           .select()
           .single();
         
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('Error inserting self:', insertError);
+          throw insertError;
+        }
         userToSync = newUser;
+        console.log('New user created:', newUser);
         setUsers(prev => [newUser, ...prev]);
       } else {
         // Ensure roles are correct
         const currentRoles = existingUser.roles || [];
         if (!currentRoles.includes('admin') || !currentRoles.includes('employee')) {
+          console.log('Updating roles to include admin and employee...');
           const newRoles = Array.from(new Set([...currentRoles, 'admin', 'employee']));
           const { data: updatedUser, error: updateError } = await supabase
             .from('users')
@@ -620,8 +647,14 @@ export default function AdminDashboard() {
             .select()
             .single();
           
-          if (!updateError && updatedUser) {
+          if (updateError) {
+            console.error('Error updating self roles:', updateError);
+            throw updateError;
+          }
+
+          if (updatedUser) {
             userToSync = updatedUser;
+            console.log('Roles updated:', updatedUser);
             setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
           }
         }
@@ -629,8 +662,10 @@ export default function AdminDashboard() {
 
       // 2. Sync to operational
       if (userToSync) {
+        console.log('Syncing to operational table...');
         // Ensure they have a base_id for syncing
         if (!userToSync.base_id) {
+          console.log('No base_id found, assigning JPA...');
           const jpaBase = bases.find(b => b.code_iata === 'JPA');
           if (jpaBase) {
             const { error: updateError } = await supabase
@@ -638,8 +673,11 @@ export default function AdminDashboard() {
               .update({ base_id: jpaBase.id })
               .eq('id', userToSync.id);
             
-            if (!updateError) {
+            if (updateError) {
+              console.error('Error updating base_id:', updateError);
+            } else {
               userToSync.base_id = jpaBase.id;
+              console.log('base_id updated to JPA');
               setUsers(prev => prev.map(u => u.id === userToSync.id ? { ...u, base_id: jpaBase.id } : u));
             }
           }
@@ -647,9 +685,15 @@ export default function AdminDashboard() {
         
         // Final check: if we have a base_id now, sync it
         if (userToSync.base_id) {
+          console.log('Calling handleSyncToOperational...');
           await handleSyncToOperational(userToSync);
+        } else {
+          console.warn('Cannot sync to operational: No base_id available');
         }
       }
+      
+      alert('Sincronização concluída! Verifique se você aparece na lista agora.');
+      fetchData(); // Refresh everything
     } catch (error: any) {
       console.error('Error in self-sync:', error);
       alert('Erro ao sincronizar perfil: ' + error.message);
@@ -967,6 +1011,15 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
       )}
 
       {/* KPI Stats Grid */}
+      {users.length === 0 && !loading && (
+        <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-amber-800 mb-6 flex items-center gap-3">
+          <AlertTriangle className="text-amber-500" />
+          <div>
+            <p className="font-bold text-sm">Nenhum usuário carregado.</p>
+            <p className="text-xs">Isso pode ser causado por políticas de RLS no Supabase bloqueando o acesso. Certifique-se de que as políticas para o e-mail <strong>bernardo.real@latam.com</strong> estão configuradas corretamente.</p>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Total de Usuários" 
