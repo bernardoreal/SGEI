@@ -60,17 +60,16 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange }: 
   const daysInMonth = data[0]?.days.length || 30;
   
   const getCellColor = (code: string) => {
-    if (code === 'FOLG' || code === 'FAGR' || code === 'FS') return 'bg-green-100 text-green-800';
+    if (code === 'FOLG' || code === 'FAGR' || code === 'FS' || code === 'FDFE' || code === 'FC') return 'bg-green-100 text-green-800';
     if (code === 'FE') return 'bg-gray-100 text-gray-500';
-    if (code === 'FC') return 'bg-amber-100 text-amber-800';
     if (code.startsWith('T')) return 'bg-white text-slate-700';
     return 'bg-white';
   };
 
   const handleCellChange = (rowIdx: number, dayIdx: number, newCode: string) => {
     if (!onDataChange) return;
-    const newData = [...data];
-    newData[rowIdx].days[dayIdx].code = newCode.toUpperCase();
+    const newData = JSON.parse(JSON.stringify(data));
+    newData[rowIdx].days[dayIdx].code = newCode;
     onDataChange(newData);
   };
 
@@ -82,6 +81,17 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange }: 
   };
 
   const ALL_CODES = [...SHIFT_LEGEND.map(s => s.code), ...SIGLA_LEGEND.map(s => s.code)];
+
+  const getDayOfWeek = (dateStr: string, yearStr: string) => {
+    try {
+      const [day, month] = dateStr.split('/');
+      const date = new Date(parseInt(yearStr), parseInt(month) - 1, parseInt(day));
+      const days = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+      return days[date.getDay()];
+    } catch (e) {
+      return '';
+    }
+  };
 
   return (
     <div className="w-full space-y-6 overflow-hidden">
@@ -105,9 +115,9 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange }: 
               <th className="border border-slate-200 p-2 sticky left-[160px] bg-slate-100 z-10">FUNÇÃO</th>
               <th className="border border-slate-200 p-2 sticky left-[240px] bg-slate-100 z-10 min-w-[150px]">NOME</th>
               {data[0]?.days.map((day, idx) => (
-                <th key={idx} className="border border-slate-200 p-1 min-w-[35px] text-center">
-                  <div className="text-[8px] opacity-60">{day.date.split('/')[0]}</div>
-                  <div>{day.date.split('/')[1]}</div>
+                <th key={idx} className="border border-slate-200 p-1 min-w-[45px] text-center">
+                  <div className="text-[9px] font-black text-latam-indigo mb-0.5">{getDayOfWeek(day.date, year)}</div>
+                  <div className="text-[10px] font-medium opacity-70">{day.date}</div>
                 </th>
               ))}
             </tr>
@@ -125,22 +135,23 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange }: 
                     key={dayIdx} 
                     className={`border border-slate-200 p-0 text-center font-bold ${getCellColor(day.code)}`}
                   >
-                    <input 
-                      type="text"
+                    <select 
                       value={day.code}
                       onChange={(e) => handleCellChange(rowIdx, dayIdx, e.target.value)}
-                      className="w-full h-full bg-transparent text-center border-none focus:ring-2 focus:ring-indigo-500 outline-none p-1 uppercase"
-                      list="codes-list"
-                    />
+                      className="w-full h-full bg-transparent text-center border-none focus:ring-2 focus:ring-indigo-500 outline-none p-1 uppercase appearance-none cursor-pointer"
+                    >
+                      {ALL_CODES.map(code => (
+                        <option key={code} value={code} className="text-slate-900 bg-white">
+                          {code}
+                        </option>
+                      ))}
+                    </select>
                   </td>
                 ))}
               </tr>
             ))}
           </tbody>
         </table>
-        <datalist id="codes-list">
-          {ALL_CODES.map(code => <option key={code} value={code} />)}
-        </datalist>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">

@@ -28,10 +28,18 @@ CREATE TABLE IF NOT EXISTS users (
     password_plain TEXT, -- Not recommended for production, but added per request
     roles TEXT[] DEFAULT ARRAY['pending'], -- Alterado para suportar múltiplos papéis
     base_id UUID REFERENCES bases(id),
+    cat6 BOOLEAN DEFAULT false,
+    cargo VARCHAR(100),
+    phone VARCHAR(20),
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Ensure columns exist if table was created previously
+ALTER TABLE users ADD COLUMN IF NOT EXISTS cat6 BOOLEAN DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS cargo VARCHAR(100);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20);
 
 -- Ensure password_plain can be NULL if it was created as NOT NULL previously
 ALTER TABLE users ALTER COLUMN password_plain DROP NOT NULL;
@@ -73,8 +81,12 @@ CREATE TABLE IF NOT EXISTS base_jpa (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Ensure work_hours column exists if table was created previously
+-- Ensure columns exist if table was created previously
 ALTER TABLE base_jpa ADD COLUMN IF NOT EXISTS work_hours VARCHAR(50);
+ALTER TABLE base_jpa ADD COLUMN IF NOT EXISTS fixed_days_off TEXT;
+ALTER TABLE base_jpa ADD COLUMN IF NOT EXISTS hour_compensation VARCHAR(20) DEFAULT '0h';
+ALTER TABLE base_jpa ADD COLUMN IF NOT EXISTS vacation_period TEXT;
+ALTER TABLE base_jpa ADD COLUMN IF NOT EXISTS cat_6 BOOLEAN DEFAULT false;
 
 -- 5. Schedules
 CREATE TABLE IF NOT EXISTS schedules (

@@ -504,7 +504,28 @@ export default function AdminDashboard() {
         error = insertError;
       }
 
-      if (error) throw error;
+      if (error) {
+        // Se o erro for sobre coluna não encontrada, tenta identificar qual e remover
+        if (error.message.includes('column') && error.message.includes('not found')) {
+          const match = error.message.match(/'([^']+)' column/);
+          if (match && match[1]) {
+            const missingColumn = match[1];
+            console.warn(`Removendo coluna inexistente '${missingColumn}' e tentando sincronização novamente...`);
+            const filteredData = { ...userData } as any;
+            delete filteredData[missingColumn];
+            
+            const { error: retryError } = existing 
+              ? await supabase.from('base_jpa').update(filteredData).eq('bp', userData.bp)
+              : await supabase.from('base_jpa').insert([filteredData]);
+            
+            if (retryError) throw retryError;
+          } else {
+            throw error;
+          }
+        } else {
+          throw error;
+        }
+      }
 
       await supabase.from('audit_log').insert({
         action: `Sincronização Híbrida: ${user.name} adicionado à base operacional ${base.code_iata}`,

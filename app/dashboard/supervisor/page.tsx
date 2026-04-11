@@ -16,12 +16,15 @@ import {
   Save,
   FileText,
   Download,
-  X
+  X,
+  FileDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import LATAMScheduleTable from '@/components/LATAMScheduleTable';
 import { GoogleGenAI } from "@google/genai";
 import { generateWithOpenRouter } from '@/app/actions/ai';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function SupervisorDashboard() {
   const [loading, setLoading] = useState(false);
@@ -113,7 +116,7 @@ export default function SupervisorDashboard() {
         - REGIME 5x1 FLEXÍVEL: O colaborador NUNCA deve trabalhar mais de 5 dias seguidos. No entanto, ele pode ter folgas antes de completar 5 dias (ex: trabalhar 3 dias e folgar 1, ou 4 dias e folgar 1). O limite de 5 dias é o MÁXIMO permitido entre folgas.
         - CONTINUIDADE ENTRE MESES: Você deve analisar o histórico dos últimos dias do mês anterior (fornecido abaixo) para garantir que ninguém ultrapasse 5 dias seguidos de trabalho na virada do mês.
         - Turno de 8 horas (7h trabalho + 1h intervalo).
-        - FOLGA AGRUPADA (FAGR): Deve haver OBRIGATORIAMENTE pelo menos 1 folga agrupada (2 dias consecutivos, ex: Sábado e Domingo ou qualquer par de dias) por mês para CADA colaborador.
+        - FOLGA AGRUPADA (FAGR): Deve haver OBRIGATORIAMENTE EXATAMENTE 1 folga agrupada (2 dias consecutivos, ex: Sábado e Domingo ou qualquer par de dias) por mês para CADA colaborador. NUNCA coloque mais de uma FAGR por mês para o mesmo colaborador.
         - HORÁRIO ATRIBUÍDO: Se o colaborador tiver um "horario_atribuido" específico, você DEVE respeitar esse horário na geração da escala.
         - COBERTURA E FOLGA DIÁRIA: Em cada dia do mês, pelo menos 1 colaborador aleatório DEVE estar de folga (FOLG ou FAGR), garantindo que nem todos trabalhem no mesmo dia, mas mantendo a cobertura mínima.
         - Compliance com CLT e Acordos Sindicais.
@@ -238,28 +241,116 @@ export default function SupervisorDashboard() {
     e.preventDefault();
     setSaving(true);
     try {
+      const updateData: any = {
+        fixed_days_off: editingEmployee.fixed_days_off,
+        work_hours: editingEmployee.work_hours,
+        hour_compensation: editingEmployee.hour_compensation,
+        cat_6: editingEmployee.cat_6,
+        vacation_period: editingEmployee.vacation_period
+      };
+
       const { error } = await supabase
         .from('base_jpa')
-        .update({
-          fixed_days_off: editingEmployee.fixed_days_off,
-          work_hours: editingEmployee.work_hours,
-          hour_compensation: editingEmployee.hour_compensation,
-          vacation_period: editingEmployee.vacation_period,
-          cat_6: editingEmployee.cat_6
-        })
+        .update(updateData)
         .eq('bp', editingEmployee.bp);
 
-      if (error) throw error;
+      if (error) {
+        // Se o erro for sobre coluna não encontrada, tenta identificar qual e remover
+        if (error.message.includes('column') && error.message.includes('not found')) {
+          console.warn('Erro de schema detectado:', error.message);
+          
+          // Tenta identificar a coluna no erro (ex: "Could not find the 'work_hours' column")
+          const match = error.message.match(/'([^']+)' column/);
+          if (match && match[1]) {
+            const missingColumn = match[1];
+            console.warn(`Removendo coluna inexistente '${missingColumn}' e tentando novamente...`);
+            delete updateData[missingColumn];
+            
+            const { error: retryError } = await supabase
+              .from('base_jpa')
+              .update(updateData)
+              .eq('bp', editingEmployee.bp);
+            
+            if (retryError) {
+              // Se falhar de novo por outra coluna, repete o processo recursivamente ou falha
+              throw retryError;
+            }
+            alert(`Dados atualizados (Nota: a coluna '${missingColumn}' ainda não existe no banco de dados e foi ignorada).`);
+          } else {
+            throw error;
+          }
+        } else {
+          throw error;
+        }
+      } else {
+        alert('Dados do colaborador atualizados com sucesso!');
+      }
 
       setEmployees(prev => prev.map(emp => emp.bp === editingEmployee.bp ? editingEmployee : emp));
       setEditingEmployee(null);
-      alert('Dados do colaborador atualizados com sucesso!');
     } catch (err: any) {
       console.error('Erro ao atualizar colaborador:', err);
       alert('Erro ao atualizar: ' + err.message);
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleExportPDF = () => {
+    if (!aiSchedule) return;
+
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    // Título
+    doc.setFontSize(18);
+    doc.setTextColor(0, 33, 105); // LATAM Indigo
+    doc.text(`ESCALA JPA - ${aiSchedule.month} / ${aiSchedule.year}`, 14, 20);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Gerado em: ${new Date().toLocaleString()}`, 14, 28);
+
+    // Preparar dados para a tabela
+    const headers = [['ÁREA', 'TURNO', 'BP', 'FUNÇÃO', 'NOME', ...aiSchedule.data[0].days.map((d: any) => d.date)]];
+    const body = aiSchedule.data.map((row: any) => [
+      row.area,
+      row.turno,
+      row.bp,
+      row.funcao,
+      row.nome,
+      ...row.days.map((d: any) => d.code)
+    ]);
+
+    autoTable(doc, {
+      head: headers,
+      body: body,
+      startY: 35,
+      theme: 'grid',
+      styles: { fontSize: 6, cellPadding: 1 },
+      headStyles: { fillColor: [0, 33, 105], textColor: [255, 255, 255] },
+      columnStyles: {
+        0: { cellWidth: 15 },
+        1: { cellWidth: 20 },
+        2: { cellWidth: 12 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 30 },
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index > 4) {
+          const val = data.cell.raw;
+          if (val === 'FOLG' || val === 'FAGR' || val === 'FC' || val === 'FS') {
+            data.cell.styles.fillColor = [220, 252, 231]; // Green 100
+            data.cell.styles.textColor = [22, 101, 52]; // Green 800
+          }
+        }
+      }
+    });
+
+    doc.save(`Escala_JPA_${aiSchedule.month}_${aiSchedule.year}.pdf`);
   };
 
   const handlePublishSchedule = async () => {
@@ -358,7 +449,10 @@ export default function SupervisorDashboard() {
                   <button onClick={() => handleFeedback('ruim')} className="p-2 bg-white text-red-600 rounded-lg hover:bg-red-50 shadow-sm transition-all"><ThumbsDown size={18} /></button>
                 </div>
               )}
-              <button className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-200 transition">
+              <button 
+                onClick={handleExportPDF}
+                className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-200 transition"
+              >
                 <Download size={18} /> Exportar PDF
               </button>
             </div>

@@ -21,7 +21,11 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [retrievedPassword, setRetrievedPassword] = useState<string | null>(null);
+  const [retrievedEmail, setRetrievedEmail] = useState<string | null>(null);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [changeLoading, setChangeLoading] = useState(false);
 
   // Limpar sessões expiradas/inválidas ao carregar a página
   useEffect(() => {
@@ -52,7 +56,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      let query = supabase.from('users').select('password_plain');
+      let query = supabase.from('users').select('password_plain, email');
       
       if (cleanInput.includes('@')) {
         query = query.eq('email', cleanInput);
@@ -78,6 +82,7 @@ export default function LoginPage() {
         return;
       }
 
+      setRetrievedEmail(data.email);
       try {
         setRetrievedPassword(decodeURIComponent(escape(atob(data.password_plain))));
       } catch (e) {
@@ -88,12 +93,70 @@ export default function LoginPage() {
           setRetrievedPassword(data.password_plain);
         }
       }
+      setIsChangingPassword(false);
+      setNewPassword('');
       setShowForgotModal(true);
     } catch (err) {
       console.error('Erro inesperado:', err);
       setError('Erro ao recuperar senha.');
     } finally {
       setForgotLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      setError('A nova senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    setChangeLoading(true);
+    setError(null);
+
+    try {
+      // 1. Logar o usuário temporariamente para poder alterar a senha
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email: retrievedEmail!,
+        password: retrievedPassword!,
+      });
+
+      if (loginError) {
+        throw loginError;
+      }
+
+      // 2. Atualizar a senha no Supabase Auth
+      const { error: updateAuthError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (updateAuthError) {
+        throw updateAuthError;
+      }
+
+      // 3. Atualizar a senha na tabela users (anonimizada)
+      const anonPassword = btoa(unescape(encodeURIComponent(newPassword)));
+      const { error: updateTableError } = await supabase.from('users')
+        .update({ password_plain: anonPassword })
+        .eq('email', retrievedEmail!);
+
+      if (updateTableError) {
+        throw updateTableError;
+      }
+
+      // 4. Sucesso! Limpar estados e fechar modal
+      setRetrievedPassword(newPassword);
+      setIsChangingPassword(false);
+      setNewPassword('');
+      // Opcional: deslogar para forçar login com a nova senha ou manter logado
+      // Por segurança, vamos manter logado e redirecionar se quiser, mas aqui apenas fechamos o modal
+      setShowForgotModal(false);
+      setError(null);
+      alert('Senha alterada com sucesso! Você já pode entrar no sistema.');
+    } catch (err: any) {
+      console.error('Erro ao alterar senha:', err);
+      setError(`Erro ao alterar senha: ${err.message}`);
+    } finally {
+      setChangeLoading(false);
     }
   };
 
@@ -264,30 +327,83 @@ export default function LoginPage() {
                     <KeyRound size={24} />
                   </div>
                   <button 
-                    onClick={() => setShowForgotModal(false)}
+                    onClick={() => {
+                      setShowForgotModal(false);
+                      setIsChangingPassword(false);
+                      setNewPassword('');
+                    }}
                     className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
                   >
                     <X size={20} />
                   </button>
                 </div>
 
-                <h3 className="text-xl font-bold text-latam-indigo mb-2">Recuperação de Senha</h3>
+                <h3 className="text-xl font-bold text-latam-indigo mb-2">
+                  {isChangingPassword ? 'Alterar Senha' : 'Recuperação de Senha'}
+                </h3>
                 <p className="text-sm text-slate-500 mb-8 leading-relaxed">
-                  Identificamos sua conta no sistema. Guarde sua senha em um local seguro.
+                  {isChangingPassword 
+                    ? 'Digite sua nova senha abaixo para atualizar seu acesso.' 
+                    : 'Identificamos sua conta no sistema. Guarde sua senha em um local seguro.'}
                 </p>
 
-                <div className="bg-latam-indigo/5 border border-latam-indigo/10 rounded-3xl p-8 text-center relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-latam-crimson" />
-                  <p className="text-[10px] font-bold text-latam-indigo/40 uppercase tracking-[0.2em] mb-3">Sua senha é:</p>
-                  <p className="text-3xl font-black text-latam-indigo tracking-tight">{retrievedPassword}</p>
-                </div>
+                {isChangingPassword ? (
+                  <div className="space-y-4">
+                    <div className="relative group">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 group-focus-within:text-latam-indigo transition-colors" size={18} />
+                      <input 
+                        type="password" 
+                        placeholder="Nova senha (mín. 6 caracteres)" 
+                        value={newPassword} 
+                        onChange={(e) => setNewPassword(e.target.value)} 
+                        className="w-full pl-12 pr-4 py-4 bg-latam-indigo/5 border border-latam-indigo/10 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 outline-none transition-all text-latam-indigo font-medium"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={() => setIsChangingPassword(false)}
+                        className="flex-1 px-4 py-4 border border-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-50 transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                      <button 
+                        onClick={handleChangePassword}
+                        disabled={changeLoading}
+                        className="flex-[2] bg-latam-crimson hover:bg-red-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-latam-crimson/20 disabled:opacity-50"
+                      >
+                        {changeLoading ? 'Salvando...' : 'Salvar Nova Senha'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-latam-indigo/5 border border-latam-indigo/10 rounded-3xl p-8 text-center relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-full h-1 bg-latam-crimson" />
+                      <p className="text-[10px] font-bold text-latam-indigo/40 uppercase tracking-[0.2em] mb-3">Sua senha é:</p>
+                      <p className="text-3xl font-black text-latam-indigo tracking-tight">{retrievedPassword}</p>
+                    </div>
 
-                <button 
-                  onClick={() => setShowForgotModal(false)}
-                  className="w-full mt-8 bg-latam-indigo hover:bg-[#001a54] text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-latam-indigo/20"
-                >
-                  Entendido
-                </button>
+                    <div className="mt-6 flex flex-col gap-3">
+                      <button 
+                        onClick={() => setIsChangingPassword(true)}
+                        className="w-full text-sm font-bold text-latam-crimson hover:underline"
+                      >
+                        Deseja alterar sua senha? Clique aqui
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setShowForgotModal(false);
+                          setIsChangingPassword(false);
+                          setNewPassword('');
+                        }}
+                        className="w-full bg-latam-indigo hover:bg-[#001a54] text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-latam-indigo/20"
+                      >
+                        Entendido
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </motion.div>
           </div>
