@@ -151,11 +151,6 @@ export default function AdminDashboard() {
       if (session?.user) {
         setCurrentUser(session.user);
         console.log('User email from session:', session.user.email);
-        
-        // Auto-sync for Bernardo if he's the one logged in
-        if (session.user.email?.toLowerCase() === 'bernardo.real@latam.com') {
-          console.log('Bernardo detected, ensuring profile is synced...');
-        }
       }
 
       console.log('Fetching admin data...');
@@ -213,17 +208,6 @@ export default function AdminDashboard() {
 
       if (usersRes.data) {
         setUsers(usersRes.data);
-        
-        // Auto-sync for Bernardo if he's not in the list
-        const email = session?.user?.email?.toLowerCase();
-        if (email === 'bernardo.real@latam.com') {
-          const isBernardoInList = usersRes.data.some(u => u.email.toLowerCase() === email);
-          if (!isBernardoInList) {
-            console.log('Bernardo not found in users list, triggering self-sync...');
-            // We use a small delay to ensure state is ready
-            setTimeout(() => handleSelfSync(), 1000);
-          }
-        }
       }
       if (basesRes.data) setBases(basesRes.data);
       if (logsRes.data) setLogs(logsRes.data);
@@ -237,11 +221,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     const init = async () => {
       await fetchData();
-      // Auto-sync admin profile if it's Bernardo
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.email === 'bernardo.real@latam.com') {
-        handleSelfSync(session.user);
-      }
     };
     init();
   }, []);
@@ -616,121 +595,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleSelfSync = async (userOverride?: any) => {
-    const userToUse = userOverride || currentUser;
-    if (!userToUse) return;
-    console.log('Starting self-sync for:', userToUse.email);
-    setLoading(true);
-    try {
-      const email = userToUse.email?.toLowerCase();
-      if (!email) throw new Error('E-mail não encontrado na sessão');
-
-      // 1. Ensure user exists in 'users' table
-      const { data: existingUser, error: fetchError } = await supabase
-        .from('users')
-        .select('*')
-        .ilike('email', email)
-        .maybeSingle();
-
-      if (fetchError) {
-        console.error('Error fetching self during sync:', fetchError);
-        throw fetchError;
-      }
-
-      console.log('Existing user found:', existingUser);
-
-      let userToSync = existingUser;
-
-      if (!existingUser) {
-        console.log('User not found in "users" table, creating...');
-        const { data: newUser, error: insertError } = await supabase
-          .from('users')
-          .insert([{
-            id: userToUse.id,
-            bp: '4598394', // Default Admin BP
-            email: email,
-            name: userToUse.user_metadata?.name || 'Bernardo Admin',
-            roles: ['admin', 'supervisor', 'employee'],
-            is_active: true
-          }])
-          .select()
-          .single();
-        
-        if (insertError) {
-          console.error('Error inserting self:', insertError);
-          throw insertError;
-        }
-        userToSync = newUser;
-        console.log('New user created:', newUser);
-        setUsers(prev => [newUser, ...prev]);
-      } else {
-        // Ensure roles are correct
-        const currentRoles = existingUser.roles || [];
-        if (!currentRoles.includes('admin') || !currentRoles.includes('supervisor')) {
-          console.log('Updating roles to include admin and supervisor...');
-          const newRoles = Array.from(new Set([...currentRoles, 'admin', 'supervisor', 'employee']));
-          const { data: updatedUser, error: updateError } = await supabase
-            .from('users')
-            .update({ roles: newRoles })
-            .eq('id', existingUser.id)
-            .select()
-            .single();
-          
-          if (updateError) {
-            console.error('Error updating self roles:', updateError);
-            throw updateError;
-          }
-
-          if (updatedUser) {
-            userToSync = updatedUser;
-            console.log('Roles updated:', updatedUser);
-            setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
-          }
-        }
-      }
-
-      // 2. Sync to operational
-      if (userToSync) {
-        console.log('Syncing to operational table...');
-        // Ensure they have a base_id for syncing
-        if (!userToSync.base_id) {
-          console.log('No base_id found, assigning JPA...');
-          const jpaBase = bases.find(b => b.code_iata === 'JPA');
-          if (jpaBase) {
-            const { error: updateError } = await supabase
-              .from('users')
-              .update({ base_id: jpaBase.id })
-              .eq('id', userToSync.id);
-            
-            if (updateError) {
-              console.error('Error updating base_id:', updateError);
-            } else {
-              userToSync.base_id = jpaBase.id;
-              console.log('base_id updated to JPA');
-              setUsers(prev => prev.map(u => u.id === userToSync.id ? { ...u, base_id: jpaBase.id } : u));
-            }
-          }
-        }
-        
-        // Final check: if we have a base_id now, sync it
-        if (userToSync.base_id) {
-          console.log('Calling handleSyncToOperational...');
-          await handleSyncToOperational(userToSync);
-        } else {
-          console.warn('Cannot sync to operational: No base_id available');
-        }
-      }
-      
-      alert('Sincronização concluída! Verifique se você aparece na lista agora.');
-      fetchData(); // Refresh everything
-    } catch (error: any) {
-      console.error('Error in self-sync:', error);
-      alert('Erro ao sincronizar perfil: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleUpdateLlmConfig = async (provider: string, model: string) => {
     setSavingLlm(true);
     try {
@@ -920,17 +784,6 @@ export default function AdminDashboard() {
             </AnimatePresence>
           </div>
 
-          {currentUser?.email?.toLowerCase() === 'bernardo.real@latam.com' && (
-            <button 
-              onClick={handleSelfSync}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-xl text-sm font-bold hover:bg-amber-600 transition shadow-lg shadow-amber-500/20"
-              title="Garante que seu perfil Admin também conste na escala operacional"
-            >
-              <Sparkles size={16} />
-              Sincronizar Meu Perfil (Híbrido)
-            </button>
-          )}
           <button 
             onClick={() => {
               setEmergencyMode('create');

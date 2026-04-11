@@ -40,13 +40,47 @@
       box-shadow: none !important;
       border: none !important;
     }
+    /* Forçar cores de fundo na impressão */
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
     /* Esconder elementos de navegação e botões do dashboard ao imprimir */
-    header, nav, aside, .no-print, button {
+    header, nav, aside, .no-print, button, .feedback-section {
       display: none !important;
+    }
+    /* Ajustar a tabela para ocupar a largura total e quebrar páginas se necessário */
+    table {
+      page-break-inside: auto;
+      width: 100% !important;
+    }
+    tr {
+      page-break-inside: avoid;
+      page-break-after: auto;
+    }
+    thead {
+      display: table-header-group;
     }
     @page {
       size: landscape;
-      margin: 1cm;
+      margin: 0.5cm;
+    }
+    /* Garantir que as legendas apareçam na mesma página ou logo após */
+    .grid {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 0.5rem !important;
+    }
+    /* Reduzir tamanhos para caber em uma folha */
+    .print-content table {
+      font-size: 8px !important;
+    }
+    .print-content th, .print-content td {
+      padding: 2px !important;
+    }
+    .print-content h2 {
+      font-size: 16px !important;
+      padding: 8px !important;
     }
   }
 }

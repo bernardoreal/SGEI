@@ -25,7 +25,7 @@ interface LATAMScheduleTableProps {
   onDataChange?: (newData: EmployeeSchedule[]) => void;
 }
 
-const SHIFT_LEGEND = [
+export const SHIFT_LEGEND = [
   { code: 'T034', desc: '04:00-11:52' },
   { code: 'T045', desc: '05:00-13:00' },
   { code: 'T074', desc: '08:00-16:00' },
@@ -43,7 +43,7 @@ const SHIFT_LEGEND = [
   { code: 'T009', desc: '00:30-07:57' },
 ];
 
-const SIGLA_LEGEND = [
+export const SIGLA_LEGEND = [
   { code: 'FE', desc: 'Férias', color: 'bg-gray-200' },
   { code: 'LM', desc: 'Licença Maternidade', color: 'bg-pink-100' },
   { code: 'LG', desc: 'Licença Casamento', color: 'bg-blue-50' },
@@ -70,6 +70,13 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange }: 
     if (!onDataChange) return;
     const newData = JSON.parse(JSON.stringify(data));
     newData[rowIdx].days[dayIdx].code = newCode;
+    onDataChange(newData);
+  };
+
+  const handleFuncaoChange = (rowIdx: number, newFuncao: string) => {
+    if (!onDataChange) return;
+    const newData = [...data];
+    newData[rowIdx].funcao = newFuncao;
     onDataChange(newData);
   };
 
@@ -100,7 +107,7 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange }: 
         <h2 className="text-2xl font-bold tracking-widest uppercase">
           ESCALA JPA {month} _ {year}
         </h2>
-        <div className="text-[10px] bg-white/20 px-2 py-1 rounded uppercase font-bold">
+        <div className="text-[10px] bg-white/20 px-2 py-1 rounded uppercase font-bold no-print">
           Modo Edição Ativo
         </div>
       </div>
@@ -109,15 +116,28 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange }: 
         <table className="w-full text-[10px] border-collapse">
           <thead>
             <tr className="bg-slate-100 text-slate-600 font-bold uppercase">
-              <th className="border border-slate-200 p-2 sticky left-0 bg-slate-100 z-10">ÁREA</th>
-              <th className="border border-slate-200 p-2 sticky left-[50px] bg-slate-100 z-10">TURNO</th>
-              <th className="border border-slate-200 p-2 sticky left-[100px] bg-slate-100 z-10">BP</th>
-              <th className="border border-slate-200 p-2 sticky left-[160px] bg-slate-100 z-10">FUNÇÃO</th>
-              <th className="border border-slate-200 p-2 sticky left-[240px] bg-slate-100 z-10 min-w-[150px]">NOME</th>
+              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-0 bg-slate-100 z-10">ÁREA</th>
+              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-[50px] bg-slate-100 z-10">TURNO</th>
+              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-[100px] bg-slate-100 z-10">BP</th>
+              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-[160px] bg-slate-100 z-10">FUNÇÃO</th>
+              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-[240px] bg-slate-100 z-10 min-w-[150px]">NOME</th>
+              {data[0]?.days.map((day, idx) => {
+                const dow = getDayOfWeek(day.date, year);
+                const isWeekend = dow === 'SÁB' || dow === 'DOM';
+                return (
+                  <th 
+                    key={`dow-${idx}`} 
+                    className={`border border-slate-200 p-1 min-w-[45px] text-center text-[9px] font-black ${isWeekend ? 'bg-latam-crimson text-white' : 'text-latam-indigo'}`}
+                  >
+                    {dow}
+                  </th>
+                );
+              })}
+            </tr>
+            <tr className="bg-slate-100 text-slate-600 font-bold uppercase">
               {data[0]?.days.map((day, idx) => (
-                <th key={idx} className="border border-slate-200 p-1 min-w-[45px] text-center">
-                  <div className="text-[9px] font-black text-latam-indigo mb-0.5">{getDayOfWeek(day.date, year)}</div>
-                  <div className="text-[10px] font-medium opacity-70">{day.date}</div>
+                <th key={`date-${idx}`} className="border border-slate-200 p-1 min-w-[45px] text-center text-[10px] font-medium opacity-70">
+                  {day.date}
                 </th>
               ))}
             </tr>
@@ -128,24 +148,35 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange }: 
                 <td className="border border-slate-200 p-2 font-bold sticky left-0 bg-white z-10">{row.area}</td>
                 <td className="border border-slate-200 p-2 sticky left-[50px] bg-white z-10">{row.turno}</td>
                 <td className="border border-slate-200 p-2 sticky left-[100px] bg-white z-10">{row.bp}</td>
-                <td className="border border-slate-200 p-2 sticky left-[160px] bg-white z-10">{row.funcao}</td>
+                <td className="border border-slate-200 p-2 sticky left-[160px] bg-white z-10">
+                  <input 
+                    type="text"
+                    value={row.funcao}
+                    onChange={(e) => handleFuncaoChange(rowIdx, e.target.value)}
+                    className="w-full bg-transparent border-none focus:ring-1 focus:ring-indigo-500 outline-none p-1 rounded no-print"
+                  />
+                  <span className="hidden print-only">{row.funcao}</span>
+                </td>
                 <td className="border border-slate-200 p-2 font-bold sticky left-[240px] bg-white z-10">{row.nome}</td>
                 {row.days.map((day, dayIdx) => (
                   <td 
                     key={dayIdx} 
                     className={`border border-slate-200 p-0 text-center font-bold ${getCellColor(day.code)}`}
                   >
-                    <select 
-                      value={day.code}
-                      onChange={(e) => handleCellChange(rowIdx, dayIdx, e.target.value)}
-                      className="w-full h-full bg-transparent text-center border-none focus:ring-2 focus:ring-indigo-500 outline-none p-1 uppercase appearance-none cursor-pointer"
-                    >
-                      {ALL_CODES.map(code => (
-                        <option key={code} value={code} className="text-slate-900 bg-white">
-                          {code}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative w-full h-full">
+                      <select 
+                        value={day.code}
+                        onChange={(e) => handleCellChange(rowIdx, dayIdx, e.target.value)}
+                        className="w-full h-full bg-transparent text-center border-none focus:ring-2 focus:ring-indigo-500 outline-none p-1 uppercase appearance-none cursor-pointer no-print"
+                      >
+                        {ALL_CODES.map(code => (
+                          <option key={code} value={code} className="text-slate-900 bg-white">
+                            {code}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="hidden print-only">{day.code}</span>
+                    </div>
                   </td>
                 ))}
               </tr>
@@ -195,12 +226,15 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange }: 
                 <tr key={idx}>
                   <td className="p-2 font-bold text-slate-700">{row.nome}</td>
                   <td className="p-2 text-slate-500">
-                    <input 
-                      type="text"
-                      value={row.tarefa}
-                      onChange={(e) => handleTarefaChange(idx, e.target.value)}
-                      className="w-full bg-transparent border-none focus:ring-1 focus:ring-indigo-500 outline-none p-1 rounded"
-                    />
+                    <div className="relative w-full">
+                      <input 
+                        type="text"
+                        value={row.tarefa}
+                        onChange={(e) => handleTarefaChange(idx, e.target.value)}
+                        className="w-full bg-transparent border-none focus:ring-1 focus:ring-indigo-500 outline-none p-1 rounded no-print"
+                      />
+                      <span className="hidden print-only">{row.tarefa}</span>
+                    </div>
                   </td>
                 </tr>
               ))}

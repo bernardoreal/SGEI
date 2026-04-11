@@ -91,11 +91,30 @@ export default function EmployeeDashboard() {
   const handleExportPDF = () => {
     if (!schedule) return;
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-    doc.setFontSize(18);
-    doc.setTextColor(0, 33, 105);
-    doc.text(`MINHA ESCALA - ${schedule.month} / ${schedule.year}`, 14, 20);
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // --- CABEÇALHO ESTILO LATAM ---
+    doc.setFillColor(0, 33, 105); // LATAM Indigo
+    doc.rect(0, 0, pageWidth, 30, 'F');
     
-    const headers = [['DATA', 'DIA', 'CÓDIGO', 'STATUS']];
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('LATAM', 14, 15);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text('AIRLINES', 14, 19);
+
+    doc.setFontSize(16);
+    doc.text(`MINHA ESCALA INDIVIDUAL - JPA`, pageWidth / 2, 15, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text(`${schedule.month} / ${schedule.year}`, pageWidth / 2, 22, { align: 'center' });
+
+    doc.setFontSize(8);
+    doc.text(`COLABORADOR: ${user?.name}`, pageWidth - 14, 15, { align: 'right' });
+    doc.text(`BP: ${user?.bp}`, pageWidth - 14, 20, { align: 'right' });
+
+    const headers = [['DATA', 'DIA', 'CÓDIGO', 'STATUS', 'TAREFA']];
     const daysArr = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
     
     const body = schedule.data[0].days.map((d: any) => {
@@ -105,19 +124,29 @@ export default function EmployeeDashboard() {
         d.date,
         daysArr[date.getDay()],
         d.code,
-        d.code === 'FOLG' || d.code === 'FAGR' ? 'FOLGA' : 'TRABALHO'
+        d.code === 'FOLG' || d.code === 'FAGR' || d.code === 'FC' ? 'FOLGA' : 'TRABALHO',
+        schedule.data[0].tarefa || 'Atividades Operacionais'
       ];
     });
 
     autoTable(doc, {
       head: headers,
       body: body,
-      startY: 30,
-      theme: 'striped',
-      headStyles: { fillColor: [0, 33, 105] }
+      startY: 35,
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [0, 33, 105], textColor: [255, 255, 255] },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 3) {
+          if (data.cell.raw === 'FOLGA') {
+            data.cell.styles.fillColor = [220, 252, 231];
+            data.cell.styles.textColor = [22, 101, 52];
+          }
+        }
+      }
     });
 
-    doc.save(`Minha_Escala_${schedule.month}.pdf`);
+    doc.save(`Minha_Escala_LATAM_${schedule.month}.pdf`);
   };
 
   if (loading) {

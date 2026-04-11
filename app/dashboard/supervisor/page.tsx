@@ -21,7 +21,7 @@ import {
   Printer
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import LATAMScheduleTable from '@/components/LATAMScheduleTable';
+import LATAMScheduleTable, { SHIFT_LEGEND, SIGLA_LEGEND } from '@/components/LATAMScheduleTable';
 import { GoogleGenAI } from "@google/genai";
 import { generateWithOpenRouter } from '@/app/actions/ai';
 import jsPDF from 'jspdf';
@@ -103,7 +103,8 @@ export default function SupervisorDashboard() {
       const employeeContext = employees.map(e => ({
         bp: e.bp,
         nome: e.name,
-        cargo: e.cargo || e.position,
+        // Forçar cargo de auxiliar para o Bernardo (BP 4598394)
+        cargo: e.bp === '4598394' ? 'AUXILIAR DE CARGAS' : (e.cargo || e.position),
         cat6: e.cat_6,
         horario_atribuido: e.work_hours || 'A definir pela IA',
         folgas_fixas: e.fixed_days_off,
@@ -118,7 +119,7 @@ export default function SupervisorDashboard() {
         - CONTINUIDADE ENTRE MESES: Você deve analisar o histórico dos últimos dias do mês anterior (fornecido abaixo) para garantir que ninguém ultrapasse 5 dias seguidos de trabalho na virada do mês.
         - Turno de 8 horas (7h trabalho + 1h intervalo).
         - FOLGA AGRUPADA (FAGR): Deve haver OBRIGATORIAMENTE EXATAMENTE 1 folga agrupada (2 dias consecutivos, ex: Sábado e Domingo ou qualquer par de dias) por mês para CADA colaborador. NUNCA coloque mais de uma FAGR por mês para o mesmo colaborador.
-        - HORÁRIO ATRIBUÍDO: Se o colaborador tiver um "horario_atribuido" específico, você DEVE respeitar esse horário na geração da escala.
+        - HORÁRIO ATRIBUÍDO (CRÍTICO): Se o colaborador tiver um "horario_atribuido" definido (diferente de 'A definir pela IA'), você DEVE respeitar esse horário ABSOLUTAMENTE. Não altere o horário definido pelo supervisor sob nenhuma circunstância.
         - COBERTURA E FOLGA DIÁRIA: Em cada dia do mês, pelo menos 1 colaborador aleatório DEVE estar de folga (FOLG ou FAGR), garantindo que nem todos trabalhem no mesmo dia, mas mantendo a cobertura mínima.
         - Compliance com CLT e Acordos Sindicais.
         - Toda escala deve ter status 'rascunho'.
@@ -306,17 +307,31 @@ export default function SupervisorDashboard() {
       format: 'a4'
     });
 
-    // Título
-    doc.setFontSize(18);
-    doc.setTextColor(0, 33, 105); // LATAM Indigo
-    doc.text(`ESCALA JPA - ${aiSchedule.month} / ${aiSchedule.year}`, 14, 20);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Gerado em: ${new Date().toLocaleString()}`, 14, 28);
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Preparar dados para a tabela
-    const headers = [['ÁREA', 'TURNO', 'BP', 'FUNÇÃO', 'NOME', ...aiSchedule.data[0].days.map((d: any) => d.date)]];
+    // --- CABEÇALHO AZUL ---
+    doc.setFillColor(0, 33, 105);
+    doc.rect(10, 10, pageWidth - 20, 10, 'F');
+    doc.setFontSize(12);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`ESCALA JPA ${aiSchedule.month} _ ${aiSchedule.year}`, pageWidth / 2, 17, { align: 'center' });
+
+    // --- PREPARAR DADOS DA TABELA ---
+    const getDayOfWeek = (dateStr: string, yearStr: string) => {
+      try {
+        const [day, month] = dateStr.split('/');
+        const date = new Date(parseInt(yearStr), parseInt(month) - 1, parseInt(day));
+        const days = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+        return days[date.getDay()];
+      } catch (e) { return ''; }
+    };
+
+    const days = aiSchedule.data[0].days;
+    const headerRow1 = ['', '', '', '', '', ...days.map((d: any) => getDayOfWeek(d.date, aiSchedule.year))];
+    const headerRow2 = ['ÁREA', 'TURNO', 'BP', 'FUNÇÃO', 'NOME', ...days.map((d: any) => d.date)];
+
     const body = aiSchedule.data.map((row: any) => [
       row.area,
       row.turno,
@@ -327,25 +342,88 @@ export default function SupervisorDashboard() {
     ]);
 
     autoTable(doc, {
-      head: headers,
+      head: [headerRow1, headerRow2],
       body: body,
-      startY: 35,
+      startY: 22,
       theme: 'grid',
-      styles: { fontSize: 6, cellPadding: 1 },
-      headStyles: { fillColor: [0, 33, 105], textColor: [255, 255, 255] },
+      styles: { 
+        fontSize: 5, 
+        cellPadding: 0.5, 
+        halign: 'center', 
+        valign: 'middle',
+        lineWidth: 0.1,
+        lineColor: [100, 100, 100]
+      },
+      headStyles: { 
+        fillColor: [0, 33, 105], 
+        textColor: [255, 255, 255],
+        fontSize: 5,
+        fontStyle: 'bold'
+      },
       columnStyles: {
         0: { cellWidth: 15 },
-        1: { cellWidth: 20 },
+        1: { cellWidth: 12 },
         2: { cellWidth: 12 },
-        3: { cellWidth: 20 },
+        3: { cellWidth: 18 },
         4: { cellWidth: 30 },
       },
       didParseCell: (data) => {
         if (data.section === 'body' && data.column.index > 4) {
           const val = data.cell.raw;
-          if (val === 'FOLG' || val === 'FAGR' || val === 'FC' || val === 'FS') {
-            data.cell.styles.fillColor = [220, 252, 231]; // Green 100
-            data.cell.styles.textColor = [22, 101, 52]; // Green 800
+          if (['FOLG', 'FAGR', 'FC', 'FS', 'FDFE'].includes(val as string)) {
+            data.cell.styles.fillColor = [220, 252, 231]; 
+            data.cell.styles.textColor = [22, 101, 52]; 
+          } else if (val === 'FE') {
+            data.cell.styles.fillColor = [243, 244, 246]; 
+            data.cell.styles.textColor = [107, 114, 128]; 
+          }
+        }
+        if (data.section === 'head' && data.row.index === 0 && data.column.index > 4) {
+          const day = data.cell.raw;
+          if (day === 'SAB' || day === 'DOM') {
+            data.cell.styles.fillColor = [230, 0, 0]; 
+          }
+        }
+      }
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY + 5;
+    const tableWidth = (pageWidth - 30) / 3;
+
+    // --- LEGENDAS ---
+    autoTable(doc, {
+      head: [['CÓDIGO', 'DESCRIÇÃO']],
+      body: SHIFT_LEGEND.map(s => [s.code, s.desc]),
+      startY: finalY,
+      margin: { left: 10 },
+      tableWidth: tableWidth,
+      styles: { fontSize: 5, cellPadding: 0.5 },
+      headStyles: { fillColor: [51, 51, 51] }
+    });
+
+    autoTable(doc, {
+      head: [['RESPONSÁVEL', 'TAREFAS DIÁRIAS']],
+      body: aiSchedule.data.map((row: any) => [row.nome, row.tarefa || '']),
+      startY: finalY,
+      margin: { left: 10 + tableWidth + 2 },
+      tableWidth: tableWidth,
+      styles: { fontSize: 5, cellPadding: 0.5 },
+      headStyles: { fillColor: [0, 33, 105] }
+    });
+
+    autoTable(doc, {
+      head: [['SIGLA', 'DESCRIÇÃO']],
+      body: SIGLA_LEGEND.map(s => [s.code, s.desc]),
+      startY: finalY,
+      margin: { left: 10 + (tableWidth + 2) * 2 },
+      tableWidth: tableWidth,
+      styles: { fontSize: 5, cellPadding: 0.5 },
+      headStyles: { fillColor: [51, 51, 51] },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 0) {
+          const sigla = data.cell.raw;
+          if (['FOLG', 'FAGR', 'FC', 'FS', 'FDFE'].includes(sigla as string)) {
+            data.cell.styles.fillColor = [220, 252, 231];
           }
         }
       }
@@ -470,6 +548,20 @@ export default function SupervisorDashboard() {
           </div>
 
           <div className="print-content">
+            {/* Cabeçalho exclusivo para impressão */}
+            <div className="hidden print:block mb-8 border-b-4 border-latam-indigo pb-4">
+              <div className="flex justify-between items-end">
+                <div>
+                  <h1 className="text-4xl font-black text-latam-indigo leading-none">LATAM</h1>
+                  <p className="text-xs font-bold tracking-[0.2em] text-latam-indigo">AIRLINES</p>
+                </div>
+                <div className="text-right">
+                  <h2 className="text-xl font-bold text-slate-800 uppercase">Escala de Revezamento - JPA</h2>
+                  <p className="text-sm text-slate-500 font-medium">{aiSchedule.month} / {aiSchedule.year}</p>
+                </div>
+              </div>
+            </div>
+
             <LATAMScheduleTable 
               month={aiSchedule.month} 
               year={aiSchedule.year} 
@@ -552,9 +644,30 @@ export default function SupervisorDashboard() {
                       </span>
                     </td>
                     <td className="px-4 py-4 bg-white border-y border-gray-100">
-                      <div className="text-xs font-bold text-indigo-600">
-                        {emp.work_hours || 'Escala IA'}
-                      </div>
+                      <input
+                        type="text"
+                        value={emp.work_hours || ''}
+                        onChange={(e) => {
+                          const newEmployees = employees.map(item => 
+                            item.bp === emp.bp ? { ...item, work_hours: e.target.value } : item
+                          );
+                          setEmployees(newEmployees);
+                        }}
+                        onBlur={async () => {
+                          try {
+                            const { error } = await supabase
+                              .from('base_jpa')
+                              .update({ work_hours: emp.work_hours })
+                              .eq('bp', emp.bp);
+                            if (error) throw error;
+                          } catch (err: any) {
+                            console.error('Erro ao salvar horário:', err);
+                            alert('Erro ao salvar horário.');
+                          }
+                        }}
+                        className="text-xs font-bold text-indigo-600 w-full bg-transparent border-b border-transparent hover:border-indigo-300 focus:border-indigo-600 outline-none"
+                        placeholder="Escala IA"
+                      />
                     </td>
                     <td className="px-4 py-4 bg-white border-y border-gray-100">
                       <div className="text-xs text-gray-600 font-medium">
