@@ -54,34 +54,8 @@ export default function ScheduleGenerator() {
         const clientApiKey = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
         
         if (clientApiKey) {
-          // Chamada direta pelo cliente (Lógica Cloudflare Pages)
-          const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${clientApiKey}`,
-              "HTTP-Referer": window.location.origin,
-              "X-Title": "LATAM SGEI",
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              "model": llmConfig.model,
-              "messages": [{ "role": "user", "content": prompt }]
-            })
-          });
-          const data = await response.json();
-          if (data.error) throw new Error(data.error.message || 'Erro no OpenRouter');
-          responseText = data.choices[0].message.content || '';
-
-          // Log usage (Client-side)
-          if (data.usage) {
-            await supabase.from('ai_usage_logs').insert([{
-              model: llmConfig.model,
-              provider: 'openrouter',
-              prompt_tokens: data.usage.prompt_tokens,
-              completion_tokens: data.usage.completion_tokens,
-              total_tokens: data.usage.total_tokens
-            }]);
-          }
+          // Chamada via Server Action
+          responseText = await generateWithOpenRouter(prompt, llmConfig.model);
         } else {
           // Fallback para Server Action
           responseText = await generateWithOpenRouter(prompt, llmConfig.model);
@@ -111,6 +85,28 @@ export default function ScheduleGenerator() {
     } catch (error: any) {
       console.error('Error generating schedule:', error);
       setResult(`Erro ao gerar escala: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveSchedule = async () => {
+    if (!result) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('schedules')
+        .insert([{
+          content: result,
+          status: 'rascunho',
+          created_at: new Date().toISOString()
+        }]);
+
+      if (error) throw error;
+      alert('Escala salva com sucesso!');
+    } catch (error: any) {
+      console.error('Error saving schedule:', error);
+      alert(`Erro ao salvar escala: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -171,6 +167,12 @@ export default function ScheduleGenerator() {
                   Escala Proposta pela IA
                 </h2>
                 <div className="flex gap-2">
+                  <button 
+                    onClick={saveSchedule}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition shadow-sm"
+                  >
+                    Salvar Escala
+                  </button>
                   <button className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition shadow-sm">
                     Validar e Publicar
                   </button>

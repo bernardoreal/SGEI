@@ -17,6 +17,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         console.error('Dashboard Layout - Auth Error:', error.message);
         if (error.message.includes('Refresh Token Not Found') || error.message.includes('Invalid Refresh Token')) {
           await supabase.auth.signOut();
+          localStorage.clear();
           router.push('/');
           return;
         }

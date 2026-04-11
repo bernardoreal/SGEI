@@ -48,6 +48,7 @@ export default function SupervisorDashboard() {
         console.error('Session error:', sessionError);
         if (sessionError.message.includes('Refresh Token Not Found') || sessionError.message.includes('Invalid Refresh Token')) {
           await supabase.auth.signOut();
+          localStorage.clear();
           window.location.href = '/';
           return;
         }
@@ -85,6 +86,11 @@ export default function SupervisorDashboard() {
   const generateScheduleAI = async () => {
     if (employees.length === 0) {
       setError('Não há colaboradores cadastrados na base JPA para gerar a escala. Por favor, adicione colaboradores primeiro.');
+      return;
+    }
+
+    if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY && llmConfig.provider === 'gemini') {
+      setError('Chave de API do Gemini não configurada.');
       return;
     }
 
@@ -176,33 +182,7 @@ export default function SupervisorDashboard() {
         
         if (clientApiKey) {
           // Chamada direta pelo cliente (Lógica Cloudflare Pages)
-          const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${clientApiKey}`,
-              "HTTP-Referer": window.location.origin,
-              "X-Title": "LATAM SGEI",
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              "model": llmConfig.model,
-              "messages": [{ "role": "user", "content": prompt }]
-            })
-          });
-          const data = await response.json();
-          if (data.error) throw new Error(data.error.message || 'Erro no OpenRouter');
-          responseText = data.choices[0].message.content || '';
-
-          // Log usage (Client-side)
-          if (data.usage) {
-            await supabase.from('ai_usage_logs').insert([{
-              model: llmConfig.model,
-              provider: 'openrouter',
-              prompt_tokens: data.usage.prompt_tokens,
-              completion_tokens: data.usage.completion_tokens,
-              total_tokens: data.usage.total_tokens
-            }]);
-          }
+          responseText = await generateWithOpenRouter(prompt, llmConfig.model);
         } else {
           // Fallback para Server Action
           responseText = await generateWithOpenRouter(prompt, llmConfig.model);
@@ -238,7 +218,8 @@ export default function SupervisorDashboard() {
       setFeedbackGiven(false);
     } catch (err: any) {
       console.error('Erro ao gerar escala:', err);
-      setError(`Falha ao gerar escala com IA: ${err.message || 'Erro desconhecido'}`);
+      const errorMessage = err.message || (err.error && err.error.message) || 'Erro desconhecido';
+      setError(`Falha ao gerar escala com IA: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -560,15 +541,15 @@ export default function SupervisorDashboard() {
 
   return (
     <div className="space-y-8 pb-12">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Painel do Supervisor - JPA</h1>
-          <p className="text-gray-500">Gestão operacional e geração de escalas.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Painel do Supervisor - JPA</h1>
+          <p className="text-sm sm:text-base text-gray-500">Gestão operacional e geração de escalas.</p>
         </div>
         <button 
           onClick={generateScheduleAI}
           disabled={loading}
-          className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 disabled:bg-gray-400"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 disabled:bg-gray-400"
         >
           {loading ? <Clock className="animate-spin" /> : <Sparkles />}
           {loading ? 'Gerando...' : 'Gerar Escala com IA'}
@@ -666,16 +647,16 @@ export default function SupervisorDashboard() {
 
       <div className="grid grid-cols-1 gap-8">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Users className="text-indigo-600" /> Gestão Detalhada de Equipe
             </h2>
-            <div className="flex gap-2">
-              <div className="relative">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <div className="relative w-full sm:w-64">
                 <input 
                   type="text"
                   placeholder="Buscar por nome ou BP..."
-                  className="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-64"
+                  className="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-full"
                   onChange={(e) => {
                     const term = e.target.value.toLowerCase();
                     const filtered = employees.filter(emp => 
@@ -687,7 +668,7 @@ export default function SupervisorDashboard() {
                 />
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               </div>
-              <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+              <span className="flex items-center justify-center gap-1 text-xs font-medium text-gray-500 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 {filteredEmployees.length} Colaboradores
               </span>
@@ -854,7 +835,16 @@ export default function SupervisorDashboard() {
                     <p className="font-bold text-sm">{new Date(s.start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()}</p>
                     <p className="text-xs text-gray-500">Criado por: {s.created_by_user?.name || 'Sistema'}</p>
                   </div>
-                  <div className="text-xs font-bold text-indigo-600">Visualizar</div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                      s.status === 'publicada' ? 'bg-green-100 text-green-700' :
+                      s.status === 'arquivada' ? 'bg-gray-200 text-gray-600' :
+                      'bg-amber-100 text-amber-700'
+                    }`}>
+                      {s.status || 'Rascunho'}
+                    </span>
+                    <div className="text-xs font-bold text-indigo-600">Visualizar</div>
+                  </div>
                 </button>
               ))}
             </div>

@@ -36,6 +36,7 @@ export default function LoginPage() {
         console.warn('Erro de sessão detectado, limpando storage:', sessionError.message);
         // Se houver erro de refresh token, forçamos o logout para limpar o storage local
         await supabase.auth.signOut();
+        localStorage.clear();
       } else if (session) {
         // Se já existe uma sessão válida, redireciona para o dashboard
         window.location.href = '/dashboard';
