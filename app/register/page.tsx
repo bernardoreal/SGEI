@@ -28,6 +28,7 @@ export default function RegisterPage() {
   const [bp, setBp] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [selectedBaseId, setSelectedBaseId] = useState('');
   const [cat6, setCat6] = useState(false);
@@ -101,6 +102,14 @@ export default function RegisterPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const validatePassword = (pass: string) => {
+    const hasLetter = /[a-zA-Z]/.test(pass);
+    const hasNumber = /[0-9]/.test(pass);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
+    const isLongEnough = pass.length >= 8;
+    return hasLetter && hasNumber && hasSpecial && isLongEnough;
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -108,6 +117,18 @@ export default function RegisterPage() {
 
     if (!selectedBaseId) {
       setError('Por favor, selecione sua base.');
+      setLoading(false);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('As senhas não coincidem.');
+      setLoading(false);
+      return;
+    }
+
+    if (!validatePassword(password)) {
+      setError('A senha deve ter pelo menos 8 caracteres, incluindo letras, números e caracteres especiais.');
       setLoading(false);
       return;
     }
@@ -365,6 +386,17 @@ export default function RegisterPage() {
                   placeholder="Senha" 
                   value={password} 
                   onChange={(e) => setPassword(e.target.value)} 
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 border border-white/50 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white outline-none transition-all text-latam-indigo font-medium placeholder:text-slate-400"
+                  required
+                />
+              </div>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 group-focus-within:text-latam-indigo transition-colors" size={18} />
+                <input 
+                  type="password" 
+                  placeholder="Confirmar Senha" 
+                  value={confirmPassword} 
+                  onChange={(e) => setConfirmPassword(e.target.value)} 
                   className="w-full pl-12 pr-4 py-4 bg-white/50 border border-white/50 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white outline-none transition-all text-latam-indigo font-medium placeholder:text-slate-400"
                   required
                 />

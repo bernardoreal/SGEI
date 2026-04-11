@@ -491,7 +491,16 @@ export default function SupervisorDashboard() {
     if (!aiSchedule) return;
     setSaving(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        if (sessionError.message.includes('Refresh Token Not Found') || sessionError.message.includes('Invalid Refresh Token')) {
+          await supabase.auth.signOut();
+          localStorage.clear();
+          window.location.href = '/';
+          return;
+        }
+      }
       
       // 1. Criar registro da escala
       const { data: schedule, error: sError } = await supabase

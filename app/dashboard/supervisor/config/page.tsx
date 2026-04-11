@@ -33,7 +33,15 @@ export default function ConfigPage() {
     };
 
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        if (error.message.includes('Refresh Token Not Found') || error.message.includes('Invalid Refresh Token')) {
+          await supabase.auth.signOut();
+          localStorage.clear();
+          window.location.href = '/';
+          return;
+        }
+      }
       if (user) setUserId(user.id);
       fetchConfig();
     };
