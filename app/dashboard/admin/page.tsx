@@ -709,7 +709,7 @@ export default function AdminDashboard() {
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {/* View Mode Dropdown */}
           <div className="relative">
             <button 
@@ -999,18 +999,18 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                   </div>
                 ) : (
                   usersInSelectedRole.map(user => (
-                    <div key={user.id} className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
+                    <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors gap-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold shrink-0">
                           {user.name.charAt(0)}
                         </div>
-                        <div>
-                          <div className="font-medium text-gray-900">{user.name}</div>
-                          <div className="text-xs text-gray-500">{user.email}</div>
+                        <div className="min-w-0">
+                          <div className="font-medium text-gray-900 truncate">{user.name}</div>
+                          <div className="text-xs text-gray-500 truncate">{user.email}</div>
                         </div>
                       </div>
                       
-                      <div className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-3 w-full sm:w-auto">
                         <div className="flex items-center gap-2">
                           {user.roles && user.roles.includes('employee') && user.roles.some((r: string) => ['admin', 'manager', 'coordinator', 'supervisor'].includes(r)) && (
                             <div className="flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded-lg text-[10px] font-bold border border-amber-200">
@@ -1107,18 +1107,18 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                   </div>
                 ) : (
                   usersInSelectedBase.map(user => (
-                    <div key={user.id} className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
+                    <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors gap-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold shrink-0">
                           {user.name.charAt(0)}
                         </div>
-                        <div>
-                          <div className="font-medium text-gray-900">{user.name}</div>
-                          <div className="text-xs text-gray-500">{user.email}</div>
+                        <div className="min-w-0">
+                          <div className="font-medium text-gray-900 truncate">{user.name}</div>
+                          <div className="text-xs text-gray-500 truncate">{user.email}</div>
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                         {user.roles && user.roles.includes('employee') && user.roles.some((r: string) => ['admin', 'manager', 'coordinator', 'supervisor'].includes(r)) && (
                           <div className="flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded-lg text-[10px] font-bold border border-amber-200">
                             <Sparkles size={10} />
@@ -1260,7 +1260,7 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                         placeholder="••••••••"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Role</label>
                         <select 
@@ -1328,15 +1328,15 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                       </div>
                     ) : (
                       filteredUsersForDeletion.map(user => (
-                        <div key={user.id} className="flex items-center justify-between p-3 border border-gray-100 rounded-xl hover:bg-red-50 transition-colors">
-                          <div>
-                            <div className="font-bold text-gray-900 text-sm">{user.name}</div>
-                            <div className="text-xs text-gray-500">BP: {user.bp} | {user.email}</div>
+                        <div key={user.id} className="flex items-center justify-between p-3 border border-gray-100 rounded-xl hover:bg-red-50 transition-colors gap-3">
+                          <div className="min-w-0">
+                            <div className="font-bold text-gray-900 text-sm truncate">{user.name}</div>
+                            <div className="text-xs text-gray-500 truncate">BP: {user.bp} | {user.email}</div>
                           </div>
                           <button 
                             onClick={() => handleDeleteUser(user.id, user.name)}
                             disabled={updatingUserId === user.id}
-                            className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50"
+                            className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50 shrink-0"
                           >
                             {updatingUserId === user.id ? '...' : <X size={18} />}
                           </button>
