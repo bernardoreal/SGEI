@@ -17,7 +17,8 @@ import {
   FileText,
   Download,
   X,
-  FileDown
+  FileDown,
+  Printer
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import LATAMScheduleTable from '@/components/LATAMScheduleTable';
@@ -353,6 +354,10 @@ export default function SupervisorDashboard() {
     doc.save(`Escala_JPA_${aiSchedule.month}_${aiSchedule.year}.pdf`);
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   const handlePublishSchedule = async () => {
     if (!aiSchedule) return;
     setSaving(true);
@@ -451,19 +456,27 @@ export default function SupervisorDashboard() {
               )}
               <button 
                 onClick={handleExportPDF}
-                className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-200 transition"
+                className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-200 transition no-print"
               >
                 <Download size={18} /> Exportar PDF
+              </button>
+              <button 
+                onClick={handlePrint}
+                className="flex items-center gap-2 bg-latam-indigo text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-[#001a54] transition shadow-md no-print"
+              >
+                <Printer size={18} /> Imprimir
               </button>
             </div>
           </div>
 
-          <LATAMScheduleTable 
-            month={aiSchedule.month} 
-            year={aiSchedule.year} 
-            data={aiSchedule.data} 
-            onDataChange={(newData) => setAiSchedule({ ...aiSchedule, data: newData })}
-          />
+          <div className="print-content">
+            <LATAMScheduleTable 
+              month={aiSchedule.month} 
+              year={aiSchedule.year} 
+              data={aiSchedule.data} 
+              onDataChange={(newData) => setAiSchedule({ ...aiSchedule, data: newData })}
+            />
+          </div>
 
           <div className="mt-10 flex justify-end gap-4">
             <button 

@@ -19,3 +19,34 @@
 .glass-dark {
   @apply bg-black/30 backdrop-blur-xl border border-white/10 shadow-2xl;
 }
+
+@layer utilities {
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    .print-only {
+      display: block !important;
+    }
+    body {
+      background: white !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+    .print-content {
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      box-shadow: none !important;
+      border: none !important;
+    }
+    /* Esconder elementos de navegação e botões do dashboard ao imprimir */
+    header, nav, aside, .no-print, button {
+      display: none !important;
+    }
+    @page {
+      size: landscape;
+      margin: 1cm;
+    }
+  }
+}
