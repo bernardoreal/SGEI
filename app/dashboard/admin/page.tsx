@@ -477,7 +477,16 @@ export default function AdminDashboard() {
         bp: user.bp,
         name: user.name,
         email: user.email,
-        position: (user.roles || []).includes('supervisor') ? 'Supervisor / Colaborador' : 'Colaborador',
+        position: user.roles && user.roles.includes('supervisor') ? 'Supervisor' :
+                 user.roles && user.roles.length > 1 
+          ? (user.roles[1] === 'employee' ? 'Colaborador' : 
+             user.roles[1] === 'supervisor' ? 'Supervisor' : 
+             user.roles[1] === 'coordinator' ? 'Coordenador' : 
+             user.roles[1] === 'manager' ? 'Gerente' : user.roles[1])
+          : (user.roles && user.roles[0] === 'admin' ? 'Administrador' : 
+             user.roles && user.roles[0] === 'supervisor' ? 'Supervisor' : 
+             user.roles && user.roles[0] === 'coordinator' ? 'Coordenador' : 
+             user.roles && user.roles[0] === 'manager' ? 'Gerente' : 'Colaborador'),
         is_active: true
       };
 
@@ -522,7 +531,7 @@ export default function AdminDashboard() {
           bp: newUserForm.bp,
           name: newUserForm.name,
           email: newUserForm.email,
-          password_plain: newUserForm.password,
+          password_plain: btoa(unescape(encodeURIComponent(newUserForm.password))),
           roles: newUserForm.role === 'pending' ? ['pending'] : [newUserForm.role],
           base_id: newUserForm.base_id || null
         }])
@@ -620,7 +629,7 @@ export default function AdminDashboard() {
             bp: '4598394', // Default Admin BP
             email: email,
             name: userToUse.user_metadata?.name || 'Bernardo Admin',
-            roles: ['admin', 'employee'],
+            roles: ['admin', 'supervisor', 'employee'],
             is_active: true
           }])
           .select()
@@ -636,9 +645,9 @@ export default function AdminDashboard() {
       } else {
         // Ensure roles are correct
         const currentRoles = existingUser.roles || [];
-        if (!currentRoles.includes('admin') || !currentRoles.includes('employee')) {
-          console.log('Updating roles to include admin and employee...');
-          const newRoles = Array.from(new Set([...currentRoles, 'admin', 'employee']));
+        if (!currentRoles.includes('admin') || !currentRoles.includes('supervisor')) {
+          console.log('Updating roles to include admin and supervisor...');
+          const newRoles = Array.from(new Set([...currentRoles, 'admin', 'supervisor', 'employee']));
           const { data: updatedUser, error: updateError } = await supabase
             .from('users')
             .update({ roles: newRoles })
@@ -1806,13 +1815,23 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                         <td className="px-6 py-4">
                           {user.roles && user.roles.length > 0 && user.roles[0] !== 'pending' ? (
                             <div className="flex flex-wrap gap-1">
-                              {user.roles.map(role => (
-                                <span key={role} className={`px-2.5 py-1 rounded-full text-[10px] font-bold capitalize ${
-                                  role === 'admin' ? 'bg-indigo-50 text-indigo-700' : 'bg-blue-50 text-blue-700'
-                                }`}>
-                                  {role}
+                              {/* If hybrid role, show the second role as primary display in manager view, prioritize supervisor */}
+                              {user.roles.includes('supervisor') ? (
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold capitalize bg-amber-50 text-amber-700 border border-amber-100">
+                                  Supervisor
                                 </span>
-                              ))}
+                              ) : user.roles.length > 1 ? (
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold capitalize bg-blue-50 text-blue-700">
+                                  {user.roles[1] === 'employee' ? 'Colaborador' : user.roles[1]}
+                                </span>
+                              ) : (
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold capitalize ${
+                                  user.roles[0] === 'admin' ? 'bg-indigo-50 text-indigo-700' : 'bg-blue-50 text-blue-700'
+                                }`}>
+                                  {user.roles[0] === 'admin' ? 'Administrador' : 
+                                   user.roles[0] === 'employee' ? 'Colaborador' : user.roles[0]}
+                                </span>
+                              )}
                             </div>
                           ) : (
                             <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 flex items-center gap-1 w-fit">

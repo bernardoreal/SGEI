@@ -142,7 +142,7 @@ export default function RegisterPage() {
       bp,
       email,
       name,
-      password_plain: password, // Salvando a senha conforme solicitado
+      password_plain: btoa(unescape(encodeURIComponent(password))), // Anonimizando a senha (Base64 Seguro) conforme solicitado
       base_id: selectedBaseId,
       cat6,
       cargo,

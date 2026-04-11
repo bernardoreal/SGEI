@@ -22,6 +22,7 @@ interface LATAMScheduleTableProps {
   month: string;
   year: string;
   data: EmployeeSchedule[];
+  onDataChange?: (newData: EmployeeSchedule[]) => void;
 }
 
 const SHIFT_LEGEND = [
@@ -55,7 +56,7 @@ const SIGLA_LEGEND = [
   { code: 'C', desc: 'Curso / Treinamento', color: 'bg-indigo-100' },
 ];
 
-export default function LATAMScheduleTable({ month, year, data }: LATAMScheduleTableProps) {
+export default function LATAMScheduleTable({ month, year, data, onDataChange }: LATAMScheduleTableProps) {
   const daysInMonth = data[0]?.days.length || 30;
   
   const getCellColor = (code: string) => {
@@ -66,12 +67,32 @@ export default function LATAMScheduleTable({ month, year, data }: LATAMScheduleT
     return 'bg-white';
   };
 
+  const handleCellChange = (rowIdx: number, dayIdx: number, newCode: string) => {
+    if (!onDataChange) return;
+    const newData = [...data];
+    newData[rowIdx].days[dayIdx].code = newCode.toUpperCase();
+    onDataChange(newData);
+  };
+
+  const handleTarefaChange = (rowIdx: number, newTarefa: string) => {
+    if (!onDataChange) return;
+    const newData = [...data];
+    newData[rowIdx].tarefa = newTarefa;
+    onDataChange(newData);
+  };
+
+  const ALL_CODES = [...SHIFT_LEGEND.map(s => s.code), ...SIGLA_LEGEND.map(s => s.code)];
+
   return (
     <div className="w-full space-y-6 overflow-hidden">
-      <div className="bg-[#002169] text-white p-4 text-center rounded-t-xl">
+      <div className="bg-[#002169] text-white p-4 text-center rounded-t-xl flex justify-between items-center">
+        <div className="w-10" />
         <h2 className="text-2xl font-bold tracking-widest uppercase">
           ESCALA JPA {month} _ {year}
         </h2>
+        <div className="text-[10px] bg-white/20 px-2 py-1 rounded uppercase font-bold">
+          Modo Edição Ativo
+        </div>
       </div>
 
       <div className="overflow-x-auto border-x border-b border-slate-200 rounded-b-xl shadow-xl">
@@ -102,15 +123,24 @@ export default function LATAMScheduleTable({ month, year, data }: LATAMScheduleT
                 {row.days.map((day, dayIdx) => (
                   <td 
                     key={dayIdx} 
-                    className={`border border-slate-200 p-1 text-center font-bold ${getCellColor(day.code)}`}
+                    className={`border border-slate-200 p-0 text-center font-bold ${getCellColor(day.code)}`}
                   >
-                    {day.code}
+                    <input 
+                      type="text"
+                      value={day.code}
+                      onChange={(e) => handleCellChange(rowIdx, dayIdx, e.target.value)}
+                      className="w-full h-full bg-transparent text-center border-none focus:ring-2 focus:ring-indigo-500 outline-none p-1 uppercase"
+                      list="codes-list"
+                    />
                   </td>
                 ))}
               </tr>
             ))}
           </tbody>
         </table>
+        <datalist id="codes-list">
+          {ALL_CODES.map(code => <option key={code} value={code} />)}
+        </datalist>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
@@ -153,7 +183,14 @@ export default function LATAMScheduleTable({ month, year, data }: LATAMScheduleT
               {data.map((row, idx) => (
                 <tr key={idx}>
                   <td className="p-2 font-bold text-slate-700">{row.nome}</td>
-                  <td className="p-2 text-slate-500">{row.tarefa}</td>
+                  <td className="p-2 text-slate-500">
+                    <input 
+                      type="text"
+                      value={row.tarefa}
+                      onChange={(e) => handleTarefaChange(idx, e.target.value)}
+                      className="w-full bg-transparent border-none focus:ring-1 focus:ring-indigo-500 outline-none p-1 rounded"
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -73,12 +73,36 @@ export default function SupervisorDashboard() {
     setLoading(true);
     setError(null);
     try {
-      // 1. Preparar contexto para a IA
+      // 1. Buscar histórico do mês anterior (últimos 7 dias)
+      const { data: lastSchedules } = await supabase
+        .from('schedules')
+        .select('id, start_date, end_date')
+        .order('end_date', { ascending: false })
+        .limit(1);
+
+      let historyContext = "Nenhum histórico encontrado. Assuma que todos os colaboradores estão descansados.";
+      
+      if (lastSchedules && lastSchedules.length > 0) {
+        const { data: lastDetails } = await supabase
+          .from('schedule_details')
+          .select('bp, date, status')
+          .eq('schedule_id', lastSchedules[0].id)
+          .order('date', { ascending: false })
+          .limit(employees.length * 7);
+        
+        if (lastDetails && lastDetails.length > 0) {
+          historyContext = JSON.stringify(lastDetails, null, 2);
+        }
+      }
+
+      // 2. Preparar contexto para a IA
       const employeeContext = employees.map(e => ({
         bp: e.bp,
         nome: e.name,
         cargo: e.cargo || e.position,
         cat6: e.cat_6,
+        horario_atribuido: e.work_hours || 'A definir pela IA',
+        folgas_fixas: e.fixed_days_off,
         restricoes: e.operational_restrictions
       }));
 
@@ -86,12 +110,19 @@ export default function SupervisorDashboard() {
         Você é o arquiteto líder do LATAM SGEI. Sua tarefa é gerar uma escala de trabalho MENSAL para o terminal de JPA (João Pessoa) seguindo RIGOROSAMENTE o modelo da LATAM.
 
         REGRAS DE NEGÓCIO:
-        - Jornada 5x1 (5 dias trabalhados, 1 folga).
+        - REGIME 5x1 FLEXÍVEL: O colaborador NUNCA deve trabalhar mais de 5 dias seguidos. No entanto, ele pode ter folgas antes de completar 5 dias (ex: trabalhar 3 dias e folgar 1, ou 4 dias e folgar 1). O limite de 5 dias é o MÁXIMO permitido entre folgas.
+        - CONTINUIDADE ENTRE MESES: Você deve analisar o histórico dos últimos dias do mês anterior (fornecido abaixo) para garantir que ninguém ultrapasse 5 dias seguidos de trabalho na virada do mês.
         - Turno de 8 horas (7h trabalho + 1h intervalo).
+        - FOLGA AGRUPADA (FAGR): Deve haver OBRIGATORIAMENTE pelo menos 1 folga agrupada (2 dias consecutivos, ex: Sábado e Domingo ou qualquer par de dias) por mês para CADA colaborador.
+        - HORÁRIO ATRIBUÍDO: Se o colaborador tiver um "horario_atribuido" específico, você DEVE respeitar esse horário na geração da escala.
+        - COBERTURA E FOLGA DIÁRIA: Em cada dia do mês, pelo menos 1 colaborador aleatório DEVE estar de folga (FOLG ou FAGR), garantindo que nem todos trabalhem no mesmo dia, mas mantendo a cobertura mínima.
         - Compliance com CLT e Acordos Sindicais.
         - Toda escala deve ter status 'rascunho'.
         - Use os códigos de horários: T034, T045, T074, T231, T082, T091, T087, T100, T109, T120, T128, T137, T145, T210, T009.
         - Use as siglas: FE (Férias), FOLG (Folga), FC (Folga Compensa), FAGR (Folga Agrupada), FS (Folga Solicitada).
+
+        HISTÓRICO DO MÊS ANTERIOR (Últimos dias):
+        ${historyContext}
 
         COLABORADORES DISPONÍVEIS:
         ${JSON.stringify(employeeContext, null, 2)}
@@ -211,6 +242,7 @@ export default function SupervisorDashboard() {
         .from('base_jpa')
         .update({
           fixed_days_off: editingEmployee.fixed_days_off,
+          work_hours: editingEmployee.work_hours,
           hour_compensation: editingEmployee.hour_compensation,
           vacation_period: editingEmployee.vacation_period,
           cat_6: editingEmployee.cat_6
@@ -225,6 +257,58 @@ export default function SupervisorDashboard() {
     } catch (err: any) {
       console.error('Erro ao atualizar colaborador:', err);
       alert('Erro ao atualizar: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePublishSchedule = async () => {
+    if (!aiSchedule) return;
+    setSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // 1. Criar registro da escala
+      const { data: schedule, error: sError } = await supabase
+        .from('schedules')
+        .insert([{
+          base_id: employees[0]?.base_id || '00000000-0000-0000-0000-000000000000',
+          start_date: `${aiSchedule.year}-${aiSchedule.month === 'ABRIL' ? '04' : '01'}-01`, // Simplificado para demo
+          end_date: `${aiSchedule.year}-${aiSchedule.month === 'ABRIL' ? '04' : '01'}-30`,
+          published_at: new Date().toISOString(),
+          created_by: session?.user?.id
+        }])
+        .select()
+        .single();
+
+      if (sError) throw sError;
+
+      // 2. Criar detalhes da escala
+      const details = [];
+      for (const emp of aiSchedule.data) {
+        for (const day of emp.days) {
+          const [d, m] = day.date.split('/');
+          details.push({
+            schedule_id: schedule.id,
+            bp: emp.bp,
+            date: `${aiSchedule.year}-${m}-${d}`,
+            shift: day.code.startsWith('T') ? 'manhã' : 'tarde', // Mapeamento simplificado
+            status: (day.code === 'FOLG' || day.code === 'FAGR' || day.code === 'FC') ? 'folga' : 'trabalhado'
+          });
+        }
+      }
+
+      const { error: dError } = await supabase
+        .from('schedule_details')
+        .insert(details);
+
+      if (dError) throw dError;
+
+      alert('Escala publicada com sucesso!');
+      setAiSchedule(null);
+    } catch (err: any) {
+      console.error('Erro ao publicar escala:', err);
+      alert('Erro ao publicar: ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -284,6 +368,7 @@ export default function SupervisorDashboard() {
             month={aiSchedule.month} 
             year={aiSchedule.year} 
             data={aiSchedule.data} 
+            onDataChange={(newData) => setAiSchedule({ ...aiSchedule, data: newData })}
           />
 
           <div className="mt-10 flex justify-end gap-4">
@@ -293,9 +378,13 @@ export default function SupervisorDashboard() {
             >
               Descartar
             </button>
-            <button className="flex items-center gap-2 bg-latam-indigo text-white px-8 py-3 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-200">
+            <button 
+              onClick={handlePublishSchedule}
+              disabled={saving}
+              className="flex items-center gap-2 bg-latam-indigo text-white px-8 py-3 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-200 disabled:bg-slate-300"
+            >
               <CheckCircle size={20} />
-              Validar e Publicar Escala
+              {saving ? 'Publicando...' : 'Validar e Publicar Escala'}
             </button>
           </div>
         </motion.div>
@@ -321,6 +410,7 @@ export default function SupervisorDashboard() {
                 <tr>
                   <th className="px-4 pb-2">Colaborador</th>
                   <th className="px-4 pb-2">Regime</th>
+                  <th className="px-4 pb-2">Horário</th>
                   <th className="px-4 pb-2">Folgas Fixas</th>
                   <th className="px-4 pb-2">Compensas</th>
                   <th className="px-4 pb-2">Férias</th>
@@ -337,7 +427,14 @@ export default function SupervisorDashboard() {
                           {emp.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                         </div>
                         <div>
-                          <div className="font-bold text-gray-900">{emp.name}</div>
+                          <div className="font-bold text-gray-900 flex items-center gap-2">
+                            {emp.name}
+                            {emp.position === 'Supervisor' && (
+                              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[8px] uppercase font-black rounded border border-amber-200">
+                                Supervisor
+                              </span>
+                            )}
+                          </div>
                           <div className="text-[10px] text-gray-400 font-mono">{emp.bp}</div>
                         </div>
                       </div>
@@ -346,6 +443,11 @@ export default function SupervisorDashboard() {
                       <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold">
                         5x1
                       </span>
+                    </td>
+                    <td className="px-4 py-4 bg-white border-y border-gray-100">
+                      <div className="text-xs font-bold text-indigo-600">
+                        {emp.work_hours || 'Escala IA'}
+                      </div>
                     </td>
                     <td className="px-4 py-4 bg-white border-y border-gray-100">
                       <div className="text-xs text-gray-600 font-medium">
@@ -404,8 +506,19 @@ export default function SupervisorDashboard() {
               <tbody className="divide-y divide-gray-50">
                 {employees.map(emp => (
                   <tr key={emp.bp}>
-                    <td className="py-4 font-medium">{emp.name}</td>
-                    <td className="py-4 text-gray-600">{emp.position}</td>
+                    <td className="py-4 font-medium flex items-center gap-2">
+                      {emp.name}
+                      {emp.position === 'Supervisor' && (
+                        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[8px] uppercase font-black rounded border border-amber-200">
+                          Supervisor
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-4 text-gray-600">
+                      <span className={emp.position === 'Supervisor' ? 'font-bold text-amber-700' : ''}>
+                        {emp.position}
+                      </span>
+                    </td>
                     <td className="py-4"><span className="px-2 py-1 bg-green-50 text-green-700 rounded-full text-xs">Ativo</span></td>
                   </tr>
                 ))}
@@ -457,16 +570,27 @@ export default function SupervisorDashboard() {
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase">Aceitador DG6 (CAT 6)</label>
-                    <div className="flex items-center gap-2 h-10">
-                      <input 
-                        type="checkbox" 
-                        checked={editingEmployee.cat_6}
-                        onChange={e => setEditingEmployee({...editingEmployee, cat_6: e.target.checked})}
-                        className="w-5 h-5 rounded border-slate-300 text-latam-indigo focus:ring-latam-indigo"
-                      />
-                      <span className="text-sm font-medium">Habilitado</span>
-                    </div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase">Horário de Trabalho</label>
+                    <input 
+                      type="text"
+                      value={editingEmployee.work_hours || ''}
+                      onChange={e => setEditingEmployee({...editingEmployee, work_hours: e.target.value})}
+                      placeholder="Ex: 08:00 - 16:00"
+                      className="w-full p-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">Aceitador DG6 (CAT 6)</label>
+                  <div className="flex items-center gap-2 h-10">
+                    <input 
+                      type="checkbox" 
+                      checked={editingEmployee.cat_6}
+                      onChange={e => setEditingEmployee({...editingEmployee, cat_6: e.target.checked})}
+                      className="w-5 h-5 rounded border-slate-300 text-latam-indigo focus:ring-latam-indigo"
+                    />
+                    <span className="text-sm font-medium">Habilitado</span>
                   </div>
                 </div>
 

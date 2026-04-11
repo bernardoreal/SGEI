@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS base_jpa (
     cargo VARCHAR(100),
     cat_6 BOOLEAN DEFAULT false,
     work_regime VARCHAR(20) DEFAULT '5x1',
+    work_hours VARCHAR(50), -- New column for custom work hours
     fixed_days_off TEXT,
     hour_compensation VARCHAR(20) DEFAULT '0h',
     vacation_period TEXT,
@@ -71,6 +72,9 @@ CREATE TABLE IF NOT EXISTS base_jpa (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Ensure work_hours column exists if table was created previously
+ALTER TABLE base_jpa ADD COLUMN IF NOT EXISTS work_hours VARCHAR(50);
 
 -- 5. Schedules
 CREATE TABLE IF NOT EXISTS schedules (

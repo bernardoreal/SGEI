@@ -78,7 +78,16 @@ export default function LoginPage() {
         return;
       }
 
-      setRetrievedPassword(data.password_plain);
+      try {
+        setRetrievedPassword(decodeURIComponent(escape(atob(data.password_plain))));
+      } catch (e) {
+        // Fallback se a senha não estiver em base64 ou formato antigo
+        try {
+          setRetrievedPassword(atob(data.password_plain));
+        } catch (e2) {
+          setRetrievedPassword(data.password_plain);
+        }
+      }
       setShowForgotModal(true);
     } catch (err) {
       console.error('Erro inesperado:', err);
