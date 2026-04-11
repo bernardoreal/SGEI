@@ -18,7 +18,8 @@ import {
   Download,
   X,
   FileDown,
-  Printer
+  Printer,
+  Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import LATAMScheduleTable, { SHIFT_LEGEND, SIGLA_LEGEND } from '@/components/LATAMScheduleTable';
@@ -30,8 +31,11 @@ import autoTable from 'jspdf-autotable';
 export default function SupervisorDashboard() {
   const [loading, setLoading] = useState(false);
   const [employees, setEmployees] = useState<any[]>([]);
+  const [filteredEmployees, setFilteredEmployees] = useState<any[]>([]);
   const [shiftRequests, setShiftRequests] = useState<any[]>([]);
+  const [scheduleHistory, setScheduleHistory] = useState<any[]>([]);
   const [aiSchedule, setAiSchedule] = useState<any | null>(null);
+  const [viewedSchedule, setViewedSchedule] = useState<any | null>(null);
   const [feedbackGiven, setFeedbackGiven] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-3-flash-preview' });
@@ -51,8 +55,18 @@ export default function SupervisorDashboard() {
 
       const { data: empData } = await supabase.from('base_jpa').select('*');
       const { data: reqData } = await supabase.from('shift_requests').select('*');
-      if (empData) setEmployees(empData);
+      if (empData) {
+        setEmployees(empData);
+        setFilteredEmployees(empData);
+      }
       if (reqData) setShiftRequests(reqData);
+
+      const { data: historyData } = await supabase
+        .from('schedules')
+        .select('*, created_by_user:users(name)')
+        .order('created_at', { ascending: false })
+        .limit(6);
+      if (historyData) setScheduleHistory(historyData);
 
       // Buscar configuração de IA
       const { data: configData } = await supabase
@@ -120,10 +134,11 @@ export default function SupervisorDashboard() {
         - Turno de 8 horas (7h trabalho + 1h intervalo).
         - FOLGA AGRUPADA (FAGR): Deve haver OBRIGATORIAMENTE EXATAMENTE 1 folga agrupada (2 dias consecutivos, ex: Sábado e Domingo ou qualquer par de dias) por mês para CADA colaborador. NUNCA coloque mais de uma FAGR por mês para o mesmo colaborador.
         - HORÁRIO ATRIBUÍDO (CRÍTICO): Se o colaborador tiver um "horario_atribuido" definido (diferente de 'A definir pela IA'), você DEVE respeitar esse horário ABSOLUTAMENTE. Não altere o horário definido pelo supervisor sob nenhuma circunstância.
+        - CORRESPONDÊNCIA DE HORÁRIO E CÓDIGO (CRÍTICO): Utilize estritamente a seguinte legenda para mapear o horário definido para o código da escala:
+          ${SHIFT_LEGEND.map(s => `${s.desc} -> ${s.code}`).join('\n          ')}
         - COBERTURA E FOLGA DIÁRIA: Em cada dia do mês, pelo menos 1 colaborador aleatório DEVE estar de folga (FOLG ou FAGR), garantindo que nem todos trabalhem no mesmo dia, mas mantendo a cobertura mínima.
         - Compliance com CLT e Acordos Sindicais.
         - Toda escala deve ter status 'rascunho'.
-        - Use os códigos de horários: T034, T045, T074, T231, T082, T091, T087, T100, T109, T120, T128, T137, T145, T210, T009.
         - Use as siglas: FE (Férias), FOLG (Folga), FC (Folga Compensa), FAGR (Folga Agrupada), FS (Folga Solicitada).
 
         HISTÓRICO DO MÊS ANTERIOR (Últimos dias):
@@ -230,6 +245,45 @@ export default function SupervisorDashboard() {
   };
 
   const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || '' });
+
+  const viewSchedule = async (schedule: any) => {
+    setLoading(true);
+    try {
+      const { data: details, error } = await supabase
+        .from('schedule_details')
+        .select('*, base_jpa(name, bp)')
+        .eq('schedule_id', schedule.id);
+      
+      if (error) throw error;
+
+      // Agrupar detalhes por colaborador
+      const groupedData = details.reduce((acc: any, detail: any) => {
+        const bp = detail.bp;
+        if (!acc[bp]) {
+          acc[bp] = {
+            bp: bp,
+            nome: detail.base_jpa.name,
+            days: []
+          };
+        }
+        acc[bp].days.push({
+          date: new Date(detail.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+          code: detail.status === 'folga' ? 'FOLG' : 'T000' // Simplificado
+        });
+        return acc;
+      }, {});
+
+      setViewedSchedule({
+        ...schedule,
+        data: Object.values(groupedData)
+      });
+    } catch (err: any) {
+      console.error('Erro ao visualizar escala:', err);
+      setError('Erro ao carregar escala.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFeedback = async (type: 'boa' | 'ruim') => {
     setFeedbackGiven(true);
@@ -361,11 +415,15 @@ export default function SupervisorDashboard() {
         fontStyle: 'bold'
       },
       columnStyles: {
-        0: { cellWidth: 15 },
-        1: { cellWidth: 12 },
-        2: { cellWidth: 12 },
-        3: { cellWidth: 18 },
-        4: { cellWidth: 30 },
+        0: { cellWidth: 10 }, // ÁREA
+        1: { cellWidth: 10 }, // TURNO
+        2: { cellWidth: 10 }, // BP
+        3: { cellWidth: 12 }, // FUNÇÃO
+        4: { cellWidth: 20 }, // NOME
+        // Dias (index 5 em diante)
+        ...Array.from({ length: days.length }, (_, i) => ({
+          [i + 5]: { cellWidth: 6 }
+        })).reduce((acc, curr) => ({ ...acc, ...curr }), {})
       },
       didParseCell: (data) => {
         if (data.section === 'body' && data.column.index > 4) {
@@ -391,34 +449,46 @@ export default function SupervisorDashboard() {
     const tableWidth = (pageWidth - 30) / 3;
 
     // --- LEGENDAS ---
+    const drawLegendTitle = (title: string, x: number) => {
+      doc.setFillColor(30, 41, 59);
+      doc.rect(x, finalY, tableWidth, 6, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(7);
+      doc.text(title, x + tableWidth / 2, finalY + 4, { align: 'center' });
+    };
+
+    drawLegendTitle('LEGENDA DE HORÁRIOS', 10);
+    drawLegendTitle('ROTEIRO DE ATIVIDADES', 10 + tableWidth + 2);
+    drawLegendTitle('LEGENDA DE SIGLAS', 10 + 2 * (tableWidth + 2));
+
     autoTable(doc, {
       head: [['CÓDIGO', 'DESCRIÇÃO']],
       body: SHIFT_LEGEND.map(s => [s.code, s.desc]),
-      startY: finalY,
+      startY: finalY + 6,
       margin: { left: 10 },
       tableWidth: tableWidth,
       styles: { fontSize: 5, cellPadding: 0.5 },
-      headStyles: { fillColor: [51, 51, 51] }
+      headStyles: { fillColor: [241, 245, 249], textColor: [71, 85, 105] }
     });
 
     autoTable(doc, {
       head: [['RESPONSÁVEL', 'TAREFAS DIÁRIAS']],
       body: aiSchedule.data.map((row: any) => [row.nome, row.tarefa || '']),
-      startY: finalY,
+      startY: finalY + 6,
       margin: { left: 10 + tableWidth + 2 },
       tableWidth: tableWidth,
       styles: { fontSize: 5, cellPadding: 0.5 },
-      headStyles: { fillColor: [0, 33, 105] }
+      headStyles: { fillColor: [241, 245, 249], textColor: [71, 85, 105] }
     });
 
     autoTable(doc, {
       head: [['SIGLA', 'DESCRIÇÃO']],
       body: SIGLA_LEGEND.map(s => [s.code, s.desc]),
-      startY: finalY,
+      startY: finalY + 6,
       margin: { left: 10 + (tableWidth + 2) * 2 },
       tableWidth: tableWidth,
       styles: { fontSize: 5, cellPadding: 0.5 },
-      headStyles: { fillColor: [51, 51, 51] },
+      headStyles: { fillColor: [241, 245, 249], textColor: [71, 85, 105] },
       didParseCell: (data) => {
         if (data.section === 'body' && data.column.index === 0) {
           const sigla = data.cell.raw;
@@ -547,6 +617,11 @@ export default function SupervisorDashboard() {
             </div>
           </div>
 
+          <div className="mb-6 bg-indigo-50 border border-indigo-100 text-indigo-700 px-4 py-3 rounded-xl flex items-center gap-3 text-sm">
+            <Sparkles size={18} className="text-indigo-500" />
+            <p>Esta escala é uma <strong>sugestão gerada por IA</strong>. Por favor, revise todos os horários e atribuições antes de validar e publicar.</p>
+          </div>
+
           <div className="print-content">
             {/* Cabeçalho exclusivo para impressão */}
             <div className="hidden print:block mb-8 border-b-4 border-latam-indigo pb-4">
@@ -596,9 +671,25 @@ export default function SupervisorDashboard() {
               <Users className="text-indigo-600" /> Gestão Detalhada de Equipe
             </h2>
             <div className="flex gap-2">
+              <div className="relative">
+                <input 
+                  type="text"
+                  placeholder="Buscar por nome ou BP..."
+                  className="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-64"
+                  onChange={(e) => {
+                    const term = e.target.value.toLowerCase();
+                    const filtered = employees.filter(emp => 
+                      emp.name.toLowerCase().includes(term) || 
+                      emp.bp.toLowerCase().includes(term)
+                    );
+                    setFilteredEmployees(filtered);
+                  }}
+                />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              </div>
               <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                {employees.length} Colaboradores
+                {filteredEmployees.length} Colaboradores
               </span>
             </div>
           </div>
@@ -618,7 +709,7 @@ export default function SupervisorDashboard() {
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {employees.map(emp => (
+                {filteredEmployees.map(emp => (
                   <tr key={emp.bp} className="group hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-4 bg-white border-y border-l border-gray-100 first:rounded-l-xl">
                       <div className="flex items-center gap-3">
@@ -747,26 +838,75 @@ export default function SupervisorDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            <ArrowRightLeft className="text-indigo-600" /> Trocas e Indisponibilidades
-          </h2>
-          <div className="space-y-4">
-            {shiftRequests.map(req => (
-              <div key={req.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                <div className="flex justify-between items-start">
-                  <span className="font-medium text-sm">{req.requester_bp}</span>
-                  <span className="text-xs text-gray-400">{req.requested_date}</span>
+        <div className="space-y-8">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+              <Calendar className="text-indigo-600" /> Histórico de Escalas
+            </h2>
+            <div className="space-y-4">
+              {scheduleHistory.map(s => (
+                <button 
+                  key={s.id} 
+                  onClick={() => viewSchedule(s)}
+                  className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 flex justify-between items-center hover:bg-indigo-50 transition-colors"
+                >
+                  <div>
+                    <p className="font-bold text-sm">{new Date(s.start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()}</p>
+                    <p className="text-xs text-gray-500">Criado por: {s.created_by_user?.name || 'Sistema'}</p>
+                  </div>
+                  <div className="text-xs font-bold text-indigo-600">Visualizar</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+              <ArrowRightLeft className="text-indigo-600" /> Trocas e Indisponibilidades
+            </h2>
+            <div className="space-y-4">
+              {shiftRequests.map(req => (
+                <div key={req.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="flex justify-between items-start">
+                    <span className="font-medium text-sm">{req.requester_bp}</span>
+                    <span className="text-xs text-gray-400">{req.requested_date}</span>
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <button className="text-xs bg-white border px-2 py-1 rounded hover:bg-gray-100">Aprovar</button>
+                    <button className="text-xs bg-white border px-2 py-1 rounded hover:bg-gray-100 text-red-600">Rejeitar</button>
+                  </div>
                 </div>
-                <div className="mt-2 flex gap-2">
-                  <button className="text-xs bg-white border px-2 py-1 rounded hover:bg-gray-100">Aprovar</button>
-                  <button className="text-xs bg-white border px-2 py-1 rounded hover:bg-gray-100 text-red-600">Rejeitar</button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {viewedSchedule && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
+            >
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 className="text-lg font-bold text-slate-900">Visualizar Escala - {new Date(viewedSchedule.start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()}</h3>
+                <button onClick={() => setViewedSchedule(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+              </div>
+              <div className="p-6 overflow-y-auto">
+                <LATAMScheduleTable 
+                  month={new Date(viewedSchedule.start_date).toLocaleDateString('pt-BR', { month: 'long' })}
+                  year={new Date(viewedSchedule.start_date).getFullYear().toString()}
+                  data={viewedSchedule.data}
+                  onDataChange={() => {}}
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {editingEmployee && (
