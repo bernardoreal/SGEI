@@ -63,6 +63,9 @@ export default function SupervisorDashboard() {
   const [savingFeedback, setSavingFeedback] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-1.5-flash' });
+  const [updatingRequest, setUpdatingRequest] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<any | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -300,16 +303,19 @@ export default function SupervisorDashboard() {
         Gere uma escala MENSAL para o terminal JPA (João Pessoa) seguindo o modelo LATAM.
         
         REGRAS CRÍTICAS:
-        1. VARIAÇÕES SEMANAIS (DINAMISMO): A IA deve alternar padrões de trabalho a cada semana para cada colaborador.
-           Exemplos de ritmos semanais:
-           - Semana 1: Ritmo 5x1 (5 dias trab, 1 folga)
-           - Semana 2: Ritmo 3x1 (3 dias trab, 1 folga)
-           - Semana 3: Ritmo 4x1 (4 dias trab, 1 folga)
-           - Semana 4: Ritmo 5x2 (5 dias trab, 2 folgas - use FAGR aqui)
-        2. FAGR (FOLGA AGRUPADA): OBRIGATÓRIO e LIMITADO a EXATAMENTE 1 VEZ POR MÊS por colaborador. Não pode haver mais de uma FAGR no mês.
-        3. MÁXIMO CONSECUTIVO: Nunca ultrapassar 5 dias seguidos de trabalho.
-        4. COBERTURA MÍNIMA: Manhã(3), Tarde(3), Noite(2).
-        5. CAT 6: Mínimo 2 colaboradores CAT 6 ativos em todos os dias.
+        1. VARIAÇÕES SEMANAIS (DINAMISMO): A IA deve alternar padrões de trabalho a cada semana para cada colaborador para tornar a escala dinâmica.
+           Exemplos de ritmos semanais (Misture-os aleatoriamente para cada colaborador):
+           - Padrão A: Ritmo 5x1 (5 dias trab, 1 folga)
+           - Padrão B: Ritmo 3x1 (3 dias trab, 1 folga)
+           - Padrão C: Ritmo 4x1 (4 dias trab, 1 folga)
+           - Padrão D: Ritmo 2x1 (2 dias trab, 1 folga - útil para ajustes de meio de semana)
+           - Padrão E: Ritmo 5x2 (5 dias trab, 2 folgas - use FAGR aqui se for a semana escolhida para folga agrupada)
+        2. FAGR (FOLGA AGRUPADA): OBRIGATÓRIO e LIMITADO a EXATAMENTE 1 VEZ POR MÊS por colaborador. 
+           - A FAGR consiste em 2 dias de folga seguidos.
+           - É PROIBIDO ter mais de uma FAGR (2 folgas seguidas) no mesmo mês para o mesmo colaborador.
+        3. MÁXIMO CONSECUTIVO: Nunca ultrapassar 5 dias seguidos de trabalho (Regra de Ouro).
+        4. COBERTURA MÍNIMA: Manhã(3), Tarde(3), Noite(2). Garanta que sempre haja pessoal suficiente.
+        5. CAT 6: Mínimo 2 colaboradores CAT 6 ativos em todos os dias em todos os turnos.
         6. RESPEITAR: horario_atribuido, folgas_fixas e periodo_ferias (FE).
         7. SIGLAS: FE (Férias), FOLG (Folga), FC (Compensa), FAGR (Agrupada), FS (Solicitada).
         8. TURNOS: ${SHIFT_LEGEND.map(s => `${s.desc}(${s.code})`).join(', ')}.
@@ -490,9 +496,6 @@ export default function SupervisorDashboard() {
     setFeedbackGiven(true);
     alert(`Feedback enviado: ${type}. A IA aprenderá com isso!`);
   };
-
-  const [editingEmployee, setEditingEmployee] = useState<any | null>(null);
-  const [saving, setSaving] = useState(false);
 
   const handleUpdateEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -707,6 +710,29 @@ export default function SupervisorDashboard() {
     });
 
     doc.save(`Escala_JPA_${aiSchedule.month}_${aiSchedule.year}.pdf`);
+  };
+
+  const handleUpdateRequestStatus = async (requestId: string, newStatus: 'aprovado' | 'rejeitado') => {
+    setUpdatingRequest(requestId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { error } = await supabase
+        .from('shift_requests')
+        .update({ 
+          status: newStatus,
+          approved_by: session?.user?.id
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      setShiftRequests(prev => prev.map(req => req.id === requestId ? { ...req, status: newStatus } : req));
+    } catch (err: any) {
+      console.error('Erro ao atualizar solicitação:', err);
+      alert('Erro ao atualizar: ' + err.message);
+    } finally {
+      setUpdatingRequest(null);
+    }
   };
 
   const handlePrint = () => {
@@ -1269,19 +1295,70 @@ export default function SupervisorDashboard() {
             <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
               <ArrowRightLeft className="text-indigo-600" /> Trocas e Indisponibilidades
             </h2>
-            <div className="space-y-4">
-              {shiftRequests.map(req => (
-                <div key={req.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                  <div className="flex justify-between items-start">
-                    <span className="font-medium text-sm">{req.requester_bp}</span>
-                    <span className="text-xs text-gray-400">{req.requested_date}</span>
-                  </div>
-                  <div className="mt-2 flex gap-2">
-                    <button className="text-xs bg-white border px-2 py-1 rounded hover:bg-gray-100">Aprovar</button>
-                    <button className="text-xs bg-white border px-2 py-1 rounded hover:bg-gray-100 text-red-600">Rejeitar</button>
-                  </div>
+            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+              {shiftRequests.length > 0 ? (
+                shiftRequests.map(req => {
+                  const emp = employees.find(e => e.bp === req.requester_bp);
+                  return (
+                    <div key={req.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-bold text-sm text-slate-800">{emp?.name || req.requester_bp}</p>
+                          <p className="text-[10px] text-slate-400 uppercase font-black">BP: {req.requester_bp}</p>
+                        </div>
+                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                          req.status === 'aprovado' ? 'bg-green-100 text-green-700' :
+                          req.status === 'rejeitado' ? 'bg-red-100 text-red-700' :
+                          'bg-amber-100 text-amber-700'
+                        }`}>
+                          {req.status}
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="bg-white p-2 rounded-lg border border-slate-100">
+                          <p className="text-[9px] text-slate-400 uppercase font-bold">Data</p>
+                          <p className="text-xs font-bold text-slate-600">{new Date(req.requested_date).toLocaleDateString('pt-BR')}</p>
+                        </div>
+                        <div className="bg-white p-2 rounded-lg border border-slate-100">
+                          <p className="text-[9px] text-slate-400 uppercase font-bold">Turno</p>
+                          <p className="text-xs font-bold text-slate-600">{req.requested_shift}</p>
+                        </div>
+                      </div>
+
+                      <div className="mb-4">
+                        <p className="text-[9px] text-slate-400 uppercase font-bold mb-1">Motivo</p>
+                        <p className="text-xs text-slate-600 leading-relaxed bg-white p-2 rounded-lg border border-slate-100 italic">
+                          &quot;{req.reason}&quot;
+                        </p>
+                      </div>
+
+                      {req.status === 'pendente' && (
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => handleUpdateRequestStatus(req.id, 'aprovado')}
+                            disabled={updatingRequest === req.id}
+                            className="flex-1 py-2 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 transition shadow-sm disabled:opacity-50"
+                          >
+                            {updatingRequest === req.id ? '...' : 'Aprovar'}
+                          </button>
+                          <button 
+                            onClick={() => handleUpdateRequestStatus(req.id, 'rejeitado')}
+                            disabled={updatingRequest === req.id}
+                            className="flex-1 py-2 bg-red-50 text-red-600 text-xs font-bold rounded-lg hover:bg-red-100 transition disabled:opacity-50"
+                          >
+                            {updatingRequest === req.id ? '...' : 'Rejeitar'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-center py-8 text-slate-400 italic text-sm">
+                  Nenhuma solicitação pendente.
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>

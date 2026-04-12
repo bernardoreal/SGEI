@@ -128,6 +128,8 @@ CREATE TABLE IF NOT EXISTS shift_requests (
     base_id UUID REFERENCES bases(id),
     requester_bp VARCHAR(20) REFERENCES base_jpa(bp),
     requested_date DATE NOT NULL,
+    requested_shift VARCHAR(50),
+    reason TEXT,
     status VARCHAR(20) DEFAULT 'pendente' CHECK (status IN ('pendente', 'aprovado', 'rejeitado')),
     approved_by UUID REFERENCES users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -30,25 +31,21 @@ export default function LoginPage() {
   // Limpar sessões expiradas/inválidas ao carregar a página
   useEffect(() => {
     const checkSession = async () => {
-      try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          if (sessionError.message.includes('Refresh Token Not Found') || sessionError.message.includes('Invalid Refresh Token')) {
-            // Silently handle expired sessions
-            await supabase.auth.signOut();
-            localStorage.removeItem('sgei-auth-token');
-          } else {
-            console.warn('Erro de sessão detectado, limpando storage:', sessionError.message);
-            await supabase.auth.signOut();
-            localStorage.removeItem('sgei-auth-token');
-          }
-        } else if (session) {
-          // Se já existe uma sessão válida, redireciona para o dashboard
-          window.location.href = '/dashboard';
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        if (sessionError.message.includes('Refresh Token Not Found') || sessionError.message.includes('Invalid Refresh Token')) {
+          // Silently handle expired sessions
+          await supabase.auth.signOut();
+          localStorage.clear();
+        } else {
+          console.warn('Erro de sessão detectado, limpando storage:', sessionError.message);
+          await supabase.auth.signOut();
+          localStorage.clear();
         }
-      } catch (err) {
-        console.error('Erro crítico ao verificar sessão:', err);
+      } else if (session) {
+        // Se já existe uma sessão válida, redireciona para o dashboard
+        window.location.href = '/dashboard';
       }
     };
     
@@ -235,9 +232,15 @@ export default function LoginPage() {
           <div className="flex flex-col items-center text-center mb-10">
             <motion.div 
               whileHover={{ scale: 1.05 }}
-              className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center mb-6 shadow-2xl p-3"
+              className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center mb-6 shadow-2xl p-3 relative"
             >
-              <img src={LATAM_LOGO} alt="LATAM Logo" className="w-full h-full object-contain" />
+              <Image 
+                src={LATAM_LOGO} 
+                alt="LATAM Logo" 
+                fill
+                className="object-contain p-3"
+                referrerPolicy="no-referrer"
+              />
             </motion.div>
             <h1 className="text-3xl font-bold text-latam-indigo tracking-tight">LATAM Cargo</h1>
             <p className="text-sm text-slate-500 font-medium mt-1">SGEI - Gestão de Escalas</p>

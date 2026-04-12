@@ -1487,7 +1487,7 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                   <button 
                     onClick={() => {
                       const newProvider = 'openrouter';
-                      const newModel = 'meta-llama/llama-3.3-70b-instruct:free';
+                      const newModel = 'google/gemma-2-9b-it:free';
                       setLlmConfig({ provider: newProvider, model: newModel });
                       handleUpdateLlmConfig(newProvider, newModel, true);
                     }}
@@ -1520,10 +1520,10 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                     <>
                       <option value="google/gemma-2-9b-it:free">Gemma 2 9B (FREE - Google)</option>
                       <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B (FREE - Meta)</option>
-                      <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B (FREE - Recomendado)</option>
-                      <option value="qwen/qwen-2.5-72b-instruct:free">Qwen 2.5 72B (FREE - Excelente)</option>
-                      <option value="mistralai/mistral-7b-instruct:free">Mistral 7B (FREE)</option>
-                      <option value="microsoft/phi-3-medium-128k-instruct:free">Phi-3 Medium (FREE)</option>
+                      <option value="qwen/qwen-2-7b-instruct:free">Qwen 2 7B (FREE - Estável)</option>
+                      <option value="mistralai/mistral-7b-instruct:free">Mistral 7B (FREE - Rápido)</option>
+                      <option value="microsoft/phi-3-mini-128k-instruct:free">Phi-3 Mini (FREE - Microsoft)</option>
+                      <option value="openchat/openchat-7b:free">OpenChat 7B (FREE)</option>
                     </>
                   )}
                 </select>
