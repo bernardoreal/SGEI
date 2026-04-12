@@ -327,33 +327,51 @@ export default function SupervisorDashboard() {
       let responseText = '';
       
       // Tenta chamada direta pelo cliente para evitar timeout do Cloudflare (30s)
-      // IMPORTANTE: Requer que a chave seja configurada com o prefixo NEXT_PUBLIC_ no Cloudflare
-      const clientGeminiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY_SGEI || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-      
-      if (llmConfig.provider === 'gemini' && clientGeminiKey) {
-        console.log("[SGEI] Usando chamada direta via cliente (Bypassing Cloudflare Timeout)...");
-        const targetModel = llmConfig.model === 'gemini-3-flash-preview' ? 'gemini-1.5-flash' : llmConfig.model;
+      if (llmConfig.provider === 'gemini') {
+        // IMPORTANTE: Requer que a chave seja configurada com o prefixo NEXT_PUBLIC_ no Cloudflare
+        const clientGeminiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY_SGEI || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
         
-        try {
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${clientGeminiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
-            })
-          });
+        if (clientGeminiKey) {
+          console.log("[SGEI] Usando chamada direta via cliente (Bypassing Cloudflare Timeout)...");
+          const targetModel = llmConfig.model === 'gemini-3-flash-preview' ? 'gemini-1.5-flash' : llmConfig.model;
+          
+          try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${clientGeminiKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
+              })
+            });
 
-          if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.error?.message || 'Erro na API Gemini via Cliente');
+            if (!response.ok) {
+              const errData = await response.json();
+              throw new Error(errData.error?.message || 'Erro na API Gemini via Cliente');
+            }
+
+            const data = await response.json();
+            responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          } catch (clientErr: any) {
+            console.warn("[SGEI] Falha na chamada direta, tentando via API Route...", clientErr);
+            // Se falhar a direta, tenta via API Route (que é mais estável que Server Action no Cloudflare)
+            const apiResponse = await fetch('/api/ai/generate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ prompt, model: llmConfig.model, provider: llmConfig.provider })
+            });
+            
+            if (!apiResponse.ok) {
+              const errData = await apiResponse.json();
+              throw new Error(errData.error || 'Erro na API Route');
+            }
+            
+            const apiData = await apiResponse.json();
+            responseText = apiData.text;
           }
-
-          const data = await response.json();
-          responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        } catch (clientErr: any) {
-          console.warn("[SGEI] Falha na chamada direta, tentando via API Route...", clientErr);
-          // Se falhar a direta, tenta via API Route (que é mais estável que Server Action no Cloudflare)
+        } else {
+          // Sem chave cliente, usa API Route
+          console.log("[SGEI] Usando API Route para geração (Gemini)...");
           const apiResponse = await fetch('/api/ai/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -369,8 +387,8 @@ export default function SupervisorDashboard() {
           responseText = apiData.text;
         }
       } else {
-        // Usa API Route em vez de Server Action para evitar erro 405 em rotas estáticas
-        console.log("[SGEI] Usando API Route para geração...");
+        // Outros provedores (OpenRouter, etc) usam API Route
+        console.log(`[SGEI] Usando API Route para geração (${llmConfig.provider})...`);
         const apiResponse = await fetch('/api/ai/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -409,7 +427,11 @@ export default function SupervisorDashboard() {
       let errorMessage = err.message || 'Erro desconhecido';
       
       if (errorMessage.includes('An unexpected response was received from the server')) {
-        errorMessage = 'O servidor de IA demorou muito para responder ou a conexão foi interrompida (Timeout Cloudflare). Verifique se a chave GEMINI_API_KEY_SGEI está configurada corretamente e tente novamente com um modelo mais rápido.';
+        if (llmConfig.provider === 'gemini') {
+          errorMessage = 'O servidor de IA demorou muito para responder ou a conexão foi interrompida (Timeout Cloudflare). Verifique se a chave GEMINI_API_KEY_SGEI está configurada corretamente e tente novamente com um modelo mais rápido.';
+        } else {
+          errorMessage = 'O servidor de IA demorou muito para responder ou a conexão foi interrompida (Timeout Cloudflare). Tente novamente com um modelo mais rápido ou verifique sua conexão.';
+        }
       }
       
       setError(`Falha ao gerar escala com IA: ${errorMessage}`);

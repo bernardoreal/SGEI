@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { generateWithGemini, generateWithOpenRouter } from '@/app/actions/ai';
 
+export const runtime = 'edge';
 export const maxDuration = 60; // Aumenta o tempo limite se suportado pela plataforma
 
 export async function POST(req: Request) {
