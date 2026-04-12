@@ -258,11 +258,6 @@ export default function SupervisorDashboard() {
       return;
     }
 
-    if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY_SGEI && !process.env.GEMINI_API_KEY_SGEI && llmConfig.provider === 'gemini') {
-      setError('Chave de API do Gemini não configurada.');
-      return;
-    }
-
     setLoading(true);
     setError(null);
     try {
@@ -366,11 +361,18 @@ export default function SupervisorDashboard() {
         responseText = await generateWithGemini(prompt, llmConfig.model);
       }
       
-      if (!responseText) throw new Error('Resposta vazia da IA');
+      if (!responseText) throw new Error('A IA retornou uma resposta vazia.');
 
       // Limpar a resposta caso a IA coloque markdown
       const jsonStr = responseText.replace(/```json|```/g, '').trim();
-      const parsedData = JSON.parse(jsonStr);
+      
+      let parsedData;
+      try {
+        parsedData = JSON.parse(jsonStr);
+      } catch (parseErr) {
+        console.error('Erro ao parsear JSON da IA:', jsonStr);
+        throw new Error('A resposta da IA não está em um formato JSON válido. Tente gerar novamente.');
+      }
       
       validateSchedule(parsedData);
       setAiSchedule(parsedData);
@@ -378,7 +380,13 @@ export default function SupervisorDashboard() {
       setFeedbackData({ rating: 0, comment: '', strengths: [], weaknesses: [] });
     } catch (err: any) {
       console.error('Erro ao gerar escala:', err);
-      const errorMessage = err.message || (err.error && err.error.message) || 'Erro desconhecido';
+      // Tratamento especial para o erro genérico do Next.js no Cloudflare
+      let errorMessage = err.message || 'Erro desconhecido';
+      
+      if (errorMessage.includes('An unexpected response was received from the server')) {
+        errorMessage = 'O servidor de IA demorou muito para responder ou a conexão foi interrompida (Timeout Cloudflare). Verifique se a chave GEMINI_API_KEY_SGEI está configurada corretamente e tente novamente com um modelo mais rápido.';
+      }
+      
       setError(`Falha ao gerar escala com IA: ${errorMessage}`);
     } finally {
       setLoading(false);

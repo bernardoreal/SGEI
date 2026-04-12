@@ -1,6 +1,5 @@
 'use server';
 
-import { GoogleGenAI } from "@google/genai";
 import { supabase } from "@/lib/supabase";
 
 export async function generateWithOpenRouter(prompt: string, model: string) {
@@ -63,10 +62,15 @@ export async function generateWithOpenRouter(prompt: string, model: string) {
 }
 
 export async function generateWithGemini(prompt: string, model: string) {
-  const apiKey = process.env.GEMINI_API_KEY_SGEI || process.env.NEXT_PUBLIC_GEMINI_API_KEY_SGEI || process.env.GEMINI_API_KEY;
+  const apiKey = 
+    process.env.GEMINI_API_KEY_SGEI || 
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY_SGEI || 
+    process.env.GEMINI_API_KEY || 
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY;
   
   if (!apiKey) {
-    throw new Error('Configuração ausente: GEMINI_API_KEY_SGEI não encontrada no servidor.');
+    console.error('API Key não encontrada. Variáveis verificadas: GEMINI_API_KEY_SGEI, NEXT_PUBLIC_GEMINI_API_KEY_SGEI, GEMINI_API_KEY, NEXT_PUBLIC_GEMINI_API_KEY');
+    throw new Error('Configuração de IA incompleta: Chave de API (GEMINI_API_KEY_SGEI) não configurada no ambiente Cloudflare.');
   }
 
   // Mapeamento de modelos para garantir nomes válidos
@@ -80,54 +84,95 @@ export async function generateWithGemini(prompt: string, model: string) {
   const targetModel = modelMap[model] || model || 'gemini-1.5-flash';
 
   try {
-    // Usando a API REST diretamente para máxima compatibilidade com Cloudflare Edge
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 4096,
+    console.log(`[SGEI-AI] Iniciando requisição para ${targetModel}...`);
+    
+    let response;
+    let retries = 2;
+    while (retries >= 0) {
+      try {
+        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{ text: prompt }]
+            }],
+            generationConfig: {
+              temperature: 0.7,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 4096,
+            }
+          }),
+        });
+        
+        if (response.ok) break;
+        
+        // Se for erro de cota ou temporário, tenta novamente
+        if (response.status === 429 || response.status >= 500) {
+          console.warn(`[SGEI-AI] Erro temporário (${response.status}). Tentativas restantes: ${retries}`);
+          retries--;
+          if (retries >= 0) await new Promise(resolve => setTimeout(resolve, 1000));
+          continue;
         }
-      })
-    });
+        
+        break; // Outros erros (400, 401, 403) não devem ser repetidos
+      } catch (fetchErr) {
+        console.error(`[SGEI-AI] Falha na rede. Tentativas restantes: ${retries}`, fetchErr);
+        retries--;
+        if (retries >= 0) await new Promise(resolve => setTimeout(resolve, 1000));
+        else throw fetchErr;
+      }
+    }
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Gemini API Error:', errorData);
-      throw new Error(errorData.error?.message || `Erro na API Gemini: ${response.statusText}`);
+    if (!response || !response.ok) {
+      const errorText = await response?.text() || 'Sem resposta do servidor';
+      console.error(`[SGEI-AI] Erro final na API Gemini:`, errorText);
+      
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        errorData = { error: { message: errorText } };
+      }
+      
+      throw new Error(`Erro na API Google: ${errorData.error?.message || response?.statusText || 'Erro de conexão'}`);
     }
 
     const data = await response.json();
     const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
-    // Log usage to Supabase
-    const usage = data.usageMetadata;
-    if (usage) {
-      try {
-        await supabase.from('ai_usage_logs').insert([{
+    if (!content) {
+      console.warn('[SGEI-AI] Resposta vazia ou bloqueada:', JSON.stringify(data));
+      if (data.promptFeedback?.blockReason) {
+        throw new Error(`Conteúdo bloqueado por segurança: ${data.promptFeedback.blockReason}`);
+      }
+      throw new Error('A IA não retornou nenhum conteúdo válido para a escala.');
+    }
+
+    // Log usage to Supabase (opcional e seguro)
+    if (supabase) {
+      const usage = data.usageMetadata;
+      if (usage) {
+        supabase.from('ai_usage_logs').insert([{
           model: targetModel,
           provider: 'gemini',
           prompt_tokens: usage.promptTokenCount,
           completion_tokens: usage.candidatesTokenCount,
           total_tokens: usage.totalTokenCount
-        }]);
-      } catch (e) {
-        console.error('Error logging AI usage:', e);
+        }]).then(({ error }) => {
+          if (error) console.error('Erro ao logar uso de IA:', error);
+        });
       }
     }
 
     return content;
   } catch (error: any) {
-    console.error('Gemini Action Error:', error);
-    throw new Error(error.message || 'Falha na comunicação com o servidor de IA (Gemini)');
+    console.error('[SGEI-AI] Falha crítica na Server Action:', error);
+    // Retornamos uma mensagem que o catch do cliente possa identificar como vinda daqui
+    throw new Error(`[SGEI_SERVER_ERROR] ${error.message || 'Erro interno no processamento da escala'}`);
   }
 }
 export async function getOpenRouterKeyInfo() {
