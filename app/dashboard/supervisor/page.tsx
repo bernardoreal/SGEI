@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, handleSupabaseSessionError } from '@/lib/supabase';
 import { 
   Calendar, 
   Users, 
@@ -20,7 +20,8 @@ import {
   FileDown,
   Printer,
   Search,
-  Cpu
+  Cpu,
+  Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import LATAMScheduleTable, { SHIFT_LEGEND, SIGLA_LEGEND } from '@/components/LATAMScheduleTable';
@@ -805,13 +806,8 @@ export default function SupervisorDashboard() {
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (sessionError) {
-        if (sessionError.message.includes('Refresh Token Not Found') || sessionError.message.includes('Invalid Refresh Token')) {
-          await supabase.auth.signOut();
-          localStorage.clear();
-          window.location.href = '/';
-          return;
-        }
+      if (await handleSupabaseSessionError(sessionError)) {
+        return;
       }
       
       // 1. Criar registro da escala

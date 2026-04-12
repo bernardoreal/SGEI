@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, handleSupabaseSessionError } from '@/lib/supabase';
 import { useRouter, usePathname } from 'next/navigation';
 
 const AuthContext = createContext<{
@@ -26,18 +26,13 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         // Usamos getSession() apenas para inicialização
         const { data: { session }, error } = await supabase.auth.getSession();
         
+        if (await handleSupabaseSessionError(error)) {
+          setLoading(false);
+          return;
+        }
+        
         if (error) {
-          // Se o token for inválido, limpamos o estado e redirecionamos silenciosamente
-          if (error.message.includes('Refresh Token Not Found') || error.message.includes('Invalid Refresh Token')) {
-            console.warn('Sessão expirada ou inválida. Redirecionando para login...');
-            await supabase.auth.signOut();
-            localStorage.removeItem('sgei-auth-token'); // Limpa a chave específica configurada
-            if (pathname !== '/' && pathname !== '/register') {
-              router.replace('/');
-            }
-          } else {
-            console.error('Auth Provider - Session Error:', error.message);
-          }
+          console.error('Erro ao verificar sessão:', error);
         }
         
         setUser(session?.user ?? null);
