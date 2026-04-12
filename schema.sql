@@ -244,23 +244,32 @@ ALTER TABLE base_configuration ENABLE ROW LEVEL SECURITY;
 -- Security Definer Functions to avoid RLS recursion
 CREATE OR REPLACE FUNCTION public.check_is_admin()
 RETURNS BOOLEAN AS $$
+DECLARE
+  is_admin_user BOOLEAN;
 BEGIN
-  RETURN EXISTS (
+  -- Use a direct query that bypasses RLS because of SECURITY DEFINER
+  SELECT EXISTS (
     SELECT 1 FROM public.users
-    WHERE (id = auth.uid() OR LOWER(email) = LOWER(auth.jwt() ->> 'email'))
+    WHERE id = auth.uid()
     AND 'admin' = ANY(roles)
-  );
+  ) INTO is_admin_user;
+  
+  RETURN COALESCE(is_admin_user, false);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE OR REPLACE FUNCTION public.check_is_supervisor()
 RETURNS BOOLEAN AS $$
+DECLARE
+  is_supervisor_user BOOLEAN;
 BEGIN
-  RETURN EXISTS (
+  SELECT EXISTS (
     SELECT 1 FROM public.users
-    WHERE (id = auth.uid() OR LOWER(email) = LOWER(auth.jwt() ->> 'email'))
+    WHERE id = auth.uid()
     AND 'supervisor' = ANY(roles)
-  );
+  ) INTO is_supervisor_user;
+  
+  RETURN COALESCE(is_supervisor_user, false);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -272,7 +281,7 @@ CREATE POLICY "Allow public BP lookup" ON users
 
 DROP POLICY IF EXISTS "Users can view their own profile" ON users;
 CREATE POLICY "Users can view their own profile" ON users
-    FOR SELECT USING (LOWER(auth.jwt() ->> 'email') = LOWER(email));
+    FOR SELECT USING (auth.uid() = id OR LOWER(auth.jwt() ->> 'email') = LOWER(email));
 
 DROP POLICY IF EXISTS "Users can insert their own profile" ON users;
 CREATE POLICY "Users can insert their own profile" ON users
@@ -281,15 +290,15 @@ CREATE POLICY "Users can insert their own profile" ON users
 DROP POLICY IF EXISTS "Admins can view all users" ON users;
 CREATE POLICY "Admins can view all users" ON users
     FOR SELECT USING (
-        LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com' OR
-        check_is_admin()
+        check_is_admin() OR 
+        LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com'
     );
 
 DROP POLICY IF EXISTS "Admins can manage users" ON users;
 CREATE POLICY "Admins can manage users" ON users
     FOR ALL USING (
-        LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com' OR
-        check_is_admin()
+        check_is_admin() OR 
+        LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com'
     );
 
 -- Base JPA Policies (Employees)
@@ -303,20 +312,18 @@ DROP POLICY IF EXISTS "Everyone can view employees" ON base_jpa;
 CREATE POLICY "Everyone can view employees" ON base_jpa
     FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Managers and Coordinators can view all employees" ON base_jpa;
-
 -- Schedules Policies
 DROP POLICY IF EXISTS "Employees can view their base schedules" ON schedules;
 CREATE POLICY "Employees can view their base schedules" ON schedules
     FOR SELECT USING (
+        check_is_admin() OR
         EXISTS (
             SELECT 1 FROM users 
-            WHERE LOWER(email) = LOWER(auth.jwt() ->> 'email') 
+            WHERE id = auth.uid()
             AND (
                 base_id = schedules.base_id OR 
                 'manager' = ANY(roles) OR 
-                'coordinator' = ANY(roles) OR 
-                check_is_admin()
+                'coordinator' = ANY(roles)
             )
         )
     );
@@ -336,8 +343,8 @@ CREATE POLICY "Everyone can view bases" ON bases
 DROP POLICY IF EXISTS "Admins can manage bases" ON bases;
 CREATE POLICY "Admins can manage bases" ON bases
     FOR ALL USING (
-        (auth.jwt() ->> 'email' = 'bernardo.real@latam.com') OR
-        EXISTS (SELECT 1 FROM users WHERE email = auth.jwt() ->> 'email' AND 'admin' = ANY(roles))
+        check_is_admin() OR
+        LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com'
     );
 
 -- Roles Policies
@@ -349,8 +356,8 @@ CREATE POLICY "Everyone can view roles" ON roles
 DROP POLICY IF EXISTS "Admins can view audit logs" ON audit_log;
 CREATE POLICY "Admins can view audit logs" ON audit_log
     FOR SELECT USING (
-        (LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com') OR
-        EXISTS (SELECT 1 FROM users WHERE LOWER(email) = LOWER(auth.jwt() ->> 'email') AND 'admin' = ANY(roles))
+        check_is_admin() OR
+        LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com'
     );
 
 -- Base Configuration Policies
@@ -361,7 +368,7 @@ CREATE POLICY "Admins and Managers can view base config" ON base_configuration
 DROP POLICY IF EXISTS "Admins can manage base config" ON base_configuration;
 CREATE POLICY "Admins can manage base config" ON base_configuration
     FOR ALL USING (
-        EXISTS (SELECT 1 FROM users WHERE email = auth.jwt() ->> 'email' AND 'admin' = ANY(roles))
+        check_is_admin()
     );
 
 -- System Settings Policies
@@ -374,8 +381,8 @@ CREATE POLICY "Everyone can view system settings" ON system_settings
 DROP POLICY IF EXISTS "Admins can manage system settings" ON system_settings;
 CREATE POLICY "Admins can manage system settings" ON system_settings
     FOR ALL USING (
-        (LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com') OR
-        EXISTS (SELECT 1 FROM users WHERE email = auth.jwt() ->> 'email' AND 'admin' = ANY(roles))
+        check_is_admin() OR
+        LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com'
     );
 
 -- Initial System Settings
