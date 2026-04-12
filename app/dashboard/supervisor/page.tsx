@@ -297,67 +297,62 @@ export default function SupervisorDashboard() {
       }));
 
       const prompt = `
-        Você é o arquiteto líder do LATAM SGEI. Sua tarefa é gerar uma escala de trabalho MENSAL para o terminal de JPA (João Pessoa) seguindo RIGOROSAMENTE o modelo da LATAM.
+        Gere uma escala MENSAL para o terminal JPA (João Pessoa) seguindo o modelo LATAM.
+        
+        REGRAS:
+        1. 5x1 FLEXÍVEL: Máximo 5 dias seguidos de trabalho.
+        2. FAGR: Exatamente 1 folga agrupada (2 dias seguidos) por mês/colaborador.
+        3. COBERTURA MÍNIMA: Manhã(3), Tarde(3), Noite(2).
+        4. CAT 6: Mínimo 2 colaboradores CAT 6 ativos em todos os dias.
+        5. RESPEITAR: horario_atribuido, folgas_fixas e periodo_ferias (FE).
+        6. SIGLAS: FE, FOLG, FC, FAGR, FS.
+        7. TURNOS: ${SHIFT_LEGEND.map(s => `${s.desc}(${s.code})`).join(', ')}.
 
-        REGRAS DE NEGÓCIO:
-        - REGIME 5x1 FLEXÍVEL: O colaborador NUNCA deve trabalhar mais de 5 dias seguidos. O limite de 5 dias é o MÁXIMO permitido entre folgas.
-        - CONTINUIDADE ENTRE MESES: Analise o histórico do mês anterior para evitar que alguém ultrapasse 5 dias seguidos de trabalho na virada.
-        - Turno de 8 horas (7h trabalho + 1h intervalo).
-        - FOLGA AGRUPADA (FAGR): OBRIGATORIAMENTE EXATAMENTE 1 folga agrupada (2 dias consecutivos) por mês para CADA colaborador.
-        - HORÁRIO ATRIBUÍDO (CRÍTICO): Respeite o "horario_atribuido" se definido.
-        - FOLGAS FIXAS (CRÍTICO): Se o colaborador tiver "folgas_fixas" (ex: "Sáb/Dom"), você DEVE priorizar essas folgas na escala, encaixando o regime 5x1 para que coincida com esses dias sempre que possível.
-        - PERÍODO DE FÉRIAS (CRÍTICO): Se o colaborador tiver um "periodo_ferias" definido, marque TODOS os dias desse intervalo com a sigla "FE".
-        - DISTRIBUIÇÃO DE TURNOS (COBERTURA):
-          * MANHÃ (04:00 - 12:00): Mínimo de 3 colaboradores.
-          * TARDE (12:00 - 20:00): Mínimo de 3 colaboradores.
-          * NOITE (20:00 - 04:00): Mínimo de 2 colaboradores.
-        - ALOCAÇÃO CAT 6 (CRÍTICO): Colaboradores com "cat6: true" são essenciais para a operação. Você DEVE garantir que em TODOS os dias do mês existam pelo menos 2 colaboradores CAT 6 trabalhando (não podem estar todos de folga no mesmo dia).
-        - CORRESPONDÊNCIA DE HORÁRIO E CÓDIGO:
-          ${SHIFT_LEGEND.map(s => `${s.desc} -> ${s.code}`).join('\n          ')}
-        - COBERTURA E FOLGA DIÁRIA: Pelo menos 1 colaborador deve estar de folga em cada dia.
-        - Use as siglas: FE (Férias), FOLG (Folga), FC (Folga Compensa), FAGR (Folga Agrupada), FS (Folga Solicitada).
+        HISTÓRICO: ${historyContext}
+        COLABORADORES: ${JSON.stringify(employeeContext)}
 
-        HISTÓRICO DO MÊS ANTERIOR (Últimos dias):
-        ${historyContext}
-
-        COLABORADORES DISPONÍVEIS:
-        ${JSON.stringify(employeeContext, null, 2)}
-
-        FORMATO DE SAÍDA (JSON APENAS):
+        SAÍDA JSON APENAS:
         {
-          "month": "ABRIL",
-          "year": "2026",
+          "month": "ABRIL", "year": "2026",
           "data": [
             {
-              "area": "OPERAÇÃO",
-              "turno": "MANHÃ/TARDE",
-              "bp": "string",
-              "funcao": "LÍDER/MULTIFUNÇÃO",
-              "nome": "string",
-              "tarefa": "Descrição da tarefa diária",
-              "days": [
-                { "date": "01/04", "code": "T079" },
-                ... (até o final do mês)
-              ]
+              "area": "OPERAÇÃO", "turno": "MANHÃ/TARDE", "bp": "string",
+              "funcao": "LÍDER", "nome": "string", "tarefa": "string",
+              "days": [{ "date": "01/04", "code": "T079" }, ...]
             }
           ]
         }
-
-        Gere a escala completa para todos os colaboradores listados, garantindo cobertura em todos os turnos e respeitando a folga 5x1.
       `;
 
       let responseText = '';
-      if (llmConfig.provider === 'openrouter') {
-        const clientApiKey = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
+      
+      // Tenta chamada direta pelo cliente para evitar timeout do Cloudflare (30s)
+      const clientGeminiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY_SGEI || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+      
+      if (llmConfig.provider === 'gemini' && clientGeminiKey) {
+        console.log("[SGEI] Usando chamada direta via cliente (Bypassing Cloudflare Timeout)...");
+        const targetModel = llmConfig.model === 'gemini-3-flash-preview' ? 'gemini-1.5-flash' : llmConfig.model;
         
-        if (clientApiKey) {
-          // Chamada direta pelo cliente (Lógica Cloudflare Pages)
-          responseText = await generateWithOpenRouter(prompt, llmConfig.model);
-        } else {
-          // Fallback para Server Action
-          responseText = await generateWithOpenRouter(prompt, llmConfig.model);
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${clientGeminiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error?.message || 'Erro na API Gemini via Cliente');
         }
+
+        const data = await response.json();
+        responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      } else if (llmConfig.provider === 'openrouter') {
+        responseText = await generateWithOpenRouter(prompt, llmConfig.model);
       } else {
+        // Fallback para Server Action (Sujeito a timeout de 30s no Cloudflare)
         responseText = await generateWithGemini(prompt, llmConfig.model);
       }
       
