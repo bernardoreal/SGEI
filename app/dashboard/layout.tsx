@@ -1,13 +1,14 @@
 'use client';
 
 import { useAuth } from '@/components/AuthProvider';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useEffect } from 'react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -25,6 +26,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   if (!user) return null;
+
+  const isSupervisor = pathname.startsWith('/dashboard/supervisor');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -57,7 +60,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </nav>
       <main className="py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className={`${isSupervisor ? 'max-w-full' : 'max-w-7xl'} mx-auto px-4 sm:px-6 lg:px-8`}>
           {children}
         </div>
       </main>
