@@ -1511,18 +1511,19 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                 >
                   {llmConfig.provider === 'gemini' ? (
                     <>
-                      <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp</option>
-                      <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                      <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                      <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Experimental)</option>
+                      <option value="gemini-1.5-pro">Gemini 1.5 Pro (Poderoso)</option>
+                      <option value="gemini-1.5-flash">Gemini 1.5 Flash (Rápido - Recomendado)</option>
+                      <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash-8B (Ultra Rápido)</option>
                     </>
                   ) : (
                     <>
-                      <option value="google/gemma-3-27b-it:free">Gemma 3 27B (FREE - Estável)</option>
+                      <option value="google/gemma-2-9b-it:free">Gemma 2 9B (FREE - Google)</option>
+                      <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B (FREE - Meta)</option>
                       <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B (FREE - Recomendado)</option>
-                      <option value="qwen/qwen-2-7b-instruct:free">Qwen 2 7B (FREE)</option>
-                      <option value="google/gemma-4-31b-it:free">Gemma 4 31B (FREE - Beta)</option>
-                      <option value="openai/gpt-oss-120b:free">GPT-OSS 120B (FREE - Beta)</option>
-                      <option value="anthropic/claude-3-haiku">Claude 3 Haiku (Pago)</option>
+                      <option value="qwen/qwen-2.5-72b-instruct:free">Qwen 2.5 72B (FREE - Excelente)</option>
+                      <option value="mistralai/mistral-7b-instruct:free">Mistral 7B (FREE)</option>
+                      <option value="microsoft/phi-3-medium-128k-instruct:free">Phi-3 Medium (FREE)</option>
                     </>
                   )}
                 </select>

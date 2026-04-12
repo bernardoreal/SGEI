@@ -75,10 +75,10 @@ export async function generateWithGemini(prompt: string, model: string) {
 
   // Mapeamento de modelos para garantir nomes válidos
   const modelMap: Record<string, string> = {
-    'gemini-3-flash-preview': 'gemini-1.5-flash',
     'gemini-2.0-flash-exp': 'gemini-2.0-flash-exp',
     'gemini-1.5-pro': 'gemini-1.5-pro',
-    'gemini-1.5-flash': 'gemini-1.5-flash'
+    'gemini-1.5-flash': 'gemini-1.5-flash',
+    'gemini-1.5-flash-8b': 'gemini-1.5-flash-8b'
   };
 
   const targetModel = modelMap[model] || model || 'gemini-1.5-flash';
@@ -88,9 +88,12 @@ export async function generateWithGemini(prompt: string, model: string) {
     
     let response;
     let retries = 2;
+    // Usamos v1 para modelos estáveis e v1beta para experimentais
+    const apiVersion = targetModel.includes('exp') || targetModel.includes('preview') ? 'v1beta' : 'v1';
+    
     while (retries >= 0) {
       try {
-        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`, {
+        response = await fetch(`https://generativelanguage.googleapis.com/${apiVersion}/models/${targetModel}:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

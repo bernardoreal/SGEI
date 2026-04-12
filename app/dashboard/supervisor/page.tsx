@@ -333,10 +333,11 @@ export default function SupervisorDashboard() {
         
         if (clientGeminiKey) {
           console.log("[SGEI] Usando chamada direta via cliente (Bypassing Cloudflare Timeout)...");
-          const targetModel = llmConfig.model === 'gemini-3-flash-preview' ? 'gemini-1.5-flash' : llmConfig.model;
+          const targetModel = llmConfig.model;
+          const apiVersion = targetModel.includes('exp') || targetModel.includes('preview') ? 'v1beta' : 'v1';
           
           try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${clientGeminiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/${apiVersion}/models/${targetModel}:generateContent?key=${clientGeminiKey}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({

@@ -30,21 +30,25 @@ export default function LoginPage() {
   // Limpar sessões expiradas/inválidas ao carregar a página
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        if (sessionError.message.includes('Refresh Token Not Found') || sessionError.message.includes('Invalid Refresh Token')) {
-          // Silently handle expired sessions
-          await supabase.auth.signOut();
-          localStorage.clear();
-        } else {
-          console.warn('Erro de sessão detectado, limpando storage:', sessionError.message);
-          await supabase.auth.signOut();
-          localStorage.clear();
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          if (sessionError.message.includes('Refresh Token Not Found') || sessionError.message.includes('Invalid Refresh Token')) {
+            // Silently handle expired sessions
+            await supabase.auth.signOut();
+            localStorage.removeItem('sgei-auth-token');
+          } else {
+            console.warn('Erro de sessão detectado, limpando storage:', sessionError.message);
+            await supabase.auth.signOut();
+            localStorage.removeItem('sgei-auth-token');
+          }
+        } else if (session) {
+          // Se já existe uma sessão válida, redireciona para o dashboard
+          window.location.href = '/dashboard';
         }
-      } else if (session) {
-        // Se já existe uma sessão válida, redireciona para o dashboard
-        window.location.href = '/dashboard';
+      } catch (err) {
+        console.error('Erro crítico ao verificar sessão:', err);
       }
     };
     

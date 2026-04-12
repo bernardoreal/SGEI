@@ -23,13 +23,15 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // Usamos getSession() apenas para inicialização
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
+          // Se o token for inválido, limpamos o estado e redirecionamos silenciosamente
           if (error.message.includes('Refresh Token Not Found') || error.message.includes('Invalid Refresh Token')) {
-            // Silently handle expired sessions
+            console.warn('Sessão expirada ou inválida. Redirecionando para login...');
             await supabase.auth.signOut();
-            localStorage.clear();
+            localStorage.removeItem('sgei-auth-token'); // Limpa a chave específica configurada
             if (pathname !== '/' && pathname !== '/register') {
               router.replace('/');
             }

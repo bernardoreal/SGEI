@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { Calendar, Clock, User, Briefcase, Info, Download } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -9,30 +10,20 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 export default function EmployeeDashboard() {
+  const { user: authUser } = useAuth();
   const [user, setUser] = useState<any>(null);
   const [schedule, setSchedule] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserAndSchedule = async () => {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        if (sessionError.message.includes('Refresh Token Not Found') || sessionError.message.includes('Invalid Refresh Token')) {
-          await supabase.auth.signOut();
-          localStorage.clear();
-          window.location.href = '/';
-          return;
-        }
-      }
-
-      if (!session) return;
+      if (!authUser) return;
 
       // 1. Buscar dados do usuário
       const { data: userData } = await supabase
         .from('users')
         .select('*')
-        .eq('email', session.user.email)
+        .eq('email', authUser.email)
         .single();
       
       setUser(userData);

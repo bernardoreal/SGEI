@@ -10,4 +10,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Supabase environment variables are missing!');
 }
 
-export const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
+export const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storageKey: 'sgei-auth-token', // Chave única para evitar conflitos com outros apps no mesmo domínio
+  }
+});
