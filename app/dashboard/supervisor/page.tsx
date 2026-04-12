@@ -935,7 +935,7 @@ export default function SupervisorDashboard() {
       </AnimatePresence>
 
       {aiSchedule && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 rounded-2xl shadow-xl border border-indigo-100">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 rounded-2xl shadow-xl border border-indigo-100 -mx-4 sm:-mx-6 lg:-mx-8">
           <div className="flex justify-between items-center mb-8">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600">
@@ -1286,6 +1286,219 @@ export default function SupervisorDashboard() {
           </div>
         </div>
       </div>
+
+      {aiSchedule && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 rounded-2xl shadow-xl border border-indigo-100 -mx-4 sm:-mx-6 lg:-mx-8 mb-8">
+          <div className="flex justify-between items-center mb-8">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600">
+                <FileText size={24} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-indigo-900">Proposta de Escala IA</h2>
+                <p className="text-sm text-slate-500">Modelo LATAM - Status: Rascunho</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              {!feedbackGiven && (
+                <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+                  <span className="text-xs font-bold text-slate-400 px-2 uppercase">Avaliar:</span>
+                  <button onClick={() => handleFeedback('boa')} className="p-2 bg-white text-green-600 rounded-lg hover:bg-green-50 shadow-sm transition-all"><ThumbsUp size={18} /></button>
+                  <button onClick={() => handleFeedback('ruim')} className="p-2 bg-white text-red-600 rounded-lg hover:bg-red-50 shadow-sm transition-all"><ThumbsDown size={18} /></button>
+                </div>
+              )}
+              <button 
+                onClick={handleExportPDF}
+                className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-200 transition no-print"
+              >
+                <Download size={18} /> Exportar PDF
+              </button>
+              <button 
+                onClick={handlePrint}
+                className="flex items-center gap-2 bg-latam-indigo text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-[#001a54] transition shadow-md no-print"
+              >
+                <Printer size={18} /> Imprimir
+              </button>
+            </div>
+          </div>
+
+          <div className="mb-6 bg-indigo-50 border border-indigo-100 text-indigo-700 px-4 py-3 rounded-xl flex items-center gap-3 text-sm">
+            <Sparkles size={18} className="text-indigo-500" />
+            <p>Esta escala é uma <strong>sugestão gerada por IA</strong>. Por favor, revise todos os horários e atribuições antes de validar e publicar.</p>
+          </div>
+
+          <div className="print-content">
+            {/* Cabeçalho exclusivo para impressão */}
+            <div className="hidden print:block mb-8 border-b-4 border-latam-indigo pb-4">
+              <div className="flex justify-between items-end">
+                <div>
+                  <h1 className="text-4xl font-black text-latam-indigo leading-none">LATAM</h1>
+                  <p className="text-xs font-bold tracking-[0.2em] text-latam-indigo">AIRLINES</p>
+                </div>
+                <div className="text-right">
+                  <h2 className="text-xl font-bold text-slate-800 uppercase">Escala de Revezamento - JPA</h2>
+                  <p className="text-sm text-slate-500 font-medium">{aiSchedule.month} / {aiSchedule.year}</p>
+                </div>
+              </div>
+            </div>
+
+            {validationErrors.length > 0 && (
+              <div className="mb-8 p-5 bg-white border-2 border-amber-200 rounded-[24px] shadow-sm overflow-hidden relative no-print">
+                <div className="absolute top-0 left-0 w-full h-1 bg-amber-400" />
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-black text-amber-900 flex items-center gap-2 uppercase tracking-wider">
+                    <AlertTriangle size={18} className="text-amber-500" />
+                    Análise de Conformidade (HITL)
+                  </h3>
+                  <span className="px-2 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-lg uppercase">
+                    {validationErrors.filter(e => e.type === 'error').length} Erros Críticos
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                  {validationErrors.map((err, idx) => (
+                    <div key={idx} className={`text-[11px] p-3 rounded-xl flex items-start gap-3 transition-all border ${err.type === 'error' ? 'bg-red-50 text-red-800 border-red-100' : 'bg-amber-50 text-amber-800 border-amber-100'}`}>
+                      <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${err.type === 'error' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                      <div className="space-y-1">
+                        <div className="font-black uppercase tracking-tight">{err.nome || err.date}</div>
+                        <div className="font-medium leading-relaxed opacity-80">{err.message}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-[10px] text-slate-400 italic">
+                  * Toda escala gerada por IA deve ser revisada manualmente antes da publicação.
+                </p>
+              </div>
+            )}
+
+            <LATAMScheduleTable 
+              month={aiSchedule.month} 
+              year={aiSchedule.year} 
+              data={aiSchedule.data} 
+              validationErrors={validationErrors}
+              onDataChange={(newData) => {
+                const updatedSchedule = { ...aiSchedule, data: newData };
+                setAiSchedule(updatedSchedule);
+                validateSchedule(updatedSchedule);
+              }}
+            />
+
+            {/* Sistema de Feedback Detalhado */}
+            {!feedbackGiven && (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-12 p-8 bg-slate-50 rounded-[32px] border border-slate-200 shadow-inner no-print"
+              >
+                <div className="flex flex-col md:flex-row gap-8">
+                  <div className="flex-1 space-y-6">
+                    <div>
+                      <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
+                        <ThumbsUp size={24} className="text-latam-indigo" />
+                        Avaliação da Inteligência Artificial
+                      </h3>
+                      <p className="text-sm text-slate-500 mt-1">Seu feedback é essencial para treinarmos o motor de escalas JPA.</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          onClick={() => setFeedbackData({ ...feedbackData, rating: star })}
+                          className={`p-1 transition-all transform hover:scale-110 ${feedbackData.rating >= star ? 'text-amber-400' : 'text-slate-300'}`}
+                        >
+                          <Sparkles size={32} fill={feedbackData.rating >= star ? 'currentColor' : 'none'} />
+                        </button>
+                      ))}
+                      <span className="ml-4 text-sm font-bold text-slate-400 uppercase tracking-widest">
+                        {feedbackData.rating > 0 ? `${feedbackData.rating} Estrelas` : 'Avalie a precisão'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pontos Fortes</label>
+                        <div className="flex flex-wrap gap-2">
+                          {['Cobertura Ideal', 'Regra 5x1 OK', 'Folgas FAGR OK', 'Turnos Equilibrados'].map(tag => (
+                            <button
+                              key={tag}
+                              onClick={() => {
+                                const strengths = feedbackData.strengths.includes(tag)
+                                  ? feedbackData.strengths.filter(s => s !== tag)
+                                  : [...feedbackData.strengths, tag];
+                                setFeedbackData({ ...feedbackData, strengths });
+                              }}
+                              className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${feedbackData.strengths.includes(tag) ? 'bg-emerald-100 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200 text-slate-500 hover:border-emerald-200'}`}
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pontos Fracos</label>
+                        <div className="flex flex-wrap gap-2">
+                          {['Muitas Férias', 'Furo de Cobertura', 'Turno Incorreto', 'Violação 5x1'].map(tag => (
+                            <button
+                              key={tag}
+                              onClick={() => {
+                                const weaknesses = feedbackData.weaknesses.includes(tag)
+                                  ? feedbackData.weaknesses.filter(w => w !== tag)
+                                  : [...feedbackData.weaknesses, tag];
+                                setFeedbackData({ ...feedbackData, weaknesses });
+                              }}
+                              className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${feedbackData.weaknesses.includes(tag) ? 'bg-red-100 border-red-200 text-red-700' : 'bg-white border-slate-200 text-slate-500 hover:border-red-200'}`}
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Comentários Adicionais</label>
+                      <textarea
+                        value={feedbackData.comment}
+                        onChange={(e) => setFeedbackData({ ...feedbackData, comment: e.target.value })}
+                        placeholder="Ex: O colaborador Bernardo ficou com turno de madrugada indevidamente..."
+                        className="w-full h-32 p-4 bg-white border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-latam-indigo outline-none transition-all resize-none"
+                      />
+                    </div>
+                    <button
+                      onClick={handleSaveFeedback}
+                      disabled={savingFeedback || feedbackData.rating === 0}
+                      className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-black transition shadow-lg disabled:bg-slate-300 flex items-center justify-center gap-2"
+                    >
+                      {savingFeedback ? 'Enviando...' : 'Enviar Feedback para Treinamento'}
+                      <ArrowRightLeft size={16} />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </div>
+
+          <div className="mt-10 flex justify-end gap-4">
+            <button 
+              onClick={() => setAiSchedule(null)}
+              className="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition"
+            >
+              Descartar
+            </button>
+            <button 
+              onClick={handlePublishSchedule}
+              disabled={saving}
+              className="flex items-center gap-2 bg-latam-indigo text-white px-8 py-3 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-200 disabled:bg-slate-300"
+            >
+              <CheckCircle size={20} />
+              {saving ? 'Publicando...' : 'Validar e Publicar Escala'}
+            </button>
+          </div>
+        </motion.div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
