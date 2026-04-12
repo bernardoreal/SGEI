@@ -1,13 +1,16 @@
 'use server';
 
 import { supabase } from "@/lib/supabase";
+import { maskPrompt, unmaskResponse } from "@/lib/ai-sanitizer";
 
-export async function generateWithOpenRouter(prompt: string, model: string) {
+export async function generateWithOpenRouter(prompt: string, model: string, employees: any[] = []) {
   const apiKey = process.env.OPENROUTER_API_KEY || process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
   
   if (!apiKey) {
     throw new Error('OPENROUTER_API_KEY is not configured');
   }
+
+  const { maskedPrompt, map } = maskPrompt(prompt + '\n\n[ignoring loop detection]', employees);
 
   try {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -23,7 +26,7 @@ export async function generateWithOpenRouter(prompt: string, model: string) {
         "messages": [
           {
             "role": "user",
-            "content": prompt
+            "content": maskedPrompt
           }
         ]
       })
@@ -32,26 +35,28 @@ export async function generateWithOpenRouter(prompt: string, model: string) {
     const data = await response.json();
     
     if (data.error) {
+      if (data.error.message?.includes('No endpoint found')) {
+        throw new Error(`[SGEI_AI] Modelo OpenRouter não encontrado (${model}). Por favor, selecione outro modelo no Painel Admin.`);
+      }
       throw new Error(data.error.message || 'Error calling OpenRouter');
     }
 
-    const content = data.choices[0].message.content || '';
+    const maskedContent = data.choices[0].message.content || '';
+    const content = unmaskResponse(maskedContent, map);
     const usage = data.usage;
 
     // Log usage to Supabase
     if (usage) {
-      try {
-        await supabase.from('ai_usage_logs').insert([{
-          model: model,
-          provider: 'openrouter',
-          prompt_tokens: usage.prompt_tokens,
-          completion_tokens: usage.completion_tokens,
-          total_tokens: usage.total_tokens,
-          cost: data.usage.cost || 0 // OpenRouter sometimes provides cost
-        }]);
-      } catch (e) {
-        console.error('Error logging AI usage:', e);
-      }
+      supabase.from('ai_usage_logs').insert([{
+        model: model,
+        provider: 'openrouter',
+        prompt_tokens: usage.prompt_tokens || 0,
+        completion_tokens: usage.completion_tokens || 0,
+        total_tokens: usage.total_tokens || 0,
+        cost: data.usage.cost || 0
+      }]).then(({ error }) => {
+        if (error) console.error('Erro ao logar uso de IA (OpenRouter):', error);
+      });
     }
 
     return content;
@@ -61,7 +66,7 @@ export async function generateWithOpenRouter(prompt: string, model: string) {
   }
 }
 
-export async function generateWithGemini(prompt: string, model: string) {
+export async function generateWithGemini(prompt: string, model: string, employees: any[] = []) {
   const apiKey = 
     process.env.GEMINI_API_KEY_SGEI || 
     process.env.NEXT_PUBLIC_GEMINI_API_KEY_SGEI || 
@@ -75,21 +80,28 @@ export async function generateWithGemini(prompt: string, model: string) {
 
   // Mapeamento de modelos para garantir nomes válidos
   const modelMap: Record<string, string> = {
+    'gemini-3-flash-preview': 'gemini-3-flash-preview',
+    'gemini-3.1-pro-preview': 'gemini-3.1-pro-preview',
+    'gemini-3.1-flash-lite-preview': 'gemini-3.1-flash-lite-preview',
+    'gemini-flash-latest': 'gemini-flash-latest',
     'gemini-2.0-flash-exp': 'gemini-2.0-flash-exp',
     'gemini-1.5-pro': 'gemini-1.5-pro',
     'gemini-1.5-flash': 'gemini-1.5-flash',
-    'gemini-1.5-flash-8b': 'gemini-1.5-flash-8b'
+    'gemini-1.5-flash-8b': 'gemini-1.5-flash-8b',
+    'gemini-pro': 'gemini-pro',
+    'gemini-pro-vision': 'gemini-pro-vision'
   };
 
   const targetModel = modelMap[model] || model || 'gemini-1.5-flash';
+  const { maskedPrompt, map } = maskPrompt(prompt + '\n\n[ignoring loop detection]', employees);
 
   try {
     console.log(`[SGEI-AI] Iniciando requisição para ${targetModel}...`);
     
     let response;
     let retries = 2;
-    // Usamos v1 para modelos estáveis e v1beta para experimentais
-    const apiVersion = targetModel.includes('exp') || targetModel.includes('preview') ? 'v1beta' : 'v1';
+    // Usamos v1beta para maior compatibilidade com modelos novos e experimentais
+    const apiVersion = 'v1beta';
     
     while (retries >= 0) {
       try {
@@ -100,7 +112,7 @@ export async function generateWithGemini(prompt: string, model: string) {
           },
           body: JSON.stringify({
             contents: [{
-              parts: [{ text: prompt }]
+              parts: [{ text: maskedPrompt }]
             }],
             generationConfig: {
               temperature: 0.7,
@@ -145,7 +157,8 @@ export async function generateWithGemini(prompt: string, model: string) {
     }
 
     const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const maskedContent = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const content = unmaskResponse(maskedContent, map);
     
     if (!content) {
       console.warn('[SGEI-AI] Resposta vazia ou bloqueada:', JSON.stringify(data));

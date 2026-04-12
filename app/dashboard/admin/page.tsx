@@ -94,7 +94,7 @@ export default function AdminDashboard() {
   const [syncingUserId, setSyncingUserId] = useState<string | null>(null);
   const [updatingBaseId, setUpdatingBaseId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-1.5-flash' });
+  const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-3-flash-preview' });
   const [savingLlm, setSavingLlm] = useState(false);
   const [openRouterInfo, setOpenRouterInfo] = useState<any>(null);
   const [tokenStats, setTokenStats] = useState({ prompt: 0, completion: 0, total: 0 });
@@ -1511,28 +1511,43 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                 >
                   {llmConfig.provider === 'gemini' ? (
                     <>
+                      <option value="gemini-3-flash-preview">Gemini 3 Flash (Mais Recente - Recomendado)</option>
+                      <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (Complexo/Raciocínio)</option>
+                      <option value="gemini-3.1-flash-lite-preview">Gemini 3.1 Flash Lite (Econômico)</option>
+                      <option value="gemini-flash-latest">Gemini Flash Latest (Sempre Atualizado)</option>
                       <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Experimental)</option>
-                      <option value="gemini-1.5-pro">Gemini 1.5 Pro (Poderoso)</option>
-                      <option value="gemini-1.5-flash">Gemini 1.5 Flash (Rápido - Recomendado)</option>
-                      <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash-8B (Ultra Rápido)</option>
+                      <option value="gemini-1.5-pro">Gemini 1.5 Pro (Legado)</option>
+                      <option value="gemini-1.5-flash">Gemini 1.5 Flash (Legado)</option>
                     </>
                   ) : (
                     <>
                       <option value="google/gemma-2-9b-it:free">Gemma 2 9B (FREE - Google)</option>
                       <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B (FREE - Meta)</option>
-                      <option value="qwen/qwen-2-7b-instruct:free">Qwen 2 7B (FREE - Estável)</option>
-                      <option value="mistralai/mistral-7b-instruct:free">Mistral 7B (FREE - Rápido)</option>
+                      <option value="qwen/qwen-2-7b-instruct:free">Qwen 2 7B (FREE - Alibaba)</option>
+                      <option value="mistralai/mistral-7b-instruct:free">Mistral 7B (FREE - Mistral AI)</option>
                       <option value="microsoft/phi-3-mini-128k-instruct:free">Phi-3 Mini (FREE - Microsoft)</option>
+                      <option value="huggingfaceh4/zephyr-7b-beta:free">Zephyr 7B Beta (FREE)</option>
                       <option value="openchat/openchat-7b:free">OpenChat 7B (FREE)</option>
+                      <option value="meta-llama/llama-3-8b-instruct:free">Llama 3 8B (FREE - Meta)</option>
                     </>
                   )}
                 </select>
+                {llmConfig.provider === 'openrouter' && (
+                  <p className="mt-1 text-[9px] text-amber-600 font-medium italic">
+                    * Modelos gratuitos do OpenRouter podem estar sujeitos a instabilidade ou limites de cota.
+                  </p>
+                )}
                 
                 <div className="mt-4 p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
-                  <span className="text-xs font-bold text-indigo-900">
-                    Modelo principal: {llmConfig.model}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-indigo-900">
+                      Modelo principal: {llmConfig.model}
+                    </span>
+                    <span className="text-[10px] text-indigo-600 italic mt-1">
+                      * O Supervisor precisa atualizar o Dashboard para aplicar mudanças.
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

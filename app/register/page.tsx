@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   UserPlus, 
@@ -214,13 +214,14 @@ export default function RegisterPage() {
           <div className="flex items-center gap-4 mb-10">
             <motion.div 
               whileHover={{ scale: 1.05 }}
-              className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-xl p-2 border border-white/50 relative"
+              className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-xl p-2 border border-white/50"
             >
               <Image 
                 src={LATAM_LOGO} 
                 alt="LATAM Logo" 
-                fill
-                className="object-contain p-2"
+                width={60} 
+                height={60} 
+                className="w-full h-full object-contain" 
                 referrerPolicy="no-referrer"
               />
             </motion.div>

@@ -19,11 +19,13 @@ import {
   X,
   FileDown,
   Printer,
-  Search
+  Search,
+  Cpu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import LATAMScheduleTable, { SHIFT_LEGEND, SIGLA_LEGEND } from '@/components/LATAMScheduleTable';
 import { generateWithOpenRouter, generateWithGemini } from '@/app/actions/ai';
+import { logAudit } from '@/lib/audit';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -62,7 +64,8 @@ export default function SupervisorDashboard() {
   const [feedbackData, setFeedbackData] = useState({ rating: 0, comment: '', strengths: [] as string[], weaknesses: [] as string[] });
   const [savingFeedback, setSavingFeedback] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-1.5-flash' });
+  const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-3-flash-preview' });
+  const [configLoading, setConfigLoading] = useState(true);
   const [updatingRequest, setUpdatingRequest] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<any | null>(null);
@@ -99,14 +102,20 @@ export default function SupervisorDashboard() {
       if (historyData) setScheduleHistory(historyData);
 
       // Buscar configuração de IA
-      const { data: configData } = await supabase
-        .from('system_settings')
-        .select('value')
-        .eq('key', 'llm_config')
-        .maybeSingle();
-      
-      if (configData) {
-        setLlmConfig(configData.value);
+      try {
+        const { data: configData } = await supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'llm_config')
+          .maybeSingle();
+        
+        if (configData) {
+          setLlmConfig(configData.value);
+        }
+      } catch (err) {
+        console.error('Error fetching LLM config:', err);
+      } finally {
+        setConfigLoading(false);
       }
     };
     fetchData();
@@ -303,19 +312,16 @@ export default function SupervisorDashboard() {
         Gere uma escala MENSAL para o terminal JPA (João Pessoa) seguindo o modelo LATAM.
         
         REGRAS CRÍTICAS:
-        1. VARIAÇÕES SEMANAIS (DINAMISMO): A IA deve alternar padrões de trabalho a cada semana para cada colaborador para tornar a escala dinâmica.
-           Exemplos de ritmos semanais (Misture-os aleatoriamente para cada colaborador):
-           - Padrão A: Ritmo 5x1 (5 dias trab, 1 folga)
-           - Padrão B: Ritmo 3x1 (3 dias trab, 1 folga)
-           - Padrão C: Ritmo 4x1 (4 dias trab, 1 folga)
-           - Padrão D: Ritmo 2x1 (2 dias trab, 1 folga - útil para ajustes de meio de semana)
-           - Padrão E: Ritmo 5x2 (5 dias trab, 2 folgas - use FAGR aqui se for a semana escolhida para folga agrupada)
-        2. FAGR (FOLGA AGRUPADA): OBRIGATÓRIO e LIMITADO a EXATAMENTE 1 VEZ POR MÊS por colaborador. 
-           - A FAGR consiste em 2 dias de folga seguidos.
-           - É PROIBIDO ter mais de uma FAGR (2 folgas seguidas) no mesmo mês para o mesmo colaborador.
-        3. MÁXIMO CONSECUTIVO: Nunca ultrapassar 5 dias seguidos de trabalho (Regra de Ouro).
-        4. COBERTURA MÍNIMA: Manhã(3), Tarde(3), Noite(2). Garanta que sempre haja pessoal suficiente.
-        5. CAT 6: Mínimo 2 colaboradores CAT 6 ativos em todos os dias em todos os turnos.
+        1. VARIAÇÕES SEMANAIS (DINAMISMO): A IA deve alternar padrões de trabalho a cada semana para cada colaborador.
+           Exemplos de ritmos semanais:
+           - Semana 1: Ritmo 5x1 (5 dias trab, 1 folga)
+           - Semana 2: Ritmo 3x1 (3 dias trab, 1 folga)
+           - Semana 3: Ritmo 4x1 (4 dias trab, 1 folga)
+           - Semana 4: Ritmo 5x2 (5 dias trab, 2 folgas - use FAGR aqui)
+        2. FAGR (FOLGA AGRUPADA): OBRIGATÓRIO e LIMITADO a EXATAMENTE 1 VEZ POR MÊS por colaborador. Não pode haver mais de uma FAGR no mês.
+        3. MÁXIMO CONSECUTIVO: Nunca ultrapassar 5 dias seguidos de trabalho.
+        4. COBERTURA MÍNIMA: Manhã(3), Tarde(3), Noite(2).
+        5. CAT 6: Mínimo 2 colaboradores CAT 6 ativos em todos os dias.
         6. RESPEITAR: horario_atribuido, folgas_fixas e periodo_ferias (FE).
         7. SIGLAS: FE (Férias), FOLG (Folga), FC (Compensa), FAGR (Agrupada), FS (Solicitada).
         8. TURNOS: ${SHIFT_LEGEND.map(s => `${s.desc}(${s.code})`).join(', ')}.
@@ -371,7 +377,7 @@ export default function SupervisorDashboard() {
             const apiResponse = await fetch('/api/ai/generate', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ prompt, model: llmConfig.model, provider: llmConfig.provider })
+              body: JSON.stringify({ prompt, model: llmConfig.model, provider: llmConfig.provider, employees })
             });
             
             if (!apiResponse.ok) {
@@ -388,7 +394,7 @@ export default function SupervisorDashboard() {
           const apiResponse = await fetch('/api/ai/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, model: llmConfig.model, provider: llmConfig.provider })
+            body: JSON.stringify({ prompt, model: llmConfig.model, provider: llmConfig.provider, employees })
           });
           
           if (!apiResponse.ok) {
@@ -405,7 +411,7 @@ export default function SupervisorDashboard() {
         const apiResponse = await fetch('/api/ai/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, model: llmConfig.model, provider: llmConfig.provider })
+          body: JSON.stringify({ prompt, model: llmConfig.model, provider: llmConfig.provider, employees })
         });
         
         if (!apiResponse.ok) {
@@ -497,6 +503,42 @@ export default function SupervisorDashboard() {
     alert(`Feedback enviado: ${type}. A IA aprenderá com isso!`);
   };
 
+  const handleAnonymizeEmployee = async () => {
+    if (!editingEmployee || !confirm('Tem certeza que deseja anonimizar este colaborador? Esta ação é irreversível.')) return;
+
+    setSaving(true);
+    try {
+      const anonData = {
+        name: 'Colaborador Anonimizado',
+        email: 'anon@latam.com',
+        phone: null,
+        is_active: false,
+        operational_restrictions: null,
+        certifications: null
+      };
+
+      const { error } = await supabase
+        .from('base_jpa')
+        .update(anonData)
+        .eq('bp', editingEmployee.bp);
+
+      if (error) throw error;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      await logAudit(user?.id || 'unknown', 'anonymize', 'base_jpa', editingEmployee.bp, editingEmployee, anonData);
+
+      setEmployees(employees.map(e => e.bp === editingEmployee.bp ? { ...e, ...anonData } : e));
+      setFilteredEmployees(filteredEmployees.map(e => e.bp === editingEmployee.bp ? { ...e, ...anonData } : e));
+      setEditingEmployee(null);
+      alert('Colaborador anonimizado com sucesso.');
+    } catch (error) {
+      console.error('Erro ao anonimizar:', error);
+      alert('Erro ao anonimizar colaborador.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleUpdateEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -509,10 +551,23 @@ export default function SupervisorDashboard() {
         vacation_period: editingEmployee.vacation_period
       };
 
+      const oldData = {
+        fixed_days_off: employees.find(e => e.bp === editingEmployee.bp)?.fixed_days_off,
+        work_hours: employees.find(e => e.bp === editingEmployee.bp)?.work_hours,
+        hour_compensation: employees.find(e => e.bp === editingEmployee.bp)?.hour_compensation,
+        cat_6: employees.find(e => e.bp === editingEmployee.bp)?.cat_6,
+        vacation_period: employees.find(e => e.bp === editingEmployee.bp)?.vacation_period
+      };
+
       const { error } = await supabase
         .from('base_jpa')
         .update(updateData)
         .eq('bp', editingEmployee.bp);
+
+      if (!error) {
+        const { data: { user } } = await supabase.auth.getUser();
+        await logAudit(user?.id || 'unknown', 'update', 'base_jpa', editingEmployee.bp, oldData, updateData);
+      }
 
       if (error) {
         // Se o erro for sobre coluna não encontrada, tenta identificar qual e remover
@@ -526,10 +581,15 @@ export default function SupervisorDashboard() {
             console.warn(`Removendo coluna inexistente '${missingColumn}' e tentando novamente...`);
             delete updateData[missingColumn];
             
-            const { error: retryError } = await supabase
+            const { error: retryError, data: retryData } = await supabase
               .from('base_jpa')
               .update(updateData)
               .eq('bp', editingEmployee.bp);
+            
+            if (!retryError) {
+              const { data: { user } } = await supabase.auth.getUser();
+              await logAudit(user?.id || 'unknown', 'update', 'base_jpa', editingEmployee.bp, oldData, updateData);
+            }
             
             if (retryError) {
               // Se falhar de novo por outra coluna, repete o processo recursivamente ou falha
@@ -805,15 +865,20 @@ export default function SupervisorDashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Painel do Supervisor - JPA</h1>
-          <p className="text-sm sm:text-base text-gray-500">Gestão operacional e geração de escalas.</p>
+          <p className="text-sm sm:text-base text-gray-500">
+            Gestão operacional e geração de escalas. 
+            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full text-[10px] font-bold uppercase border border-indigo-100">
+              <Cpu size={10} /> IA: {configLoading ? '...' : `${llmConfig.provider} (${llmConfig.model})`}
+            </span>
+          </p>
         </div>
         <button 
           onClick={generateScheduleAI}
-          disabled={loading}
+          disabled={loading || configLoading}
           className="w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 disabled:bg-gray-400"
         >
           {loading ? <Clock className="animate-spin" /> : <Sparkles />}
-          {loading ? 'Gerando...' : 'Gerar Escala com IA'}
+          {loading ? 'Gerando...' : (configLoading ? 'Carregando Config...' : 'Gerar Escala com IA')}
         </button>
       </div>
 
@@ -1471,6 +1536,13 @@ export default function SupervisorDashboard() {
                 </div>
 
                 <div className="pt-4 flex gap-3">
+                  <button 
+                    type="button"
+                    onClick={handleAnonymizeEmployee}
+                    className="py-3 px-4 rounded-xl font-bold text-red-600 hover:bg-red-50 transition"
+                  >
+                    Anonimizar
+                  </button>
                   <button 
                     type="button"
                     onClick={() => setEditingEmployee(null)}

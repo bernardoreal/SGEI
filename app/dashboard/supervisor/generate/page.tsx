@@ -8,28 +8,34 @@ import { Cpu, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
 export default function ScheduleGenerator() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-1.5-flash' });
+  const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-3-flash-preview' });
   const [configLoading, setConfigLoading] = useState(true);
+  const [employees, setEmployees] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchConfig = async () => {
+    const fetchData = async () => {
       try {
-        const { data, error } = await supabase
+        const { data: configData } = await supabase
           .from('system_settings')
           .select('value')
           .eq('key', 'llm_config')
           .maybeSingle();
         
-        if (data) {
-          setLlmConfig(data.value);
+        if (configData) {
+          setLlmConfig(configData.value);
+        }
+
+        const { data: empData } = await supabase.from('base_jpa').select('*');
+        if (empData) {
+          setEmployees(empData);
         }
       } catch (err) {
-        console.error('Error fetching LLM config:', err);
+        console.error('Error fetching data:', err);
       } finally {
         setConfigLoading(false);
       }
     };
-    fetchConfig();
+    fetchData();
   }, []);
 
   const generateSchedule = async () => {
@@ -50,17 +56,9 @@ export default function ScheduleGenerator() {
       
       let responseText = '';
       if (llmConfig.provider === 'openrouter') {
-        const clientApiKey = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
-        
-        if (clientApiKey) {
-          // Chamada via Server Action
-          responseText = await generateWithOpenRouter(prompt, llmConfig.model);
-        } else {
-          // Fallback para Server Action
-          responseText = await generateWithOpenRouter(prompt, llmConfig.model);
-        }
+        responseText = await generateWithOpenRouter(prompt, llmConfig.model, employees);
       } else {
-        responseText = await generateWithGemini(prompt, llmConfig.model);
+        responseText = await generateWithGemini(prompt, llmConfig.model, employees);
       }
 
       setResult(responseText || 'Não foi possível gerar a escala.');
