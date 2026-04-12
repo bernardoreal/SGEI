@@ -1147,11 +1147,20 @@ export default function SupervisorDashboard() {
                   const groupedErrors = validationErrors.reduce((acc: any, err: any) => {
                     let groupKey = 'Geral / Mensal';
                     if (err.date) {
-                      const d = new Date(err.date);
-                      if (!isNaN(d.getTime())) {
-                        const dayOfMonth = d.getUTCDate();
-                        const weekNum = Math.ceil(dayOfMonth / 7);
-                        groupKey = `Semana ${weekNum}`;
+                      const parts = err.date.split('/');
+                      if (parts.length === 2) {
+                        const dayOfMonth = parseInt(parts[0], 10);
+                        if (!isNaN(dayOfMonth)) {
+                          const weekNum = Math.ceil(dayOfMonth / 7);
+                          groupKey = `Semana ${weekNum}`;
+                        }
+                      } else {
+                        const d = new Date(err.date);
+                        if (!isNaN(d.getTime())) {
+                          const dayOfMonth = d.getUTCDate();
+                          const weekNum = Math.ceil(dayOfMonth / 7);
+                          groupKey = `Semana ${weekNum}`;
+                        }
                       }
                     }
                     if (!acc[groupKey]) acc[groupKey] = [];
@@ -1174,11 +1183,16 @@ export default function SupervisorDashboard() {
                             {groupedErrors[groupKey].map((err: any, idx: number) => {
                               let dateLabel = '';
                               if (err.date) {
-                                const d = new Date(err.date);
-                                if (!isNaN(d.getTime())) {
-                                  dateLabel = d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+                                const parts = err.date.split('/');
+                                if (parts.length === 2) {
+                                  dateLabel = `${parts[0]}/${parts[1]}`;
                                 } else {
-                                  dateLabel = err.date;
+                                  const d = new Date(err.date);
+                                  if (!isNaN(d.getTime())) {
+                                    dateLabel = d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+                                  } else {
+                                    dateLabel = err.date;
+                                  }
                                 }
                               }
                               
