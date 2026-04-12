@@ -1038,7 +1038,7 @@ export default function SupervisorDashboard() {
                 className="mt-12 p-8 bg-slate-50 rounded-[32px] border border-slate-200 shadow-inner no-print"
               >
                 <div className="flex flex-col md:flex-row gap-8">
-                  <div className="flex-1 space-y-6">
+                  <div className="w-full space-y-6">
                     <div>
                       <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
                         <ThumbsUp size={24} className="text-latam-indigo" />
@@ -1391,7 +1391,7 @@ export default function SupervisorDashboard() {
                 className="mt-12 p-8 bg-slate-50 rounded-[32px] border border-slate-200 shadow-inner no-print"
               >
                 <div className="flex flex-col md:flex-row gap-8">
-                  <div className="flex-1 space-y-6">
+                  <div className="w-full space-y-6">
                     <div>
                       <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
                         <ThumbsUp size={24} className="text-latam-indigo" />
@@ -1457,7 +1457,7 @@ export default function SupervisorDashboard() {
                     </div>
                   </div>
 
-                  <div className="flex-1 space-y-4">
+                  <div className="w-full space-y-4">
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Comentários Adicionais</label>
                       <textarea
