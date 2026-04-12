@@ -66,23 +66,54 @@ export async function generateWithGemini(prompt: string, model: string) {
   const apiKey = process.env.GEMINI_API_KEY_SGEI || process.env.NEXT_PUBLIC_GEMINI_API_KEY_SGEI || process.env.GEMINI_API_KEY;
   
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY_SGEI is not configured on the server');
+    throw new Error('Configuração ausente: GEMINI_API_KEY_SGEI não encontrada no servidor.');
   }
 
+  // Mapeamento de modelos para garantir nomes válidos
+  const modelMap: Record<string, string> = {
+    'gemini-3-flash-preview': 'gemini-1.5-flash',
+    'gemini-2.0-flash-exp': 'gemini-2.0-flash-exp',
+    'gemini-1.5-pro': 'gemini-1.5-pro',
+    'gemini-1.5-flash': 'gemini-1.5-flash'
+  };
+
+  const targetModel = modelMap[model] || model || 'gemini-1.5-flash';
+
   try {
-    const ai = new GoogleGenAI({ apiKey });
-    const response = await ai.models.generateContent({
-      model: model || "gemini-3-flash-preview",
-      contents: prompt,
+    // Usando a API REST diretamente para máxima compatibilidade com Cloudflare Edge
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: prompt }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 4096,
+        }
+      })
     });
 
-    const content = response.text || '';
-    const usage = response.usageMetadata;
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Gemini API Error:', errorData);
+      throw new Error(errorData.error?.message || `Erro na API Gemini: ${response.statusText}`);
+    }
 
+    const data = await response.json();
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    // Log usage to Supabase
+    const usage = data.usageMetadata;
     if (usage) {
       try {
         await supabase.from('ai_usage_logs').insert([{
-          model: model || "gemini-3-flash-preview",
+          model: targetModel,
           provider: 'gemini',
           prompt_tokens: usage.promptTokenCount,
           completion_tokens: usage.candidatesTokenCount,
@@ -95,8 +126,8 @@ export async function generateWithGemini(prompt: string, model: string) {
 
     return content;
   } catch (error: any) {
-    console.error('Gemini Error:', error);
-    throw new Error(error.message || 'Failed to generate content with Gemini');
+    console.error('Gemini Action Error:', error);
+    throw new Error(error.message || 'Falha na comunicação com o servidor de IA (Gemini)');
   }
 }
 export async function getOpenRouterKeyInfo() {

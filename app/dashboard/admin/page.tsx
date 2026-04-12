@@ -94,7 +94,7 @@ export default function AdminDashboard() {
   const [syncingUserId, setSyncingUserId] = useState<string | null>(null);
   const [updatingBaseId, setUpdatingBaseId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-3-flash-preview' });
+  const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-1.5-flash' });
   const [savingLlm, setSavingLlm] = useState(false);
   const [openRouterInfo, setOpenRouterInfo] = useState<any>(null);
   const [tokenStats, setTokenStats] = useState({ prompt: 0, completion: 0, total: 0 });

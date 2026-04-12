@@ -29,15 +29,40 @@ import autoTable from 'jspdf-autotable';
 
 export default function SupervisorDashboard() {
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const loadingSteps = [
+    "Analisando banco de dados de colaboradores...",
+    "Aplicando regras de regime 5x1 e CLT...",
+    "Validando folgas fixas e períodos de férias...",
+    "Otimizando cobertura CAT 6 e turnos...",
+    "Finalizando formatação da escala JPA..."
+  ];
+
+  useEffect(() => {
+    let interval: any;
+    if (loading) {
+      setLoadingStep(0);
+      interval = setInterval(() => {
+        setLoadingStep(prev => (prev < loadingSteps.length - 1 ? prev + 1 : prev));
+      }, 3000);
+    } else {
+      setLoadingStep(0);
+    }
+    return () => clearInterval(interval);
+  }, [loading, loadingSteps.length]);
+
   const [employees, setEmployees] = useState<any[]>([]);
   const [filteredEmployees, setFilteredEmployees] = useState<any[]>([]);
   const [shiftRequests, setShiftRequests] = useState<any[]>([]);
   const [scheduleHistory, setScheduleHistory] = useState<any[]>([]);
   const [aiSchedule, setAiSchedule] = useState<any | null>(null);
   const [viewedSchedule, setViewedSchedule] = useState<any | null>(null);
+  const [validationErrors, setValidationErrors] = useState<any[]>([]);
   const [feedbackGiven, setFeedbackGiven] = useState(false);
+  const [feedbackData, setFeedbackData] = useState({ rating: 0, comment: '', strengths: [] as string[], weaknesses: [] as string[] });
+  const [savingFeedback, setSavingFeedback] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-3-flash-preview' });
+  const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-1.5-flash' });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -84,6 +109,149 @@ export default function SupervisorDashboard() {
     fetchData();
   }, []);
 
+  const validateSchedule = (scheduleData: any) => {
+    const errors: any[] = [];
+    const { data } = scheduleData;
+
+    data.forEach((empSchedule: any) => {
+      const employee = employees.find(e => e.bp === empSchedule.bp);
+      let consecutiveWorkDays = 0;
+      let fagrCount = 0;
+      let hasWorkHoursMismatch = false;
+
+      empSchedule.days.forEach((day: any, idx: number) => {
+        const isWorkDay = day.code.startsWith('T') || day.code === 'C';
+        
+        // 1. Check 5x1 Rule
+        if (isWorkDay) {
+          consecutiveWorkDays++;
+          if (consecutiveWorkDays > 5) {
+            errors.push({
+              bp: empSchedule.bp,
+              nome: empSchedule.nome,
+              date: day.date,
+              message: `Violação da regra 5x1: ${consecutiveWorkDays} dias seguidos de trabalho.`,
+              type: 'error'
+            });
+          }
+        } else {
+          consecutiveWorkDays = 0;
+        }
+
+        // 2. Count FAGR
+        if (day.code === 'FAGR') {
+          // Check if it's consecutive
+          if (idx > 0 && empSchedule.days[idx-1].code === 'FAGR') {
+            // Already counted as part of a pair or more
+          } else {
+            fagrCount++;
+          }
+        }
+
+        // 3. Check Work Hours Mismatch (if assigned)
+        if (employee?.work_hours && isWorkDay) {
+          const shift = SHIFT_LEGEND.find(s => s.code === day.code);
+          if (shift && !shift.desc.includes(employee.work_hours.split('-')[0])) {
+             // Simple check: if the start hour doesn't match
+             hasWorkHoursMismatch = true;
+          }
+        }
+      });
+
+      // 4. Check FAGR Count (Exactly 1 per month)
+      if (fagrCount !== 1) {
+        errors.push({
+          bp: empSchedule.bp,
+          nome: empSchedule.nome,
+          message: `Folga Agrupada (FAGR): Encontradas ${fagrCount} FAGRs no mês. OBRIGATÓRIO exatamente 1.`,
+          type: 'error'
+        });
+      }
+
+      if (hasWorkHoursMismatch) {
+        errors.push({
+          bp: empSchedule.bp,
+          nome: empSchedule.nome,
+          message: `Divergência de Horário: O colaborador tem horário atribuído (${employee.work_hours}), mas a IA atribuiu turnos diferentes.`,
+          type: 'warning'
+        });
+      }
+
+      // 5. Check CAT 6 Coverage (Qualification)
+      // Note: CAT 6 employees work 8h shifts like others, but are required for specific coverage.
+    });
+
+    // 6. Check Daily Coverage
+    const daysCount = data[0]?.days.length || 0;
+    for (let i = 0; i < daysCount; i++) {
+      const workingEmployees = data.filter((emp: any) => emp.days[i].code.startsWith('T') || emp.days[i].code === 'C');
+      const offCount = data.length - workingEmployees.length;
+
+      // Check for CAT 6 coverage (At least 2 per day as a general rule for the terminal)
+      const cat6Working = workingEmployees.filter((emp: any) => {
+        const employee = employees.find(e => e.bp === emp.bp);
+        return employee?.cat_6;
+      });
+
+      if (cat6Working.length < 2) {
+        errors.push({
+          date: data[0].days[i].date,
+          message: `Alerta CAT 6: Apenas ${cat6Working.length} colaborador(es) com CAT 6 trabalhando neste dia. Recomendado: mínimo 2.`,
+          type: 'warning'
+        });
+      }
+
+      if (offCount === 0) {
+        errors.push({
+          date: data[0].days[i].date,
+          message: `Falha de Cobertura: Ninguém está de folga neste dia. Pelo menos 1 colaborador deve estar de folga.`,
+          type: 'warning'
+        });
+      }
+    }
+
+    setValidationErrors(errors);
+  };
+
+  const handleSaveFeedback = async () => {
+    if (feedbackData.rating === 0) {
+      alert('Por favor, selecione uma classificação em estrelas.');
+      return;
+    }
+
+    setSavingFeedback(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const { error: fError } = await supabase
+        .from('ai_feedback')
+        .insert([{
+          user_id: session?.user?.id,
+          rating: feedbackData.rating,
+          comment: feedbackData.comment,
+          strengths: feedbackData.strengths,
+          weaknesses: feedbackData.weaknesses,
+          model_used: llmConfig.model,
+          provider: llmConfig.provider,
+          schedule_context: {
+            month: aiSchedule.month,
+            year: aiSchedule.year,
+            employee_count: aiSchedule.data.length
+          }
+        }]);
+
+      if (fError) throw fError;
+      
+      setFeedbackGiven(true);
+      alert('Obrigado pelo seu feedback! Isso ajudará a melhorar as próximas escalas.');
+    } catch (err: any) {
+      console.error('Erro ao salvar feedback:', err);
+      alert('Erro ao salvar feedback: ' + err.message);
+    } finally {
+      setSavingFeedback(false);
+    }
+  };
+
   const generateScheduleAI = async () => {
     if (employees.length === 0) {
       setError('Não há colaboradores cadastrados na base JPA para gerar a escala. Por favor, adicione colaboradores primeiro.');
@@ -129,6 +297,7 @@ export default function SupervisorDashboard() {
         cat6: e.cat_6,
         horario_atribuido: e.work_hours || 'A definir pela IA',
         folgas_fixas: e.fixed_days_off,
+        periodo_ferias: e.vacation_period,
         restricoes: e.operational_restrictions
       }));
 
@@ -136,16 +305,21 @@ export default function SupervisorDashboard() {
         Você é o arquiteto líder do LATAM SGEI. Sua tarefa é gerar uma escala de trabalho MENSAL para o terminal de JPA (João Pessoa) seguindo RIGOROSAMENTE o modelo da LATAM.
 
         REGRAS DE NEGÓCIO:
-        - REGIME 5x1 FLEXÍVEL: O colaborador NUNCA deve trabalhar mais de 5 dias seguidos. No entanto, ele pode ter folgas antes de completar 5 dias (ex: trabalhar 3 dias e folgar 1, ou 4 dias e folgar 1). O limite de 5 dias é o MÁXIMO permitido entre folgas.
-        - CONTINUIDADE ENTRE MESES: Você deve analisar o histórico dos últimos dias do mês anterior (fornecido abaixo) para garantir que ninguém ultrapasse 5 dias seguidos de trabalho na virada do mês.
+        - REGIME 5x1 FLEXÍVEL: O colaborador NUNCA deve trabalhar mais de 5 dias seguidos. O limite de 5 dias é o MÁXIMO permitido entre folgas.
+        - CONTINUIDADE ENTRE MESES: Analise o histórico do mês anterior para evitar que alguém ultrapasse 5 dias seguidos de trabalho na virada.
         - Turno de 8 horas (7h trabalho + 1h intervalo).
-        - FOLGA AGRUPADA (FAGR): Deve haver OBRIGATORIAMENTE EXATAMENTE 1 folga agrupada (2 dias consecutivos, ex: Sábado e Domingo ou qualquer par de dias) por mês para CADA colaborador. NUNCA coloque mais de uma FAGR por mês para o mesmo colaborador.
-        - HORÁRIO ATRIBUÍDO (CRÍTICO): Se o colaborador tiver um "horario_atribuido" definido (diferente de 'A definir pela IA'), você DEVE respeitar esse horário ABSOLUTAMENTE. Não altere o horário definido pelo supervisor sob nenhuma circunstância.
-        - CORRESPONDÊNCIA DE HORÁRIO E CÓDIGO (CRÍTICO): Utilize estritamente a seguinte legenda para mapear o horário definido para o código da escala:
+        - FOLGA AGRUPADA (FAGR): OBRIGATORIAMENTE EXATAMENTE 1 folga agrupada (2 dias consecutivos) por mês para CADA colaborador.
+        - HORÁRIO ATRIBUÍDO (CRÍTICO): Respeite o "horario_atribuido" se definido.
+        - FOLGAS FIXAS (CRÍTICO): Se o colaborador tiver "folgas_fixas" (ex: "Sáb/Dom"), você DEVE priorizar essas folgas na escala, encaixando o regime 5x1 para que coincida com esses dias sempre que possível.
+        - PERÍODO DE FÉRIAS (CRÍTICO): Se o colaborador tiver um "periodo_ferias" definido, marque TODOS os dias desse intervalo com a sigla "FE".
+        - DISTRIBUIÇÃO DE TURNOS (COBERTURA):
+          * MANHÃ (04:00 - 12:00): Mínimo de 3 colaboradores.
+          * TARDE (12:00 - 20:00): Mínimo de 3 colaboradores.
+          * NOITE (20:00 - 04:00): Mínimo de 2 colaboradores.
+        - ALOCAÇÃO CAT 6 (CRÍTICO): Colaboradores com "cat6: true" são essenciais para a operação. Você DEVE garantir que em TODOS os dias do mês existam pelo menos 2 colaboradores CAT 6 trabalhando (não podem estar todos de folga no mesmo dia).
+        - CORRESPONDÊNCIA DE HORÁRIO E CÓDIGO:
           ${SHIFT_LEGEND.map(s => `${s.desc} -> ${s.code}`).join('\n          ')}
-        - COBERTURA E FOLGA DIÁRIA: Em cada dia do mês, pelo menos 1 colaborador aleatório DEVE estar de folga (FOLG ou FAGR), garantindo que nem todos trabalhem no mesmo dia, mas mantendo a cobertura mínima.
-        - Compliance com CLT e Acordos Sindicais.
-        - Toda escala deve ter status 'rascunho'.
+        - COBERTURA E FOLGA DIÁRIA: Pelo menos 1 colaborador deve estar de folga em cada dia.
         - Use as siglas: FE (Férias), FOLG (Folga), FC (Folga Compensa), FAGR (Folga Agrupada), FS (Folga Solicitada).
 
         HISTÓRICO DO MÊS ANTERIOR (Últimos dias):
@@ -198,8 +372,10 @@ export default function SupervisorDashboard() {
       const jsonStr = responseText.replace(/```json|```/g, '').trim();
       const parsedData = JSON.parse(jsonStr);
       
+      validateSchedule(parsedData);
       setAiSchedule(parsedData);
       setFeedbackGiven(false);
+      setFeedbackData({ rating: 0, comment: '', strengths: [], weaknesses: [] });
     } catch (err: any) {
       console.error('Erro ao gerar escala:', err);
       const errorMessage = err.message || (err.error && err.error.message) || 'Erro desconhecido';
@@ -554,6 +730,55 @@ export default function SupervisorDashboard() {
         </div>
       )}
 
+      {/* Indicador de Progresso Proeminente */}
+      <AnimatePresence>
+        {loading && !aiSchedule && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/80 backdrop-blur-md no-print"
+          >
+            <div className="max-w-md w-full p-10 bg-white rounded-[40px] shadow-2xl text-center space-y-8">
+              <div className="relative flex justify-center">
+                <div className="w-24 h-24 border-4 border-slate-100 border-t-latam-indigo rounded-full animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Sparkles className="text-latam-indigo animate-pulse" size={32} />
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">
+                  Inteligência Artificial em Ação
+                </h3>
+                <div className="space-y-2">
+                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <motion.div 
+                      className="h-full bg-latam-indigo"
+                      initial={{ width: "0%" }}
+                      animate={{ width: `${((loadingStep + 1) / loadingSteps.length) * 100}%` }}
+                      transition={{ duration: 0.5 }}
+                    />
+                  </div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">
+                    Passo {loadingStep + 1} de {loadingSteps.length}
+                  </p>
+                </div>
+                <p className="text-slate-600 font-medium italic">
+                  &quot;{loadingSteps[loadingStep]}&quot;
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-slate-50">
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
+                  O motor SGEI está processando milhares de combinações para garantir a melhor escala para o terminal JPA.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {aiSchedule && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 rounded-2xl shadow-xl border border-indigo-100">
           <div className="flex justify-between items-center mb-8">
@@ -609,12 +834,143 @@ export default function SupervisorDashboard() {
               </div>
             </div>
 
+            {validationErrors.length > 0 && (
+              <div className="mb-8 p-5 bg-white border-2 border-amber-200 rounded-[24px] shadow-sm overflow-hidden relative no-print">
+                <div className="absolute top-0 left-0 w-full h-1 bg-amber-400" />
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-black text-amber-900 flex items-center gap-2 uppercase tracking-wider">
+                    <AlertTriangle size={18} className="text-amber-500" />
+                    Análise de Conformidade (HITL)
+                  </h3>
+                  <span className="px-2 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-lg uppercase">
+                    {validationErrors.filter(e => e.type === 'error').length} Erros Críticos
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                  {validationErrors.map((err, idx) => (
+                    <div key={idx} className={`text-[11px] p-3 rounded-xl flex items-start gap-3 transition-all border ${err.type === 'error' ? 'bg-red-50 text-red-800 border-red-100' : 'bg-amber-50 text-amber-800 border-amber-100'}`}>
+                      <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${err.type === 'error' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                      <div className="space-y-1">
+                        <div className="font-black uppercase tracking-tight">{err.nome || err.date}</div>
+                        <div className="font-medium leading-relaxed opacity-80">{err.message}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-[10px] text-slate-400 italic">
+                  * Toda escala gerada por IA deve ser revisada manualmente antes da publicação.
+                </p>
+              </div>
+            )}
+
             <LATAMScheduleTable 
               month={aiSchedule.month} 
               year={aiSchedule.year} 
               data={aiSchedule.data} 
-              onDataChange={(newData) => setAiSchedule({ ...aiSchedule, data: newData })}
+              validationErrors={validationErrors}
+              onDataChange={(newData) => {
+                const updatedSchedule = { ...aiSchedule, data: newData };
+                setAiSchedule(updatedSchedule);
+                validateSchedule(updatedSchedule);
+              }}
             />
+
+            {/* Sistema de Feedback Detalhado */}
+            {!feedbackGiven && (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-12 p-8 bg-slate-50 rounded-[32px] border border-slate-200 shadow-inner no-print"
+              >
+                <div className="flex flex-col md:flex-row gap-8">
+                  <div className="flex-1 space-y-6">
+                    <div>
+                      <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
+                        <ThumbsUp size={24} className="text-latam-indigo" />
+                        Avaliação da Inteligência Artificial
+                      </h3>
+                      <p className="text-sm text-slate-500 mt-1">Seu feedback é essencial para treinarmos o motor de escalas JPA.</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          onClick={() => setFeedbackData({ ...feedbackData, rating: star })}
+                          className={`p-1 transition-all transform hover:scale-110 ${feedbackData.rating >= star ? 'text-amber-400' : 'text-slate-300'}`}
+                        >
+                          <Sparkles size={32} fill={feedbackData.rating >= star ? 'currentColor' : 'none'} />
+                        </button>
+                      ))}
+                      <span className="ml-4 text-sm font-bold text-slate-400 uppercase tracking-widest">
+                        {feedbackData.rating > 0 ? `${feedbackData.rating} Estrelas` : 'Avalie a precisão'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pontos Fortes</label>
+                        <div className="flex flex-wrap gap-2">
+                          {['Cobertura Ideal', 'Regra 5x1 OK', 'Folgas FAGR OK', 'Turnos Equilibrados'].map(tag => (
+                            <button
+                              key={tag}
+                              onClick={() => {
+                                const strengths = feedbackData.strengths.includes(tag)
+                                  ? feedbackData.strengths.filter(s => s !== tag)
+                                  : [...feedbackData.strengths, tag];
+                                setFeedbackData({ ...feedbackData, strengths });
+                              }}
+                              className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${feedbackData.strengths.includes(tag) ? 'bg-emerald-100 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200 text-slate-500 hover:border-emerald-200'}`}
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pontos Fracos</label>
+                        <div className="flex flex-wrap gap-2">
+                          {['Muitas Férias', 'Furo de Cobertura', 'Turno Incorreto', 'Violação 5x1'].map(tag => (
+                            <button
+                              key={tag}
+                              onClick={() => {
+                                const weaknesses = feedbackData.weaknesses.includes(tag)
+                                  ? feedbackData.weaknesses.filter(w => w !== tag)
+                                  : [...feedbackData.weaknesses, tag];
+                                setFeedbackData({ ...feedbackData, weaknesses });
+                              }}
+                              className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${feedbackData.weaknesses.includes(tag) ? 'bg-red-100 border-red-200 text-red-700' : 'bg-white border-slate-200 text-slate-500 hover:border-red-200'}`}
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Comentários Adicionais</label>
+                      <textarea
+                        value={feedbackData.comment}
+                        onChange={(e) => setFeedbackData({ ...feedbackData, comment: e.target.value })}
+                        placeholder="Ex: O colaborador Bernardo ficou com turno de madrugada indevidamente..."
+                        className="w-full h-32 p-4 bg-white border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-latam-indigo outline-none transition-all resize-none"
+                      />
+                    </div>
+                    <button
+                      onClick={handleSaveFeedback}
+                      disabled={savingFeedback || feedbackData.rating === 0}
+                      className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-black transition shadow-lg disabled:bg-slate-300 flex items-center justify-center gap-2"
+                    >
+                      {savingFeedback ? 'Enviando...' : 'Enviar Feedback para Treinamento'}
+                      <ArrowRightLeft size={16} />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </div>
 
           <div className="mt-10 flex justify-end gap-4">

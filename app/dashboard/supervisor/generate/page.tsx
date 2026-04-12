@@ -8,7 +8,7 @@ import { Cpu, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
 export default function ScheduleGenerator() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-3-flash-preview' });
+  const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-1.5-flash' });
   const [configLoading, setConfigLoading] = useState(true);
 
   useEffect(() => {
