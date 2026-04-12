@@ -104,7 +104,7 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
   };
 
   return (
-    <div className="w-full space-y-6 overflow-hidden relative">
+    <div className="w-full space-y-6 overflow-hidden relative print-content" id="printable-schedule">
       <AnimatePresence>
         {activeError && (
           <motion.div 
@@ -150,9 +150,9 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
         )}
       </AnimatePresence>
 
-      <div className="bg-[#002169] text-white p-4 text-center rounded-t-xl flex justify-between items-center">
+      <div className="bg-[#002169] text-white p-4 text-center rounded-t-xl flex justify-between items-center border-b-2 border-white">
         <div className="w-10" />
-        <h2 className="text-2xl font-bold tracking-widest uppercase">
+        <h2 className="text-2xl font-black tracking-[0.2em] uppercase">
           ESCALA JPA {month} _ {year}
         </h2>
         <div className="text-[10px] bg-white/20 px-2 py-1 rounded uppercase font-bold no-print">
@@ -205,7 +205,7 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
                       onChange={(e) => handleFuncaoChange(rowIdx, e.target.value)}
                       className="w-full bg-transparent border-none focus:ring-1 focus:ring-indigo-500 outline-none p-1 rounded no-print"
                     />
-                    <span className="hidden print-only">{row.funcao}</span>
+                    <span className="hidden print:inline">{row.funcao}</span>
                   </td>
                   <td className={`border border-slate-200 p-2 font-bold sticky left-[240px] z-10 ${hasError ? 'bg-red-50 text-red-700' : 'bg-white'}`}>
                     <div className="flex items-center justify-between gap-2">
@@ -244,7 +244,7 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
                               </option>
                             ))}
                           </select>
-                          <span className="hidden print-only">{day.code}</span>
+                          <span className="hidden print:inline">{day.code}</span>
                           
                           {dayError && (
                             <button 
@@ -265,80 +265,83 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
         </table>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-        {/* Legenda de Horários */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-          <div className="bg-slate-800 text-white p-2 text-center text-xs font-bold uppercase">
-            Legenda de Horários
-          </div>
-          <table className="w-full text-[10px]">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="p-2 text-left">CÓDIGO</th>
-                <th className="p-2 text-left">DESCRIÇÃO</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {SHIFT_LEGEND.map((item, idx) => (
-                <tr key={idx}>
-                  <td className="p-2 font-bold text-slate-700">{item.code}</td>
-                  <td className="p-2 text-slate-500">{item.desc}</td>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 print:grid-cols-2">
+        {/* Coluna 1: Legendas */}
+        <div className="space-y-6">
+          {/* Legenda de Horários */}
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-slate-800 text-white p-2 text-center text-[10px] font-bold uppercase tracking-widest">
+              Legenda de Horários
+            </div>
+            <table className="w-full text-[9px]">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="p-1.5 text-left">CÓDIGO</th>
+                  <th className="p-1.5 text-left">DESCRIÇÃO</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {SHIFT_LEGEND.map((item, idx) => (
+                  <tr key={idx}>
+                    <td className="p-1.5 font-bold text-slate-700">{item.code}</td>
+                    <td className="p-1.5 text-slate-500">{item.desc}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Legenda de Siglas */}
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-slate-800 text-white p-2 text-center text-[10px] font-bold uppercase tracking-widest">
+              Legenda de Siglas
+            </div>
+            <table className="w-full text-[9px]">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="p-1.5 text-left">SIGLA</th>
+                  <th className="p-1.5 text-left">DESCRIÇÃO</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {SIGLA_LEGEND.map((item, idx) => (
+                  <tr key={idx}>
+                    <td className={`p-1.5 font-bold ${item.color} text-slate-700`}>{item.code}</td>
+                    <td className="p-1.5 text-slate-500">{item.desc}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* Roteiro de Atividades */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-          <div className="bg-[#002169] text-white p-2 text-center text-xs font-bold uppercase">
+        {/* Coluna 2: Roteiro de Atividades */}
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm h-full">
+          <div className="bg-[#002169] text-white p-2 text-center text-[10px] font-bold uppercase tracking-widest">
             Roteiro de Atividades
           </div>
-          <table className="w-full text-[10px]">
+          <table className="w-full text-[9px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="p-2 text-left">RESPONSÁVEL</th>
-                <th className="p-2 text-left">TAREFAS DIÁRIAS</th>
+                <th className="p-1.5 text-left">RESPONSÁVEL</th>
+                <th className="p-1.5 text-left">TAREFAS DIÁRIAS</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {data.map((row, idx) => (
                 <tr key={idx}>
-                  <td className="p-2 font-bold text-slate-700">{row.nome}</td>
-                  <td className="p-2 text-slate-500">
+                  <td className="p-1.5 font-bold text-slate-700">{row.nome}</td>
+                  <td className="p-1.5 text-slate-500">
                     <div className="relative w-full">
                       <input 
                         type="text"
                         value={row.tarefa}
                         onChange={(e) => handleTarefaChange(idx, e.target.value)}
-                        className="w-full bg-transparent border-none focus:ring-1 focus:ring-indigo-500 outline-none p-1 rounded no-print"
+                        className="w-full bg-transparent border-none focus:ring-1 focus:ring-indigo-500 outline-none p-0.5 rounded no-print"
                       />
-                      <span className="hidden print-only">{row.tarefa}</span>
+                      <span className="hidden print:inline">{row.tarefa}</span>
                     </div>
                   </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Legenda de Siglas */}
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-          <div className="bg-slate-800 text-white p-2 text-center text-xs font-bold uppercase">
-            Legenda de Siglas
-          </div>
-          <table className="w-full text-[10px]">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="p-2 text-left">SIGLA</th>
-                <th className="p-2 text-left">DESCRIÇÃO</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {SIGLA_LEGEND.map((item, idx) => (
-                <tr key={idx}>
-                  <td className={`p-2 font-bold ${item.color} text-slate-700`}>{item.code}</td>
-                  <td className="p-2 text-slate-500">{item.desc}</td>
                 </tr>
               ))}
             </tbody>

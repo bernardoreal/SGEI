@@ -299,14 +299,20 @@ export default function SupervisorDashboard() {
       const prompt = `
         Gere uma escala MENSAL para o terminal JPA (João Pessoa) seguindo o modelo LATAM.
         
-        REGRAS:
-        1. 5x1 FLEXÍVEL: Máximo 5 dias seguidos de trabalho.
-        2. FAGR: Exatamente 1 folga agrupada (2 dias seguidos) por mês/colaborador.
-        3. COBERTURA MÍNIMA: Manhã(3), Tarde(3), Noite(2).
-        4. CAT 6: Mínimo 2 colaboradores CAT 6 ativos em todos os dias.
-        5. RESPEITAR: horario_atribuido, folgas_fixas e periodo_ferias (FE).
-        6. SIGLAS: FE, FOLG, FC, FAGR, FS.
-        7. TURNOS: ${SHIFT_LEGEND.map(s => `${s.desc}(${s.code})`).join(', ')}.
+        REGRAS CRÍTICAS:
+        1. VARIAÇÕES SEMANAIS (DINAMISMO): A IA deve alternar padrões de trabalho a cada semana para cada colaborador.
+           Exemplos de ritmos semanais:
+           - Semana 1: Ritmo 5x1 (5 dias trab, 1 folga)
+           - Semana 2: Ritmo 3x1 (3 dias trab, 1 folga)
+           - Semana 3: Ritmo 4x1 (4 dias trab, 1 folga)
+           - Semana 4: Ritmo 5x2 (5 dias trab, 2 folgas - use FAGR aqui)
+        2. FAGR (FOLGA AGRUPADA): OBRIGATÓRIO e LIMITADO a EXATAMENTE 1 VEZ POR MÊS por colaborador. Não pode haver mais de uma FAGR no mês.
+        3. MÁXIMO CONSECUTIVO: Nunca ultrapassar 5 dias seguidos de trabalho.
+        4. COBERTURA MÍNIMA: Manhã(3), Tarde(3), Noite(2).
+        5. CAT 6: Mínimo 2 colaboradores CAT 6 ativos em todos os dias.
+        6. RESPEITAR: horario_atribuido, folgas_fixas e periodo_ferias (FE).
+        7. SIGLAS: FE (Férias), FOLG (Folga), FC (Compensa), FAGR (Agrupada), FS (Solicitada).
+        8. TURNOS: ${SHIFT_LEGEND.map(s => `${s.desc}(${s.code})`).join(', ')}.
 
         HISTÓRICO: ${historyContext}
         COLABORADORES: ${JSON.stringify(employeeContext)}
@@ -641,47 +647,37 @@ export default function SupervisorDashboard() {
     });
 
     const finalY = (doc as any).lastAutoTable.finalY + 5;
-    const tableWidth = (pageWidth - 30) / 3;
+    const colWidth = (pageWidth - 25) / 2;
 
-    // --- LEGENDAS ---
-    const drawLegendTitle = (title: string, x: number) => {
-      doc.setFillColor(30, 41, 59);
-      doc.rect(x, finalY, tableWidth, 6, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(7);
-      doc.text(title, x + tableWidth / 2, finalY + 4, { align: 'center' });
-    };
-
-    drawLegendTitle('LEGENDA DE HORÁRIOS', 10);
-    drawLegendTitle('ROTEIRO DE ATIVIDADES', 10 + tableWidth + 2);
-    drawLegendTitle('LEGENDA DE SIGLAS', 10 + 2 * (tableWidth + 2));
+    // --- COLUNA 1: LEGENDAS ---
+    doc.setFillColor(30, 41, 59);
+    doc.rect(10, finalY, colWidth, 6, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(7);
+    doc.text('LEGENDA DE HORÁRIOS', 10 + colWidth / 2, finalY + 4, { align: 'center' });
 
     autoTable(doc, {
       head: [['CÓDIGO', 'DESCRIÇÃO']],
       body: SHIFT_LEGEND.map(s => [s.code, s.desc]),
       startY: finalY + 6,
       margin: { left: 10 },
-      tableWidth: tableWidth,
+      tableWidth: colWidth,
       styles: { fontSize: 5, cellPadding: 0.5 },
       headStyles: { fillColor: [241, 245, 249], textColor: [71, 85, 105] }
     });
 
-    autoTable(doc, {
-      head: [['RESPONSÁVEL', 'TAREFAS DIÁRIAS']],
-      body: aiSchedule.data.map((row: any) => [row.nome, row.tarefa || '']),
-      startY: finalY + 6,
-      margin: { left: 10 + tableWidth + 2 },
-      tableWidth: tableWidth,
-      styles: { fontSize: 5, cellPadding: 0.5 },
-      headStyles: { fillColor: [241, 245, 249], textColor: [71, 85, 105] }
-    });
+    const siglaY = (doc as any).lastAutoTable.finalY + 4;
+    doc.setFillColor(30, 41, 59);
+    doc.rect(10, siglaY, colWidth, 6, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.text('LEGENDA DE SIGLAS', 10 + colWidth / 2, siglaY + 4, { align: 'center' });
 
     autoTable(doc, {
       head: [['SIGLA', 'DESCRIÇÃO']],
       body: SIGLA_LEGEND.map(s => [s.code, s.desc]),
-      startY: finalY + 6,
-      margin: { left: 10 + (tableWidth + 2) * 2 },
-      tableWidth: tableWidth,
+      startY: siglaY + 6,
+      margin: { left: 10 },
+      tableWidth: colWidth,
       styles: { fontSize: 5, cellPadding: 0.5 },
       headStyles: { fillColor: [241, 245, 249], textColor: [71, 85, 105] },
       didParseCell: (data) => {
@@ -692,6 +688,22 @@ export default function SupervisorDashboard() {
           }
         }
       }
+    });
+
+    // --- COLUNA 2: ROTEIRO DE ATIVIDADES ---
+    doc.setFillColor(0, 33, 105);
+    doc.rect(10 + colWidth + 5, finalY, colWidth, 6, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.text('ROTEIRO DE ATIVIDADES', 10 + colWidth + 5 + colWidth / 2, finalY + 4, { align: 'center' });
+
+    autoTable(doc, {
+      head: [['RESPONSÁVEL', 'TAREFAS DIÁRIAS']],
+      body: aiSchedule.data.map((row: any) => [row.nome, row.tarefa || '']),
+      startY: finalY + 6,
+      margin: { left: 10 + colWidth + 5 },
+      tableWidth: colWidth,
+      styles: { fontSize: 5, cellPadding: 0.5 },
+      headStyles: { fillColor: [241, 245, 249], textColor: [71, 85, 105] }
     });
 
     doc.save(`Escala_JPA_${aiSchedule.month}_${aiSchedule.year}.pdf`);
