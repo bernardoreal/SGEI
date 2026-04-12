@@ -1292,139 +1292,45 @@ export default function SupervisorDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            <Users className="text-indigo-600" /> Colaboradores da Base
+            <Clock className="text-indigo-600" /> Legenda de Horários
           </h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="text-xs text-gray-500 uppercase">
-                <tr><th className="pb-4">Nome</th><th className="pb-4">Cargo</th><th className="pb-4">Status</th></tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {employees.map(emp => (
-                  <tr key={emp.bp}>
-                    <td className="py-4 font-medium flex items-center gap-2">
-                      {emp.name}
-                      {emp.position === 'Supervisor' && (
-                        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[8px] uppercase font-black rounded border border-amber-200">
-                          Supervisor
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-4 text-gray-600">
-                      <span className={emp.position === 'Supervisor' ? 'font-bold text-amber-700' : ''}>
-                        {emp.position}
-                      </span>
-                    </td>
-                    <td className="py-4"><span className="px-2 py-1 bg-green-50 text-green-700 rounded-full text-xs">Ativo</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="grid grid-cols-2 gap-2">
+            {SHIFT_LEGEND.map(s => (
+              <div key={s.code} className="text-xs p-2 bg-gray-50 rounded-lg flex justify-between">
+                <span className="font-bold text-indigo-600">{s.code}</span>
+                <span className="text-gray-600">{s.desc}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="space-y-8">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-              <Calendar className="text-indigo-600" /> Histórico de Escalas
-            </h2>
-            <div className="space-y-4">
-              {scheduleHistory.map(s => (
-                <button 
-                  key={s.id} 
-                  onClick={() => viewSchedule(s)}
-                  className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 flex justify-between items-center hover:bg-indigo-50 transition-colors"
-                >
-                  <div>
-                    <p className="font-bold text-sm">{new Date(s.start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()}</p>
-                    <p className="text-xs text-gray-500">Criado por: {s.created_by_user?.name || 'Sistema'}</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                      s.status === 'publicada' ? 'bg-green-100 text-green-700' :
-                      s.status === 'arquivada' ? 'bg-gray-200 text-gray-600' :
-                      'bg-amber-100 text-amber-700'
-                    }`}>
-                      {s.status || 'Rascunho'}
-                    </span>
-                    <div className="text-xs font-bold text-indigo-600">Visualizar</div>
-                  </div>
-                </button>
-              ))}
-            </div>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+            <FileText className="text-indigo-600" /> Roteiro de Atividades
+          </h2>
+          <div className="space-y-4">
+            {aiSchedule?.data.map((row: any) => (
+              <div key={row.bp} className="text-xs p-3 bg-gray-50 rounded-lg">
+                <div className="font-bold text-gray-900">{row.nome}</div>
+                <div className="text-gray-600 truncate">{row.tarefa || 'Sem tarefas'}</div>
+              </div>
+            ))}
           </div>
+        </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-              <ArrowRightLeft className="text-indigo-600" /> Trocas e Indisponibilidades
-            </h2>
-            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-              {shiftRequests.length > 0 ? (
-                shiftRequests.map(req => {
-                  const emp = employees.find(e => e.bp === req.requester_bp);
-                  return (
-                    <div key={req.id} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-bold text-sm text-slate-800">{emp?.name || req.requester_bp}</p>
-                          <p className="text-[10px] text-slate-400 uppercase font-black">BP: {req.requester_bp}</p>
-                        </div>
-                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
-                          req.status === 'aprovado' ? 'bg-green-100 text-green-700' :
-                          req.status === 'rejeitado' ? 'bg-red-100 text-red-700' :
-                          'bg-amber-100 text-amber-700'
-                        }`}>
-                          {req.status}
-                        </span>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-2 mb-3">
-                        <div className="bg-white p-2 rounded-lg border border-slate-100">
-                          <p className="text-[9px] text-slate-400 uppercase font-bold">Data</p>
-                          <p className="text-xs font-bold text-slate-600">{new Date(req.requested_date).toLocaleDateString('pt-BR')}</p>
-                        </div>
-                        <div className="bg-white p-2 rounded-lg border border-slate-100">
-                          <p className="text-[9px] text-slate-400 uppercase font-bold">Turno</p>
-                          <p className="text-xs font-bold text-slate-600">{req.requested_shift}</p>
-                        </div>
-                      </div>
-
-                      <div className="mb-4">
-                        <p className="text-[9px] text-slate-400 uppercase font-bold mb-1">Motivo</p>
-                        <p className="text-xs text-slate-600 leading-relaxed bg-white p-2 rounded-lg border border-slate-100 italic">
-                          &quot;{req.reason}&quot;
-                        </p>
-                      </div>
-
-                      {req.status === 'pendente' && (
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={() => handleUpdateRequestStatus(req.id, 'aprovado')}
-                            disabled={updatingRequest === req.id}
-                            className="flex-1 py-2 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 transition shadow-sm disabled:opacity-50"
-                          >
-                            {updatingRequest === req.id ? '...' : 'Aprovar'}
-                          </button>
-                          <button 
-                            onClick={() => handleUpdateRequestStatus(req.id, 'rejeitado')}
-                            disabled={updatingRequest === req.id}
-                            className="flex-1 py-2 bg-red-50 text-red-600 text-xs font-bold rounded-lg hover:bg-red-100 transition disabled:opacity-50"
-                          >
-                            {updatingRequest === req.id ? '...' : 'Rejeitar'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="text-center py-8 text-slate-400 italic text-sm">
-                  Nenhuma solicitação pendente.
-                </div>
-              )}
-            </div>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+            <Info className="text-indigo-600" /> Legenda de Siglas
+          </h2>
+          <div className="grid grid-cols-1 gap-2">
+            {SIGLA_LEGEND.map(s => (
+              <div key={s.code} className="text-xs p-2 bg-gray-50 rounded-lg flex items-center gap-2">
+                <span className={`px-2 py-1 rounded ${s.color || 'bg-gray-200'}`}>{s.code}</span>
+                <span className="text-gray-600">{s.desc}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
