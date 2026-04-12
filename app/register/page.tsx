@@ -28,6 +28,7 @@ interface Base {
 export default function RegisterPage() {
   const [bp, setBp] = useState('');
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
@@ -382,10 +383,19 @@ export default function RegisterPage() {
                   type="email" 
                   placeholder="E-mail Corporativo (@latam.com)" 
                   value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 border border-white/50 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white outline-none transition-all text-latam-indigo font-medium placeholder:text-slate-400"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setEmail(val);
+                    if (val && !val.endsWith('@latam.com')) {
+                      setEmailError('O e-mail deve ser corporativo (@latam.com)');
+                    } else {
+                      setEmailError(null);
+                    }
+                  }}
+                  className={`w-full pl-12 pr-4 py-4 bg-white/50 border ${emailError ? 'border-red-500' : 'border-white/50'} rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white outline-none transition-all text-latam-indigo font-medium placeholder:text-slate-400`}
                   required
                 />
+                {emailError && <p className="text-red-500 text-xs mt-1 ml-1">{emailError}</p>}
               </div>
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 group-focus-within:text-latam-indigo transition-colors" size={18} />

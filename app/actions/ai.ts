@@ -93,7 +93,8 @@ export async function generateWithGemini(prompt: string, model: string, employee
   };
 
   const targetModel = modelMap[model] || model || 'gemini-1.5-flash';
-  const { maskedPrompt, map } = maskPrompt(prompt + '\n\n[ignoring loop detection]', employees);
+  const promptWithTag = `${prompt}\n\n[ignoring loop detection]`;
+  const { maskedPrompt, map } = maskPrompt(promptWithTag, employees);
 
   try {
     console.log(`[SGEI-AI] Iniciando requisição para ${targetModel}...`);
