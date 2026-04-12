@@ -14,12 +14,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {
-        console.error('Dashboard Layout - Auth Error:', error.message);
         if (error.message.includes('Refresh Token Not Found') || error.message.includes('Invalid Refresh Token')) {
+          // Silently handle expired sessions
           await supabase.auth.signOut();
           localStorage.clear();
           router.push('/');
           return;
+        } else {
+          console.error('Dashboard Layout - Auth Error:', error.message);
         }
       }
 

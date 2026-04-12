@@ -23,8 +23,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import LATAMScheduleTable, { SHIFT_LEGEND, SIGLA_LEGEND } from '@/components/LATAMScheduleTable';
-import { GoogleGenAI } from "@google/genai";
-import { generateWithOpenRouter } from '@/app/actions/ai';
+import { generateWithOpenRouter, generateWithGemini } from '@/app/actions/ai';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -45,12 +44,14 @@ export default function SupervisorDashboard() {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
-        console.error('Session error:', sessionError);
         if (sessionError.message.includes('Refresh Token Not Found') || sessionError.message.includes('Invalid Refresh Token')) {
+          // Silently handle expired sessions
           await supabase.auth.signOut();
           localStorage.clear();
           window.location.href = '/';
           return;
+        } else {
+          console.error('Session error:', sessionError);
         }
       }
 
@@ -89,7 +90,7 @@ export default function SupervisorDashboard() {
       return;
     }
 
-    if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY && llmConfig.provider === 'gemini') {
+    if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY_SGEI && !process.env.GEMINI_API_KEY_SGEI && llmConfig.provider === 'gemini') {
       setError('Chave de API do Gemini não configurada.');
       return;
     }
@@ -188,24 +189,7 @@ export default function SupervisorDashboard() {
           responseText = await generateWithOpenRouter(prompt, llmConfig.model);
         }
       } else {
-        const response = await ai.models.generateContent({
-          model: llmConfig.model || "gemini-3-flash-preview",
-          contents: prompt,
-        });
-        
-        responseText = response.text || '';
-
-        // Log usage (Gemini)
-        const usage = response.usageMetadata;
-        if (usage) {
-          await supabase.from('ai_usage_logs').insert([{
-            model: llmConfig.model || "gemini-3-flash-preview",
-            provider: 'gemini',
-            prompt_tokens: usage.promptTokenCount,
-            completion_tokens: usage.candidatesTokenCount,
-            total_tokens: usage.totalTokenCount
-          }]);
-        }
+        responseText = await generateWithGemini(prompt, llmConfig.model);
       }
       
       if (!responseText) throw new Error('Resposta vazia da IA');
@@ -224,8 +208,6 @@ export default function SupervisorDashboard() {
       setLoading(false);
     }
   };
-
-  const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || '' });
 
   const viewSchedule = async (schedule: any) => {
     setLoading(true);

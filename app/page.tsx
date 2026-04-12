@@ -33,10 +33,15 @@ export default function LoginPage() {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
-        console.warn('Erro de sessão detectado, limpando storage:', sessionError.message);
-        // Se houver erro de refresh token, forçamos o logout para limpar o storage local
-        await supabase.auth.signOut();
-        localStorage.clear();
+        if (sessionError.message.includes('Refresh Token Not Found') || sessionError.message.includes('Invalid Refresh Token')) {
+          // Silently handle expired sessions
+          await supabase.auth.signOut();
+          localStorage.clear();
+        } else {
+          console.warn('Erro de sessão detectado, limpando storage:', sessionError.message);
+          await supabase.auth.signOut();
+          localStorage.clear();
+        }
       } else if (session) {
         // Se já existe uma sessão válida, redireciona para o dashboard
         window.location.href = '/dashboard';

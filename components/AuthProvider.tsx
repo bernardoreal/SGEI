@@ -26,13 +26,15 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Auth Provider - Session Error:', error.message);
           if (error.message.includes('Refresh Token Not Found') || error.message.includes('Invalid Refresh Token')) {
+            // Silently handle expired sessions
             await supabase.auth.signOut();
             localStorage.clear();
             if (pathname !== '/' && pathname !== '/register') {
               router.replace('/');
             }
+          } else {
+            console.error('Auth Provider - Session Error:', error.message);
           }
         }
         

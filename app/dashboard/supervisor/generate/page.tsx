@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { generateWithOpenRouter } from '@/app/actions/ai';
+import { generateWithOpenRouter, generateWithGemini } from '@/app/actions/ai';
 import { Cpu, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
 
 export default function ScheduleGenerator() {
   const [loading, setLoading] = useState(false);
@@ -61,24 +60,7 @@ export default function ScheduleGenerator() {
           responseText = await generateWithOpenRouter(prompt, llmConfig.model);
         }
       } else {
-        const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || '' });
-        const response = await ai.models.generateContent({
-          model: llmConfig.model || "gemini-3-flash-preview",
-          contents: prompt,
-        });
-        responseText = response.text || '';
-
-        // Log usage (Gemini)
-        const usage = (response as any).usageMetadata;
-        if (usage) {
-          await supabase.from('ai_usage_logs').insert([{
-            model: llmConfig.model || "gemini-3-flash-preview",
-            provider: 'gemini',
-            prompt_tokens: usage.promptTokenCount,
-            completion_tokens: usage.candidatesTokenCount,
-            total_tokens: usage.totalTokenCount
-          }]);
-        }
+        responseText = await generateWithGemini(prompt, llmConfig.model);
       }
 
       setResult(responseText || 'Não foi possível gerar a escala.');

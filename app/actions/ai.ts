@@ -62,6 +62,43 @@ export async function generateWithOpenRouter(prompt: string, model: string) {
   }
 }
 
+export async function generateWithGemini(prompt: string, model: string) {
+  const apiKey = process.env.GEMINI_API_KEY_SGEI || process.env.NEXT_PUBLIC_GEMINI_API_KEY_SGEI || process.env.GEMINI_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY_SGEI is not configured on the server');
+  }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: model || "gemini-3-flash-preview",
+      contents: prompt,
+    });
+
+    const content = response.text || '';
+    const usage = response.usageMetadata;
+
+    if (usage) {
+      try {
+        await supabase.from('ai_usage_logs').insert([{
+          model: model || "gemini-3-flash-preview",
+          provider: 'gemini',
+          prompt_tokens: usage.promptTokenCount,
+          completion_tokens: usage.candidatesTokenCount,
+          total_tokens: usage.totalTokenCount
+        }]);
+      } catch (e) {
+        console.error('Error logging AI usage:', e);
+      }
+    }
+
+    return content;
+  } catch (error: any) {
+    console.error('Gemini Error:', error);
+    throw new Error(error.message || 'Failed to generate content with Gemini');
+  }
+}
 export async function getOpenRouterKeyInfo() {
   const apiKey = process.env.OPENROUTER_API_KEY || process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
   

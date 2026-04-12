@@ -140,11 +140,12 @@ export default function AdminDashboard() {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
-        console.error('Session error:', sessionError);
         if (sessionError.message.includes('Refresh Token Not Found') || sessionError.message.includes('Invalid Refresh Token')) {
           await supabase.auth.signOut();
           window.location.href = '/';
           return;
+        } else {
+          console.error('Session error:', sessionError);
         }
       }
 
@@ -595,7 +596,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleUpdateLlmConfig = async (provider: string, model: string) => {
+  const handleUpdateLlmConfig = async (provider: string, model: string, silent = false) => {
     setSavingLlm(true);
     try {
       const newConfig = { provider, model };
@@ -612,10 +613,14 @@ export default function AdminDashboard() {
         table_name: 'system_settings'
       });
 
-      alert('Configuração de IA salva com sucesso!');
+      if (!silent) {
+        alert('Configuração de IA salva com sucesso!');
+      }
     } catch (error: any) {
       console.error('Error saving LLM config:', error);
-      alert('Erro ao salvar configuração: ' + error.message);
+      if (!silent) {
+        alert('Erro ao salvar configuração: ' + error.message);
+      }
     } finally {
       setSavingLlm(false);
     }
@@ -1469,13 +1474,23 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                 <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Provedor</label>
                 <div className="flex gap-2">
                   <button 
-                    onClick={() => setLlmConfig({ ...llmConfig, provider: 'gemini' })}
+                    onClick={() => {
+                      const newProvider = 'gemini';
+                      const newModel = 'gemini-1.5-flash';
+                      setLlmConfig({ provider: newProvider, model: newModel });
+                      handleUpdateLlmConfig(newProvider, newModel, true);
+                    }}
                     className={`flex-1 py-2 rounded-lg border transition-all text-xs font-bold ${llmConfig.provider === 'gemini' ? 'border-indigo-600 bg-indigo-50 text-indigo-900' : 'border-gray-100 text-gray-400'}`}
                   >
                     Gemini
                   </button>
                   <button 
-                    onClick={() => setLlmConfig({ ...llmConfig, provider: 'openrouter' })}
+                    onClick={() => {
+                      const newProvider = 'openrouter';
+                      const newModel = 'meta-llama/llama-3.3-70b-instruct:free';
+                      setLlmConfig({ provider: newProvider, model: newModel });
+                      handleUpdateLlmConfig(newProvider, newModel, true);
+                    }}
                     className={`flex-1 py-2 rounded-lg border transition-all text-xs font-bold ${llmConfig.provider === 'openrouter' ? 'border-indigo-600 bg-indigo-50 text-indigo-900' : 'border-gray-100 text-gray-400'}`}
                   >
                     OpenRouter
@@ -1488,7 +1503,11 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                 <select 
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
                   value={llmConfig.model}
-                  onChange={(e) => setLlmConfig({ ...llmConfig, model: e.target.value })}
+                  onChange={(e) => {
+                    const newModel = e.target.value;
+                    setLlmConfig({ ...llmConfig, model: newModel });
+                    handleUpdateLlmConfig(llmConfig.provider, newModel, true);
+                  }}
                 >
                   {llmConfig.provider === 'gemini' ? (
                     <>
@@ -1507,16 +1526,15 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                     </>
                   )}
                 </select>
+                
+                <div className="mt-4 p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
+                  <span className="text-xs font-bold text-indigo-900">
+                    Modelo principal: {llmConfig.model}
+                  </span>
+                </div>
               </div>
             </div>
-
-            <button 
-              onClick={() => handleUpdateLlmConfig(llmConfig.provider, llmConfig.model)}
-              disabled={savingLlm}
-              className="mt-6 w-full py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {savingLlm ? 'Salvando...' : 'Salvar Motor'}
-            </button>
           </div>
 
           {/* Card 2: Controle de Custos (OpenRouter) */}
@@ -1562,8 +1580,10 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                 )}
               </div>
             ) : (
-              <div className="h-full flex items-center justify-center text-gray-400 text-sm italic">
-                Aguardando conexão com OpenRouter...
+              <div className="h-full flex items-center justify-center text-gray-400 text-sm italic text-center p-4">
+                {llmConfig.provider === 'gemini' 
+                  ? 'Controle financeiro não aplicável (Provedor Gemini ativo)'
+                  : 'Aguardando conexão com OpenRouter...'}
               </div>
             )}
           </div>
