@@ -900,6 +900,23 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (public.is_admin(
 
 DROP POLICY IF EXISTS "Users can view own data" ON users;
 CREATE POLICY "Users can view own data" ON users FOR SELECT USING (id = auth.uid());
+-- 6. Tabela Knowledge Base (Base de Conhecimento)
+CREATE TABLE IF NOT EXISTS public.knowledge_base (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    file_name TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.knowledge_base ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Supervisors can manage knowledge base" ON public.knowledge_base;
+CREATE POLICY "Supervisors can manage knowledge base" ON public.knowledge_base FOR ALL USING (public.is_admin() OR EXISTS (
+    SELECT 1 FROM public.users WHERE email = auth.jwt() ->> 'email' AND 'supervisor' = ANY(roles)
+));
+
+DROP POLICY IF EXISTS "Everyone can view knowledge base" ON public.knowledge_base;
+CREATE POLICY "Everyone can view knowledge base" ON public.knowledge_base FOR SELECT USING (true);
 `;
                   navigator.clipboard.writeText(sql);
                   alert('SQL de reparo copiado para a área de transferência! Execute-o no SQL Editor do Supabase.');

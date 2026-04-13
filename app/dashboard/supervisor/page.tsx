@@ -21,7 +21,10 @@ import {
   Printer,
   Search,
   Cpu,
-  Info
+  Info,
+  BookOpen,
+  Trash2,
+  Upload
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import LATAMScheduleTable, { SHIFT_LEGEND, SIGLA_LEGEND } from '@/components/LATAMScheduleTable';
@@ -70,6 +73,8 @@ export default function SupervisorDashboard() {
   const [updatingRequest, setUpdatingRequest] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<any | null>(null);
+  const [knowledgeFiles, setKnowledgeFiles] = useState<any[]>([]);
+  const [uploadingKb, setUploadingKb] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -89,11 +94,14 @@ export default function SupervisorDashboard() {
 
       const { data: empData } = await supabase.from('base_jpa').select('*');
       const { data: reqData } = await supabase.from('shift_requests').select('*');
+      const { data: kbData } = await supabase.from('knowledge_base').select('id, file_name, created_at').order('created_at', { ascending: false });
+      
       if (empData) {
         setEmployees(empData);
         setFilteredEmployees(empData);
       }
       if (reqData) setShiftRequests(reqData);
+      if (kbData) setKnowledgeFiles(kbData);
 
       const { data: historyData } = await supabase
         .from('schedules')
@@ -309,6 +317,15 @@ export default function SupervisorDashboard() {
         restricoes: e.operational_restrictions
       }));
 
+      // 3. Preparar Base de Conhecimento
+      let kbContext = '';
+      if (knowledgeFiles && knowledgeFiles.length > 0) {
+        const { data: kbData } = await supabase.from('knowledge_base').select('content');
+        if (kbData && kbData.length > 0) {
+          kbContext = `\n\nBASE DE CONHECIMENTO (EXEMPLOS DE ESCALAS ANTERIORES):\n${kbData.map(kb => kb.content).join('\n\n---\n\n')}\n\nUse esses exemplos para entender o padrão de preenchimento e distribuição de turnos.`;
+        }
+      }
+
       const prompt = `
         Gere uma escala MENSAL para o terminal JPA (João Pessoa) seguindo o modelo LATAM.
         
@@ -329,6 +346,7 @@ export default function SupervisorDashboard() {
 
         HISTÓRICO: ${historyContext}
         COLABORADORES: ${JSON.stringify(employeeContext)}
+        ${kbContext}
 
         SAÍDA JSON APENAS:
         {
@@ -798,6 +816,67 @@ export default function SupervisorDashboard() {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleUploadKb = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingKb(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Sessão expirada. Faça login novamente.');
+
+      const { uploadKnowledgeBaseFile } = await import('@/app/actions/knowledge');
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.type !== 'application/pdf') {
+          alert(`O arquivo ${file.name} não é um PDF válido.`);
+          continue;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const result = await uploadKnowledgeBaseFile(formData, session.access_token);
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+
+        if (result.data) {
+          setKnowledgeFiles(prev => [result.data, ...prev]);
+        }
+      }
+      alert('Arquivos processados e adicionados à Base de Conhecimento com sucesso!');
+    } catch (err: any) {
+      console.error('Erro no upload:', err);
+      alert('Erro no upload: ' + err.message);
+    } finally {
+      setUploadingKb(false);
+      if (e.target) e.target.value = ''; // Reset input
+    }
+  };
+
+  const handleDeleteKb = async (id: string) => {
+    if (!confirm('Tem certeza que deseja remover este arquivo da base de conhecimento? A IA não usará mais este arquivo como contexto.')) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Sessão expirada. Faça login novamente.');
+
+      const { deleteKnowledgeBaseFile } = await import('@/app/actions/knowledge');
+      const result = await deleteKnowledgeBaseFile(id, session.access_token);
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      setKnowledgeFiles(prev => prev.filter(f => f.id !== id));
+    } catch (err: any) {
+      console.error('Erro ao deletar:', err);
+      alert('Erro ao deletar: ' + err.message);
+    }
   };
 
   const handlePublishSchedule = async () => {
@@ -1465,6 +1544,71 @@ export default function SupervisorDashboard() {
                 </div>
               </div>
             ))
+          )}
+        </div>
+      </div>
+
+      {/* Base de Conhecimento Section */}
+      <div className="mt-8 bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <BookOpen className="text-latam-indigo" size={24} />
+              Base de Conhecimento (IA)
+            </h2>
+            <p className="text-sm text-slate-500 mt-1">
+              Faça upload de escalas anteriores em PDF para que a IA aprenda o padrão e gere escalas mais precisas.
+            </p>
+          </div>
+          
+          <div>
+            <label className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-bold text-sm cursor-pointer transition-all ${uploadingKb ? 'bg-slate-100 text-slate-400' : 'bg-latam-indigo text-white hover:bg-opacity-90 shadow-lg shadow-indigo-100'}`}>
+              <Upload size={18} />
+              {uploadingKb ? 'Processando...' : 'Fazer Upload (PDF)'}
+              <input 
+                type="file" 
+                accept="application/pdf" 
+                multiple 
+                className="hidden" 
+                onChange={handleUploadKb}
+                disabled={uploadingKb}
+              />
+            </label>
+          </div>
+        </div>
+        
+        <div className="space-y-3">
+          {knowledgeFiles.length === 0 ? (
+            <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+              <BookOpen size={32} className="mx-auto mb-3 text-slate-300" />
+              <p>Nenhum arquivo na base de conhecimento.</p>
+              <p className="text-xs mt-1">Faça upload de PDFs de escalas antigas para melhorar a IA.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {knowledgeFiles.map(file => (
+                <div key={file.id} className="flex items-center justify-between p-4 border border-slate-100 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                      <FileText size={20} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-sm text-slate-900 truncate" title={file.file_name}>{file.file_name}</div>
+                      <div className="text-xs text-slate-500">
+                        {new Date(file.created_at).toLocaleDateString('pt-BR')}
+                      </div>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleDeleteKb(file.id)}
+                    className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition-colors shrink-0"
+                    title="Remover arquivo"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
