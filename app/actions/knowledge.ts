@@ -1,7 +1,6 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
-import pdfParse from "pdf-parse";
 import { generateWithGemini, generateWithOpenRouter } from './ai';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -22,6 +21,7 @@ export async function uploadKnowledgeBaseFile(formData: FormData, token: string)
     const buffer = Buffer.from(arrayBuffer);
 
     // Extrair texto do PDF
+    const pdfParse = require('pdf-parse');
     const pdfData = await pdfParse(buffer);
     const rawText = pdfData.text;
 
