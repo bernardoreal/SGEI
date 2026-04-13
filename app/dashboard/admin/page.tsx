@@ -877,7 +877,8 @@ export default function AdminDashboard() {
 -- 1. Remover a função problemática para evitar conflitos (CASCADE remove as políticas dependentes)
 DROP FUNCTION IF EXISTS public.is_admin() CASCADE;
 
--- 2. Políticas para Usuários (users)
+-- 2. Políticas Universais de Leitura (Garante que os contadores funcionem)
+-- USERS
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admins can view all users" ON public.users;
 DROP POLICY IF EXISTS "Admins can manage users" ON public.users;
@@ -885,97 +886,115 @@ DROP POLICY IF EXISTS "Users can view own data" ON public.users;
 DROP POLICY IF EXISTS "Users can update own data" ON public.users;
 DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.users;
 DROP POLICY IF EXISTS "Enable all access for admin email" ON public.users;
+DROP POLICY IF EXISTS "Enable read access for all" ON public.users;
 
--- Permite que qualquer usuário logado veja a lista de usuários (necessário para o painel)
-CREATE POLICY "Enable read access for all authenticated users" ON public.users FOR SELECT USING (auth.role() = 'authenticated');
--- Permite que o seu e-mail gerencie tudo na tabela de usuários
+CREATE POLICY "Enable read access for all" ON public.users FOR SELECT USING (true);
 CREATE POLICY "Enable all access for admin email" ON public.users FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
--- Permite que os usuários atualizem seus próprios dados
 CREATE POLICY "Users can update own data" ON public.users FOR UPDATE USING (id = auth.uid());
 
-
--- 3. Políticas para Bases (bases)
+-- BASES
 ALTER TABLE public.bases ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Everyone can view bases" ON public.bases;
 DROP POLICY IF EXISTS "Admins can manage bases" ON public.bases;
 DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.bases;
 DROP POLICY IF EXISTS "Enable all access for admin email" ON public.bases;
+DROP POLICY IF EXISTS "Enable read access for all" ON public.bases;
 
-CREATE POLICY "Enable read access for all authenticated users" ON public.bases FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable read access for all" ON public.bases FOR SELECT USING (true);
 CREATE POLICY "Enable all access for admin email" ON public.bases FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
 
+-- ROLES
+ALTER TABLE public.roles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Everyone can view roles" ON public.roles;
+CREATE POLICY "Everyone can view roles" ON public.roles FOR SELECT USING (true);
 
--- 4. Políticas para Colaboradores Operacionais (base_jpa)
+-- BASE_JPA
 ALTER TABLE public.base_jpa ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Everyone can view base_jpa" ON public.base_jpa;
 DROP POLICY IF EXISTS "Admins can manage base_jpa" ON public.base_jpa;
 DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.base_jpa;
 DROP POLICY IF EXISTS "Enable all access for admin email" ON public.base_jpa;
+DROP POLICY IF EXISTS "Enable read access for all" ON public.base_jpa;
 
-CREATE POLICY "Enable read access for all authenticated users" ON public.base_jpa FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable read access for all" ON public.base_jpa FOR SELECT USING (true);
 CREATE POLICY "Enable all access for admin email" ON public.base_jpa FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
 
-
--- 5. Políticas para Auditoria (audit_log)
+-- AUDIT_LOG
 ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admins can view audit logs" ON public.audit_log;
 DROP POLICY IF EXISTS "Admins can insert audit logs" ON public.audit_log;
 DROP POLICY IF EXISTS "Enable read access for admin" ON public.audit_log;
 DROP POLICY IF EXISTS "Enable insert for authenticated" ON public.audit_log;
+DROP POLICY IF EXISTS "Enable read access for all" ON public.audit_log;
 
-CREATE POLICY "Enable read access for admin" ON public.audit_log FOR SELECT USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
-CREATE POLICY "Enable insert for authenticated" ON public.audit_log FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Enable read access for all" ON public.audit_log FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated" ON public.audit_log FOR INSERT WITH CHECK (true);
+CREATE POLICY "Enable all access for admin email" ON public.audit_log FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
 
-
--- 6. Políticas para Configurações do Sistema (system_settings)
+-- SYSTEM_SETTINGS
 ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Everyone can view system settings" ON public.system_settings;
 DROP POLICY IF EXISTS "Admins can manage system settings" ON public.system_settings;
 DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.system_settings;
 DROP POLICY IF EXISTS "Enable all access for admin email" ON public.system_settings;
+DROP POLICY IF EXISTS "Enable read access for all" ON public.system_settings;
 
-CREATE POLICY "Enable read access for all authenticated users" ON public.system_settings FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable read access for all" ON public.system_settings FOR SELECT USING (true);
 CREATE POLICY "Enable all access for admin email" ON public.system_settings FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
 
--- 7. Tabela Knowledge Base (Base de Conhecimento)
-CREATE TABLE IF NOT EXISTS public.knowledge_base (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    file_name TEXT NOT NULL,
-    content TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
+-- KNOWLEDGE_BASE
 ALTER TABLE public.knowledge_base ENABLE ROW LEVEL SECURITY;
-
 DROP POLICY IF EXISTS "Supervisors can manage knowledge base" ON public.knowledge_base;
 DROP POLICY IF EXISTS "Everyone can view knowledge base" ON public.knowledge_base;
 DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.knowledge_base;
 DROP POLICY IF EXISTS "Enable all access for admin email" ON public.knowledge_base;
+DROP POLICY IF EXISTS "Enable read access for all" ON public.knowledge_base;
 
-CREATE POLICY "Enable read access for all authenticated users" ON public.knowledge_base FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable read access for all" ON public.knowledge_base FOR SELECT USING (true);
 CREATE POLICY "Enable all access for admin email" ON public.knowledge_base FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
 
--- 8. Tabela e Políticas para Logs de IA (ai_usage_logs)
-CREATE TABLE IF NOT EXISTS public.ai_usage_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id),
-    model TEXT NOT NULL,
-    provider TEXT NOT NULL,
-    prompt_tokens INT DEFAULT 0,
-    completion_tokens INT DEFAULT 0,
-    total_tokens INT DEFAULT 0,
-    cost DECIMAL(10, 6) DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
+-- AI_USAGE_LOGS
 ALTER TABLE public.ai_usage_logs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.ai_usage_logs;
 DROP POLICY IF EXISTS "Enable insert for anon" ON public.ai_usage_logs;
 DROP POLICY IF EXISTS "Enable all access for admin email" ON public.ai_usage_logs;
+DROP POLICY IF EXISTS "Enable read access for all" ON public.ai_usage_logs;
 
-CREATE POLICY "Enable read access for all authenticated users" ON public.ai_usage_logs FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable read access for all" ON public.ai_usage_logs FOR SELECT USING (true);
 CREATE POLICY "Enable insert for anon" ON public.ai_usage_logs FOR INSERT WITH CHECK (true);
 CREATE POLICY "Enable all access for admin email" ON public.ai_usage_logs FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
+
+-- 3. INSERIR DADOS BÁSICOS CASO ESTEJAM FALTANDO
+INSERT INTO public.roles (name, description) VALUES 
+('admin', 'Administrador Global'),
+('manager', 'Gerente Global'),
+('coordinator', 'Coordenador Global'),
+('supervisor', 'Supervisor de Base'),
+('employee', 'Colaborador')
+ON CONFLICT (name) DO NOTHING;
+
+INSERT INTO public.bases (code_iata, name) VALUES 
+('JPA', 'João Pessoa'),
+('REC', 'Recife'),
+('NAT', 'Natal'),
+('MCZ', 'Maceió'),
+('FOR', 'Fortaleza'),
+('SSA', 'Salvador')
+ON CONFLICT (code_iata) DO NOTHING;
+
+-- 4. SINCRONIZAR USUÁRIOS DO AUTH PARA A TABELA PUBLIC.USERS
+-- Isso garante que, se o trigger falhou, os usuários apareçam no painel
+INSERT INTO public.users (id, email, name, roles)
+SELECT id, email, raw_user_meta_data->>'full_name', ARRAY['admin']
+FROM auth.users
+WHERE email = 'bernardo.real@latam.com'
+ON CONFLICT (id) DO UPDATE SET roles = ARRAY['admin'];
+
+INSERT INTO public.users (id, email, name, roles)
+SELECT id, email, raw_user_meta_data->>'full_name', ARRAY['pending']
+FROM auth.users
+WHERE email != 'bernardo.real@latam.com'
+ON CONFLICT (id) DO NOTHING;
 `;
                   navigator.clipboard.writeText(sql);
                   alert('SQL de reparo copiado para a área de transferência! Execute-o no SQL Editor do Supabase.');
