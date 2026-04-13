@@ -48,7 +48,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <button
                 onClick={async () => {
                   await supabase.auth.signOut();
-                  localStorage.removeItem('sgei-auth-token');
                   router.push('/');
                 }}
                 className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-latam-crimson transition-colors border border-gray-100 rounded-xl hover:bg-red-50"
