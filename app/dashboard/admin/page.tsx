@@ -98,6 +98,7 @@ export default function AdminDashboard() {
   const [savingLlm, setSavingLlm] = useState(false);
   const [openRouterInfo, setOpenRouterInfo] = useState<any>(null);
   const [tokenStats, setTokenStats] = useState({ prompt: 0, completion: 0, total: 0 });
+  const [geminiDailyRequests, setGeminiDailyRequests] = useState(0);
   const [loadingStats, setLoadingStats] = useState(false);
   const [notifications, setNotifications] = useState<{ id: string; message: string }[]>([]);
   const [viewMode, setViewMode] = useState<'admin' | 'manager' | 'coordinator' | 'supervisor' | 'employee'>('admin');
@@ -183,9 +184,13 @@ export default function AdminDashboard() {
 
       // Buscar estatísticas de tokens
       try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayIso = today.toISOString();
+
         const { data: usageData } = await supabase
           .from('ai_usage_logs')
-          .select('prompt_tokens, completion_tokens, total_tokens');
+          .select('prompt_tokens, completion_tokens, total_tokens, provider, created_at');
         
         if (usageData) {
           const stats = usageData.reduce((acc, curr) => ({
@@ -194,6 +199,12 @@ export default function AdminDashboard() {
             total: acc.total + (curr.total_tokens || 0)
           }), { prompt: 0, completion: 0, total: 0 });
           setTokenStats(stats);
+
+          // Count Gemini requests today
+          const geminiToday = usageData.filter(log => 
+            log.provider === 'gemini' && new Date(log.created_at) >= today
+          ).length;
+          setGeminiDailyRequests(geminiToday);
         }
       } catch (err) {
         console.error('Error fetching token stats:', err);
@@ -863,8 +874,8 @@ export default function AdminDashboard() {
                 onClick={() => {
                   const sql = `-- Execute este SQL no Editor do Supabase:
 
--- 1. Remover a função problemática para evitar conflitos
-DROP FUNCTION IF EXISTS public.is_admin();
+-- 1. Remover a função problemática para evitar conflitos (CASCADE remove as políticas dependentes)
+DROP FUNCTION IF EXISTS public.is_admin() CASCADE;
 
 -- 2. Políticas para Usuários (users)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
@@ -942,6 +953,28 @@ DROP POLICY IF EXISTS "Enable all access for admin email" ON public.knowledge_ba
 
 CREATE POLICY "Enable read access for all authenticated users" ON public.knowledge_base FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Enable all access for admin email" ON public.knowledge_base FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
+
+-- 8. Tabela e Políticas para Logs de IA (ai_usage_logs)
+CREATE TABLE IF NOT EXISTS public.ai_usage_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id),
+    model TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    prompt_tokens INT DEFAULT 0,
+    completion_tokens INT DEFAULT 0,
+    total_tokens INT DEFAULT 0,
+    cost DECIMAL(10, 6) DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE public.ai_usage_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.ai_usage_logs;
+DROP POLICY IF EXISTS "Enable insert for anon" ON public.ai_usage_logs;
+DROP POLICY IF EXISTS "Enable all access for admin email" ON public.ai_usage_logs;
+
+CREATE POLICY "Enable read access for all authenticated users" ON public.ai_usage_logs FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable insert for anon" ON public.ai_usage_logs FOR INSERT WITH CHECK (true);
+CREATE POLICY "Enable all access for admin email" ON public.ai_usage_logs FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
 `;
                   navigator.clipboard.writeText(sql);
                   alert('SQL de reparo copiado para a área de transferência! Execute-o no SQL Editor do Supabase.');
@@ -1618,7 +1651,32 @@ CREATE POLICY "Enable all access for admin email" ON public.knowledge_base FOR A
               Controle Financeiro
             </h3>
             
-            {openRouterInfo ? (
+            {llmConfig.provider === 'gemini' ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                  <div className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Requisições Hoje (Plano Free)</div>
+                  <div className="text-3xl font-black text-emerald-700">
+                    {geminiDailyRequests} <span className="text-lg text-emerald-600/70">/ 1500</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px] font-bold uppercase text-gray-400">
+                    <span>Consumo Diário</span>
+                    <span>{((geminiDailyRequests / 1500) * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-500 ${geminiDailyRequests > 1200 ? 'bg-red-500' : 'bg-emerald-500'}`}
+                      style={{ width: `${Math.min((geminiDailyRequests / 1500) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-gray-500 italic mt-2">
+                  * O plano gratuito do Gemini possui limite de 1.500 requisições por dia.
+                </p>
+              </div>
+            ) : openRouterInfo ? (
               <div className="space-y-4">
                 <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
                   <div className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Saldo Disponível</div>
@@ -1655,9 +1713,7 @@ CREATE POLICY "Enable all access for admin email" ON public.knowledge_base FOR A
               </div>
             ) : (
               <div className="h-full flex items-center justify-center text-gray-400 text-sm italic text-center p-4">
-                {llmConfig.provider === 'gemini' 
-                  ? 'Controle financeiro não aplicável (Provedor Gemini ativo)'
-                  : 'Aguardando conexão com OpenRouter...'}
+                Aguardando conexão com OpenRouter...
               </div>
             )}
           </div>
