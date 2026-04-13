@@ -863,44 +863,69 @@ export default function AdminDashboard() {
                 onClick={() => {
                   const sql = `-- Execute este SQL no Editor do Supabase:
 
--- 1. Criar função segura para verificar admin (evita loop infinito de RLS)
-CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS BOOLEAN
-LANGUAGE sql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT (auth.jwt() ->> 'email' = 'bernardo.real@latam.com') OR EXISTS (
-    SELECT 1 FROM public.users
-    WHERE email = auth.jwt() ->> 'email' AND 'admin' = ANY(roles)
-  );
-$$;
+-- 1. Remover a função problemática para evitar conflitos
+DROP FUNCTION IF EXISTS public.is_admin();
 
--- 2. Políticas para Bases
-DROP POLICY IF EXISTS "Everyone can view bases" ON bases;
-CREATE POLICY "Everyone can view bases" ON bases FOR SELECT USING (true);
+-- 2. Políticas para Usuários (users)
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Admins can view all users" ON public.users;
+DROP POLICY IF EXISTS "Admins can manage users" ON public.users;
+DROP POLICY IF EXISTS "Users can view own data" ON public.users;
+DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.users;
+DROP POLICY IF EXISTS "Enable all access for admin email" ON public.users;
 
-DROP POLICY IF EXISTS "Admins can manage bases" ON bases;
-CREATE POLICY "Admins can manage bases" ON bases FOR ALL USING (public.is_admin());
+-- Permite que qualquer usuário logado veja a lista de usuários (necessário para o painel)
+CREATE POLICY "Enable read access for all authenticated users" ON public.users FOR SELECT USING (auth.role() = 'authenticated');
+-- Permite que o seu e-mail gerencie tudo na tabela de usuários
+CREATE POLICY "Enable all access for admin email" ON public.users FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
+-- Permite que os usuários atualizem seus próprios dados
+CREATE POLICY "Users can update own data" ON public.users FOR UPDATE USING (id = auth.uid());
 
--- 3. Políticas para Roles
-DROP POLICY IF EXISTS "Everyone can view roles" ON roles;
-CREATE POLICY "Everyone can view roles" ON roles FOR SELECT USING (true);
 
--- 4. Políticas para Auditoria
-DROP POLICY IF EXISTS "Admins can view audit logs" ON audit_log;
-CREATE POLICY "Admins can view audit logs" ON audit_log FOR SELECT USING (public.is_admin());
+-- 3. Políticas para Bases (bases)
+ALTER TABLE public.bases ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Everyone can view bases" ON public.bases;
+DROP POLICY IF EXISTS "Admins can manage bases" ON public.bases;
+DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.bases;
+DROP POLICY IF EXISTS "Enable all access for admin email" ON public.bases;
 
--- 5. Políticas para Usuários
-DROP POLICY IF EXISTS "Admins can view all users" ON users;
-CREATE POLICY "Admins can view all users" ON users FOR SELECT USING (public.is_admin());
+CREATE POLICY "Enable read access for all authenticated users" ON public.bases FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable all access for admin email" ON public.bases FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
 
-DROP POLICY IF EXISTS "Admins can manage users" ON users;
-CREATE POLICY "Admins can manage users" ON users FOR ALL USING (public.is_admin());
 
-DROP POLICY IF EXISTS "Users can view own data" ON users;
-CREATE POLICY "Users can view own data" ON users FOR SELECT USING (id = auth.uid());
--- 6. Tabela Knowledge Base (Base de Conhecimento)
+-- 4. Políticas para Colaboradores Operacionais (base_jpa)
+ALTER TABLE public.base_jpa ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Everyone can view base_jpa" ON public.base_jpa;
+DROP POLICY IF EXISTS "Admins can manage base_jpa" ON public.base_jpa;
+DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.base_jpa;
+DROP POLICY IF EXISTS "Enable all access for admin email" ON public.base_jpa;
+
+CREATE POLICY "Enable read access for all authenticated users" ON public.base_jpa FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable all access for admin email" ON public.base_jpa FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
+
+
+-- 5. Políticas para Auditoria (audit_log)
+ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Admins can view audit logs" ON public.audit_log;
+DROP POLICY IF EXISTS "Admins can insert audit logs" ON public.audit_log;
+DROP POLICY IF EXISTS "Enable read access for admin" ON public.audit_log;
+DROP POLICY IF EXISTS "Enable insert for authenticated" ON public.audit_log;
+
+CREATE POLICY "Enable read access for admin" ON public.audit_log FOR SELECT USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
+CREATE POLICY "Enable insert for authenticated" ON public.audit_log FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+
+-- 6. Políticas para Configurações do Sistema (system_settings)
+ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Everyone can view system settings" ON public.system_settings;
+DROP POLICY IF EXISTS "Admins can manage system settings" ON public.system_settings;
+DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.system_settings;
+DROP POLICY IF EXISTS "Enable all access for admin email" ON public.system_settings;
+
+CREATE POLICY "Enable read access for all authenticated users" ON public.system_settings FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable all access for admin email" ON public.system_settings FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
+
+-- 7. Tabela Knowledge Base (Base de Conhecimento)
 CREATE TABLE IF NOT EXISTS public.knowledge_base (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     file_name TEXT NOT NULL,
@@ -911,12 +936,12 @@ CREATE TABLE IF NOT EXISTS public.knowledge_base (
 ALTER TABLE public.knowledge_base ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Supervisors can manage knowledge base" ON public.knowledge_base;
-CREATE POLICY "Supervisors can manage knowledge base" ON public.knowledge_base FOR ALL USING (public.is_admin() OR EXISTS (
-    SELECT 1 FROM public.users WHERE email = auth.jwt() ->> 'email' AND 'supervisor' = ANY(roles)
-));
-
 DROP POLICY IF EXISTS "Everyone can view knowledge base" ON public.knowledge_base;
-CREATE POLICY "Everyone can view knowledge base" ON public.knowledge_base FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.knowledge_base;
+DROP POLICY IF EXISTS "Enable all access for admin email" ON public.knowledge_base;
+
+CREATE POLICY "Enable read access for all authenticated users" ON public.knowledge_base FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable all access for admin email" ON public.knowledge_base FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
 `;
                   navigator.clipboard.writeText(sql);
                   alert('SQL de reparo copiado para a área de transferência! Execute-o no SQL Editor do Supabase.');
