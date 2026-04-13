@@ -1,31 +1,22 @@
-import type {Metadata} from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
-import './globals.css';
-import AuthProvider from '@/components/AuthProvider';
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
 
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-sans',
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-mono',
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'LATAM Cargo - Gestão de Escalas',
-  description: 'Sistema automatizado de gestão de escalas e colaboradores para LATAM Cargo Brasil.',
+  title: "LATAM SGEI",
+  description: "Sistema de Gestão de Escalas e Colaboradores LATAM",
 };
 
-export default function RootLayout({children}: {children: React.ReactNode}) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} ${jetbrainsMono.variable}`}>
-      <body className="font-sans antialiased">
-        <AuthProvider>
-          {children}
-        </AuthProvider>
-      </body>
+    <html lang="pt-BR">
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }

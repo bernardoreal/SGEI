@@ -178,15 +178,16 @@ export default function RegisterPage() {
       console.error('Database registration error:', dbError);
       setError(dbError.message);
     } else {
-      // 3. Sincronizar com a tabela operacional da base (ex: base_jpa)
+      // 3. Sincronizar com a tabela operacional da base (ex: base_employees)
       if (selectedBase?.code_iata === 'JPA') {
         try {
-          await supabase.from('base_jpa').insert([{
+          await supabase.from('base_employees').insert([{
             bp,
             name,
             email,
             position: cargo,
-            is_active: true
+            is_active: true,
+            base_id: selectedBaseId
           }]);
           console.log('Usuário sincronizado com a base operacional JPA');
         } catch (syncError) {

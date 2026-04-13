@@ -58,15 +58,16 @@ BEGIN
     END IF;
 END $$;
 
--- 4. Base JPA Employees
-CREATE TABLE IF NOT EXISTS base_jpa (
+-- 4. Base Employees (Generic)
+CREATE TABLE IF NOT EXISTS base_employees (
     bp VARCHAR(20) PRIMARY KEY,
+    base_id UUID REFERENCES bases(id),
     name VARCHAR(255) NOT NULL,
     position VARCHAR(100),
     cargo VARCHAR(100),
     cat_6 BOOLEAN DEFAULT false,
     work_regime VARCHAR(20) DEFAULT '5x1',
-    work_hours VARCHAR(50), -- New column for custom work hours
+    work_hours VARCHAR(50),
     fixed_days_off TEXT,
     hour_compensation VARCHAR(20) DEFAULT '0h',
     vacation_period TEXT,
@@ -81,12 +82,15 @@ CREATE TABLE IF NOT EXISTS base_jpa (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Ensure columns exist if table was created previously
-ALTER TABLE base_jpa ADD COLUMN IF NOT EXISTS work_hours VARCHAR(50);
-ALTER TABLE base_jpa ADD COLUMN IF NOT EXISTS fixed_days_off TEXT;
-ALTER TABLE base_jpa ADD COLUMN IF NOT EXISTS hour_compensation VARCHAR(20) DEFAULT '0h';
-ALTER TABLE base_jpa ADD COLUMN IF NOT EXISTS vacation_period TEXT;
-ALTER TABLE base_jpa ADD COLUMN IF NOT EXISTS cat_6 BOOLEAN DEFAULT false;
+-- Migração se a tabela antiga existir
+DO $$ 
+BEGIN 
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'base_jpa') THEN
+        -- Copiar dados se necessário ou apenas renomear
+        -- Para simplificar neste ambiente, vamos apenas renomear se possível ou assumir a nova
+        ALTER TABLE base_jpa RENAME TO base_employees;
+    END IF;
+END $$;
 
 -- 5. Schedules
 CREATE TABLE IF NOT EXISTS schedules (
@@ -104,16 +108,13 @@ CREATE TABLE IF NOT EXISTS schedules (
 CREATE TABLE IF NOT EXISTS schedule_details (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     schedule_id UUID REFERENCES schedules(id),
-    bp VARCHAR(20) REFERENCES base_jpa(bp),
+    bp VARCHAR(20) REFERENCES base_employees(bp),
     date DATE NOT NULL,
     shift VARCHAR(20) CHECK (shift IN ('manhã', 'tarde', 'noite')),
     status VARCHAR(20) CHECK (status IN ('trabalhado', 'folga', 'indisponibilidade')),
     code VARCHAR(10), -- New column to store exact shift/off code (e.g., T079, FAGR)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
-
--- Ensure code column exists if table was created previously
-ALTER TABLE schedule_details ADD COLUMN IF NOT EXISTS code VARCHAR(10);
 
 -- 7. Schedule Feedback
 CREATE TABLE IF NOT EXISTS schedule_feedback (
@@ -130,7 +131,7 @@ CREATE INDEX IF NOT EXISTS idx_schedule_feedback_base_id ON schedule_feedback(ba
 CREATE TABLE IF NOT EXISTS shift_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     base_id UUID REFERENCES bases(id),
-    requester_bp VARCHAR(20) REFERENCES base_jpa(bp),
+    requester_bp VARCHAR(20) REFERENCES base_employees(bp),
     requested_date DATE NOT NULL,
     requested_shift VARCHAR(50),
     reason TEXT,
@@ -183,6 +184,18 @@ CREATE TABLE IF NOT EXISTS ai_usage_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 13. System Suggestions
+CREATE TABLE IF NOT EXISTS system_suggestions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id),
+    user_name TEXT,
+    user_role TEXT,
+    suggestion TEXT NOT NULL,
+    priority TEXT CHECK (priority IN ('baixa', 'média', 'alta', 'crítica')),
+    status TEXT DEFAULT 'pendente' CHECK (status IN ('pendente', 'em_analise', 'implementado', 'arquivado')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Seed Data
 INSERT INTO roles (name, description) VALUES 
 ('admin', 'Administrador Global'),
@@ -227,25 +240,27 @@ ON CONFLICT (email) DO UPDATE SET
     roles = ARRAY['admin', 'employee'],
     base_id = (SELECT id FROM bases WHERE code_iata = 'JPA' LIMIT 1);
 
--- Seed Bernardo into base_jpa (Operational Table)
-INSERT INTO base_jpa (bp, name, email, position, is_active)
-VALUES ('4598394', 'Bernardo de Mendonça Corte Real', 'bernardo.real@latam.com', 'Administrador / Colaborador', true)
+-- Seed Bernardo into base_employees (Operational Table)
+INSERT INTO base_employees (bp, name, email, position, is_active, base_id)
+VALUES ('4598394', 'Bernardo de Mendonça Corte Real', 'bernardo.real@latam.com', 'Administrador / Colaborador', true, (SELECT id FROM bases WHERE code_iata = 'JPA' LIMIT 1))
 ON CONFLICT (bp) DO UPDATE SET
     name = EXCLUDED.name,
     email = EXCLUDED.email,
-    position = EXCLUDED.position;
+    position = EXCLUDED.position,
+    base_id = EXCLUDED.base_id;
 
 -- 11. RLS Policies
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bases ENABLE ROW LEVEL SECURITY;
 ALTER TABLE roles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE base_jpa ENABLE ROW LEVEL SECURITY;
+ALTER TABLE base_employees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE schedule_details ENABLE ROW LEVEL SECURITY;
 ALTER TABLE schedule_feedback ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shift_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE base_configuration ENABLE ROW LEVEL SECURITY;
+ALTER TABLE system_suggestions ENABLE ROW LEVEL SECURITY;
 
 -- Security Definer Functions to avoid RLS recursion
 CREATE OR REPLACE FUNCTION public.check_is_admin()
@@ -279,6 +294,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+CREATE OR REPLACE FUNCTION public.check_is_coordinator()
+RETURNS BOOLEAN AS $$
+DECLARE
+  is_coord BOOLEAN;
+BEGIN
+  SELECT EXISTS (
+    SELECT 1 FROM public.users
+    WHERE id = auth.uid()
+    AND ('coordinator' = ANY(roles) OR 'manager' = ANY(roles) OR 'admin' = ANY(roles))
+  ) INTO is_coord;
+  
+  RETURN COALESCE(is_coord, false);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Users Policies
 DROP POLICY IF EXISTS "Allow public BP lookup" ON users;
 CREATE POLICY "Allow public BP lookup" ON users
@@ -307,16 +337,35 @@ CREATE POLICY "Admins can manage users" ON users
         LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com'
     );
 
--- Base JPA Policies (Employees)
-DROP POLICY IF EXISTS "Admins and Supervisors can manage base employees" ON base_jpa;
-CREATE POLICY "Admins and Supervisors can manage base employees" ON base_jpa
+-- Base Employees Policies
+DROP POLICY IF EXISTS "Admins and Supervisors can manage base employees" ON base_employees;
+CREATE POLICY "Admins and Supervisors can manage base employees" ON base_employees
     FOR ALL USING (
-        check_is_admin() OR check_is_supervisor()
+        check_is_admin() OR 
+        (check_is_supervisor() AND EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND base_id = base_employees.base_id))
     );
 
-DROP POLICY IF EXISTS "Everyone can view employees" ON base_jpa;
-CREATE POLICY "Everyone can view employees" ON base_jpa
-    FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Everyone can view employees" ON base_employees;
+CREATE POLICY "Everyone can view employees" ON base_employees
+    FOR SELECT USING (
+        check_is_coordinator() OR
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND base_id = base_employees.base_id)
+    );
+
+-- Shift Requests Policies
+DROP POLICY IF EXISTS "Users can view their own requests" ON shift_requests;
+CREATE POLICY "Users can view their own requests" ON shift_requests
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND (bp = shift_requests.requester_bp OR base_id = shift_requests.base_id)) OR
+        check_is_coordinator()
+    );
+
+DROP POLICY IF EXISTS "Supervisors can manage base requests" ON shift_requests;
+CREATE POLICY "Supervisors can manage base requests" ON shift_requests
+    FOR ALL USING (
+        check_is_admin() OR
+        (check_is_supervisor() AND EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND base_id = shift_requests.base_id))
+    );
 
 -- Schedules Policies
 DROP POLICY IF EXISTS "Employees can view their base schedules" ON schedules;
@@ -372,6 +421,24 @@ CREATE POLICY "Admins and Managers can view base config" ON base_configuration
     FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Admins and Supervisors can manage base config" ON base_configuration;
+CREATE POLICY "Admins and Supervisors can manage base config" ON base_configuration
+    FOR ALL USING (
+        check_is_admin() OR
+        (check_is_supervisor() AND EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND base_id = base_configuration.base_id))
+    );
+
+-- System Suggestions Policies
+DROP POLICY IF EXISTS "Users can insert their own suggestions" ON system_suggestions;
+CREATE POLICY "Users can insert their own suggestions" ON system_suggestions
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Admins can view all suggestions" ON system_suggestions;
+CREATE POLICY "Admins can view all suggestions" ON system_suggestions
+    FOR SELECT USING (check_is_admin() OR LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com');
+
+DROP POLICY IF EXISTS "Users can view their own suggestions" ON system_suggestions;
+CREATE POLICY "Users can view their own suggestions" ON system_suggestions
+    FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Admins and Supervisors can manage base config" ON base_configuration
     FOR ALL USING (
         check_is_admin() OR check_is_supervisor()

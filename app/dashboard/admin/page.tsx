@@ -98,6 +98,7 @@ export default function AdminDashboard() {
   const [savingLlm, setSavingLlm] = useState(false);
   const [openRouterInfo, setOpenRouterInfo] = useState<any>(null);
   const [tokenStats, setTokenStats] = useState({ prompt: 0, completion: 0, total: 0 });
+  const [suggestions, setSuggestions] = useState<any[]>([]);
   const [geminiDailyRequests, setGeminiDailyRequests] = useState(0);
   const [loadingStats, setLoadingStats] = useState(false);
   const [notifications, setNotifications] = useState<{ id: string; message: string }[]>([]);
@@ -223,6 +224,13 @@ export default function AdminDashboard() {
       }
       if (basesRes.data) setBases(basesRes.data);
       if (logsRes.data) setLogs(logsRes.data);
+
+      // Fetch Suggestions
+      const { data: suggestionsData } = await supabase
+        .from('system_suggestions')
+        .select('*')
+        .order('created_at', { ascending: false });
+      setSuggestions(suggestionsData || []);
     } catch (error) {
       console.error('Error fetching admin data:', error);
     } finally {
@@ -449,7 +457,7 @@ export default function AdminDashboard() {
     const base = bases.find(b => b.id === user.base_id);
     if (!base) return;
 
-    // For now, we only have base_jpa table as per schema.sql
+    // For now, we only have base_employees table as per schema.sql
     if (base.code_iata !== 'JPA') {
       alert(`A base ${base.code_iata} ainda não possui tabela operacional configurada.`);
       return;
@@ -457,9 +465,9 @@ export default function AdminDashboard() {
 
     setSyncingUserId(user.id);
     try {
-      // Check if already exists in base_jpa
+      // Check if already exists in base_employees
       const { data: existing } = await supabase
-        .from('base_jpa')
+        .from('base_employees')
         .select('bp')
         .eq('bp', user.bp)
         .maybeSingle();
@@ -484,13 +492,13 @@ export default function AdminDashboard() {
       let error;
       if (existing) {
         const { error: updateError } = await supabase
-          .from('base_jpa')
+          .from('base_employees')
           .update(userData)
           .eq('bp', userData.bp);
         error = updateError;
       } else {
         const { error: insertError } = await supabase
-          .from('base_jpa')
+          .from('base_employees')
           .insert([userData]);
         error = insertError;
       }
@@ -506,8 +514,8 @@ export default function AdminDashboard() {
             delete filteredData[missingColumn];
             
             const { error: retryError } = existing 
-              ? await supabase.from('base_jpa').update(filteredData).eq('bp', userData.bp)
-              : await supabase.from('base_jpa').insert([filteredData]);
+              ? await supabase.from('base_employees').update(filteredData).eq('bp', userData.bp)
+              : await supabase.from('base_employees').insert([filteredData]);
             
             if (retryError) throw retryError;
           } else {
@@ -520,7 +528,7 @@ export default function AdminDashboard() {
 
       await supabase.from('audit_log').insert({
         action: `Sincronização Híbrida: ${user.name} adicionado à base operacional ${base.code_iata}`,
-        table_name: 'base_jpa',
+        table_name: 'base_employees',
         record_id: user.id as any
       });
 
@@ -1010,12 +1018,12 @@ DROP POLICY IF EXISTS "Admins can manage KB" ON public.knowledge_base;
 CREATE POLICY "Authenticated can view KB" ON public.knowledge_base FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Admins can manage KB" ON public.knowledge_base FOR ALL USING (public.has_role('admin'));
 
-ALTER TABLE public.base_jpa ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Enable read access for all" ON public.base_jpa;
-DROP POLICY IF EXISTS "Authenticated can view base_jpa" ON public.base_jpa;
-DROP POLICY IF EXISTS "Admins can manage base_jpa" ON public.base_jpa;
-CREATE POLICY "Authenticated can view base_jpa" ON public.base_jpa FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Admins can manage base_jpa" ON public.base_jpa FOR ALL USING (public.has_role('admin'));
+ALTER TABLE public.base_employees ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable read access for all" ON public.base_employees;
+DROP POLICY IF EXISTS "Authenticated can view base_employees" ON public.base_employees;
+DROP POLICY IF EXISTS "Admins can manage base_employees" ON public.base_employees;
+CREATE POLICY "Authenticated can view base_employees" ON public.base_employees FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR ALL USING (public.has_role('admin'));
 `;
                   navigator.clipboard.writeText(sql);
                   alert('SQL de reparo copiado para a área de transferência! Execute-o no SQL Editor do Supabase.');
@@ -2038,6 +2046,95 @@ CREATE POLICY "Admins can manage base_jpa" ON public.base_jpa FOR ALL USING (pub
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Seção de Sugestões de Melhoria (Admin View) */}
+      <div className="mt-12 bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
+              <ClipboardList size={24} />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Sugestões de Melhoria</h3>
+              <p className="text-slate-500 font-medium">Feedback enviado pelos supervisores, coordenadores e gerentes.</p>
+            </div>
+          </div>
+          <div className="bg-slate-50 px-4 py-2 rounded-xl text-xs font-bold text-slate-500 uppercase tracking-widest">
+            {suggestions.length} Sugestões
+          </div>
+        </div>
+
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left border-separate border-spacing-y-2">
+            <thead>
+              <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                <th className="px-6 py-4">Data</th>
+                <th className="px-6 py-4">Usuário / Role</th>
+                <th className="px-6 py-4">Sugestão de Melhoria</th>
+                <th className="px-6 py-4">Prioridade</th>
+                <th className="px-6 py-4">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {suggestions.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-medium italic bg-slate-50/50 rounded-3xl">
+                    Nenhuma sugestão enviada até o momento.
+                  </td>
+                </tr>
+              ) : (
+                suggestions.map((s) => (
+                  <tr key={s.id} className="group hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 bg-white border-y border-l border-slate-100 rounded-l-2xl text-sm font-medium text-slate-600">
+                      {new Date(s.created_at).toLocaleDateString('pt-BR')}
+                    </td>
+                    <td className="px-6 py-4 bg-white border-y border-slate-100">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-slate-900">{s.user_name}</span>
+                        <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{s.user_role}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 bg-white border-y border-slate-100 max-w-md">
+                      <p className="text-sm text-slate-700 leading-relaxed">{s.suggestion}</p>
+                    </td>
+                    <td className="px-6 py-4 bg-white border-y border-slate-100">
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                        s.priority === 'crítica' ? 'bg-red-100 text-red-700' :
+                        s.priority === 'alta' ? 'bg-orange-100 text-orange-700' :
+                        s.priority === 'média' ? 'bg-blue-100 text-blue-700' :
+                        'bg-slate-100 text-slate-600'
+                      }`}>
+                        {s.priority}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 bg-white border-y border-r border-slate-100 rounded-r-2xl">
+                      <select 
+                        value={s.status}
+                        onChange={async (e) => {
+                          const newStatus = e.target.value;
+                          const { error } = await supabase
+                            .from('system_suggestions')
+                            .update({ status: newStatus })
+                            .eq('id', s.id);
+                          if (!error) {
+                            setSuggestions(prev => prev.map(item => item.id === s.id ? { ...item, status: newStatus } : item));
+                          }
+                        }}
+                        className="text-xs font-bold bg-slate-100 border-none rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="pendente">Pendente</option>
+                        <option value="em_analise">Em Análise</option>
+                        <option value="implementado">Implementado</option>
+                        <option value="arquivado">Arquivado</option>
+                      </select>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

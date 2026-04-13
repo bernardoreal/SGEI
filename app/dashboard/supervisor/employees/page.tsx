@@ -19,7 +19,7 @@ export default function EmployeesPage() {
   useEffect(() => {
     const fetchEmployees = async () => {
       setLoading(true);
-      const { data, error } = await supabase.from('base_jpa').select('*').eq('is_active', true);
+      const { data, error } = await supabase.from('base_employees').select('*').eq('is_active', true);
       if (error) {
         console.error('Error fetching employees:', error);
       } else {

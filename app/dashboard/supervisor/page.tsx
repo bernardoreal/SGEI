@@ -28,6 +28,7 @@ import {
   Upload
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import SuggestionSection from '@/components/SuggestionSection';
 import LATAMScheduleTable, { SHIFT_LEGEND, SIGLA_LEGEND } from '@/components/LATAMScheduleTable';
 import { generateWithOpenRouter, generateWithGemini } from '@/app/actions/ai';
 import { logAudit } from '@/lib/audit';
@@ -81,11 +82,21 @@ export default function SupervisorDashboard() {
   const [baseConfig, setBaseConfig] = useState({ min_coverage_per_shift: 3, min_cat6_per_shift: 2 });
   const [showConfig, setShowConfig] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
+      if (session) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        setUser(userData);
+      }
+
       if (sessionError) {
         if (sessionError.message.includes('Refresh Token Not Found') || sessionError.message.includes('Invalid Refresh Token')) {
           // Silently handle expired sessions
@@ -98,7 +109,7 @@ export default function SupervisorDashboard() {
         }
       }
 
-      const { data: empData } = await supabase.from('base_jpa').select('*');
+      const { data: empData } = await supabase.from('base_employees').select('*');
       const { data: reqData } = await supabase.from('shift_requests').select('*');
       const { data: kbData } = await supabase.from('knowledge_base').select('id, file_name, created_at').order('created_at', { ascending: false });
       
@@ -137,7 +148,7 @@ export default function SupervisorDashboard() {
         for (const schedule of historyData.slice(0, 2)) { // Pega as 2 mais recentes
           const { data: details } = await supabase
             .from('schedule_details')
-            .select('*, base_jpa(name, bp)')
+            .select('*, base_employees(name, bp)')
             .eq('schedule_id', schedule.id)
             .order('date', { ascending: true });
           
@@ -156,7 +167,7 @@ export default function SupervisorDashboard() {
                   turno: detail.shift === 'manhã' ? 'MANHÃ' : 'TARDE',
                   bp: bp,
                   funcao: emp?.cargo || emp?.position || 'AUXILIAR',
-                  nome: emp?.name || detail.base_jpa?.name || 'Desconhecido',
+                  nome: emp?.name || detail.base_employees?.name || 'Desconhecido',
                   tarefa: "",
                   days: []
                 };
@@ -605,7 +616,7 @@ export default function SupervisorDashboard() {
     try {
       const { data: details, error } = await supabase
         .from('schedule_details')
-        .select('*, base_jpa(name, bp)')
+        .select('*, base_employees(name, bp)')
         .eq('schedule_id', schedule.id);
       
       if (error) throw error;
@@ -616,7 +627,7 @@ export default function SupervisorDashboard() {
         if (!acc[bp]) {
           acc[bp] = {
             bp: bp,
-            nome: detail.base_jpa.name,
+            nome: detail.base_employees.name,
             days: []
           };
         }
@@ -661,14 +672,14 @@ export default function SupervisorDashboard() {
       };
 
       const { error } = await supabase
-        .from('base_jpa')
+        .from('base_employees')
         .update(anonData)
         .eq('bp', editingEmployee.bp);
 
       if (error) throw error;
 
       const { data: { user } } = await supabase.auth.getUser();
-      await logAudit(user?.id || 'unknown', 'anonymize', 'base_jpa', editingEmployee.bp, editingEmployee, anonData);
+      await logAudit(user?.id || 'unknown', 'anonymize', 'base_employees', editingEmployee.bp, editingEmployee, anonData);
 
       setEmployees(employees.map(e => e.bp === editingEmployee.bp ? { ...e, ...anonData } : e));
       setFilteredEmployees(filteredEmployees.map(e => e.bp === editingEmployee.bp ? { ...e, ...anonData } : e));
@@ -703,13 +714,13 @@ export default function SupervisorDashboard() {
       };
 
       const { error } = await supabase
-        .from('base_jpa')
+        .from('base_employees')
         .update(updateData)
         .eq('bp', editingEmployee.bp);
 
       if (!error) {
         const { data: { user } } = await supabase.auth.getUser();
-        await logAudit(user?.id || 'unknown', 'update', 'base_jpa', editingEmployee.bp, oldData, updateData);
+        await logAudit(user?.id || 'unknown', 'update', 'base_employees', editingEmployee.bp, oldData, updateData);
       }
 
       if (error) {
@@ -725,13 +736,13 @@ export default function SupervisorDashboard() {
             delete updateData[missingColumn];
             
             const { error: retryError, data: retryData } = await supabase
-              .from('base_jpa')
+              .from('base_employees')
               .update(updateData)
               .eq('bp', editingEmployee.bp);
             
             if (!retryError) {
               const { data: { user } } = await supabase.auth.getUser();
-              await logAudit(user?.id || 'unknown', 'update', 'base_jpa', editingEmployee.bp, oldData, updateData);
+              await logAudit(user?.id || 'unknown', 'update', 'base_employees', editingEmployee.bp, oldData, updateData);
             }
             
             if (retryError) {
@@ -1656,7 +1667,7 @@ export default function SupervisorDashboard() {
                         onBlur={async () => {
                           try {
                             const { error } = await supabase
-                              .from('base_jpa')
+                              .from('base_employees')
                               .update({ work_hours: emp.work_hours })
                               .eq('bp', emp.bp);
                             if (error) throw error;
@@ -2183,6 +2194,13 @@ export default function SupervisorDashboard() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Sugestões de Melhoria */}
+      <SuggestionSection 
+        userId={user?.id} 
+        userName={user?.name} 
+        userRole={user?.roles?.[0] || 'supervisor'} 
+      />
     </div>
   );
 }

@@ -1,98 +1,24 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-@theme {
-  --color-latam-indigo: #002169;
-  --color-latam-crimson: #E60000;
-  --font-latam: var(--font-sans), system-ui, sans-serif;
+:root {
+  --latam-indigo: #002169;
+  --latam-crimson: #E60000;
 }
 
-@layer base {
-  body {
-    @apply font-latam text-slate-900;
-  }
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
 }
 
-.glass {
-  @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-xl;
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.glass-dark {
-  @apply bg-black/30 backdrop-blur-xl border border-white/10 shadow-2xl;
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
 }
 
-@layer utilities {
-  @media print {
-    .no-print {
-      display: none !important;
-    }
-    .print-only {
-      display: block !important;
-    }
-    body {
-      background: white !important;
-      padding: 0 !important;
-      margin: 0 !important;
-    }
-    .print-content {
-      width: 100% !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      box-shadow: none !important;
-      border: none !important;
-    }
-    /* Forçar cores de fundo na impressão */
-    * {
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    /* Esconder elementos de navegação e botões do dashboard ao imprimir */
-    header, nav, aside, .no-print, button, .feedback-section {
-      display: none !important;
-    }
-    /* Ajustar a tabela para ocupar a largura total e quebrar páginas se necessário */
-    table {
-      page-break-inside: auto;
-      width: 100% !important;
-    }
-    tr {
-      page-break-inside: avoid;
-      page-break-after: auto;
-    }
-    thead {
-      display: table-header-group;
-    }
-    @page {
-      size: A4 landscape;
-      margin: 10mm;
-    }
-    /* Garantir que as legendas apareçam na mesma página ou logo após */
-    .print-content .grid {
-      display: grid !important;
-      grid-template-columns: 1fr 1fr !important;
-      gap: 1rem !important;
-    }
-    .print-content .grid > div {
-      break-inside: avoid;
-    }
-    /* Reduzir tamanhos para caber em uma folha */
-    .print-content table {
-      font-size: 7px !important;
-    }
-    .print-content th, .print-content td {
-      padding: 1.5px !important;
-      border-width: 0.5px !important;
-    }
-    .print-content h2 {
-      font-size: 18px !important;
-      padding: 10px !important;
-      letter-spacing: 0.2em !important;
-    }
-    /* Forçar visibilidade de elementos ocultos apenas para impressão */
-    .print-content .hidden.print\:inline {
-      display: inline !important;
-    }
-    .print-content .hidden.print\:grid {
-      display: grid !important;
-    }
-  }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
 }

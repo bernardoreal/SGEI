@@ -44,7 +44,7 @@ export default function ScheduleGenerator() {
           setLlmConfig(configData.value);
         }
 
-        const { data: empData } = await supabase.from('base_jpa').select('*');
+        const { data: empData } = await supabase.from('base_employees').select('*');
         if (empData) {
           setEmployees(empData);
         }
