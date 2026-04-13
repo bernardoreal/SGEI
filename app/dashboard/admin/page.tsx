@@ -882,6 +882,7 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admins can view all users" ON public.users;
 DROP POLICY IF EXISTS "Admins can manage users" ON public.users;
 DROP POLICY IF EXISTS "Users can view own data" ON public.users;
+DROP POLICY IF EXISTS "Users can update own data" ON public.users;
 DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.users;
 DROP POLICY IF EXISTS "Enable all access for admin email" ON public.users;
 
