@@ -982,8 +982,71 @@ INSERT INTO public.bases (code_iata, name) VALUES
 ('SSA', 'Salvador')
 ON CONFLICT (code_iata) DO NOTHING;
 
--- 4. SINCRONIZAR USUÁRIOS DO AUTH PARA A TABELA PUBLIC.USERS
--- Isso garante que, se o trigger falhou, os usuários apareçam no painel
+-- 4. CORREÇÃO ARQUITETURAL: ALINHAR IDs E ARRUMAR O GATILHO (TRIGGER)
+-- 4.1. Alterar as chaves estrangeiras para ON UPDATE CASCADE para permitir a mudança do ID
+ALTER TABLE public.bases DROP CONSTRAINT IF EXISTS bases_supervisor_id_fkey, ADD CONSTRAINT bases_supervisor_id_fkey FOREIGN KEY (supervisor_id) REFERENCES public.users(id) ON UPDATE CASCADE;
+ALTER TABLE public.bases DROP CONSTRAINT IF EXISTS bases_coordinator_id_fkey, ADD CONSTRAINT bases_coordinator_id_fkey FOREIGN KEY (coordinator_id) REFERENCES public.users(id) ON UPDATE CASCADE;
+ALTER TABLE public.bases DROP CONSTRAINT IF EXISTS bases_manager_id_fkey, ADD CONSTRAINT bases_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES public.users(id) ON UPDATE CASCADE;
+
+ALTER TABLE public.escala_drafts DROP CONSTRAINT IF EXISTS escala_drafts_created_by_fkey, ADD CONSTRAINT escala_drafts_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id) ON UPDATE CASCADE;
+ALTER TABLE public.escalas DROP CONSTRAINT IF EXISTS escalas_supervisor_id_fkey, ADD CONSTRAINT escalas_supervisor_id_fkey FOREIGN KEY (supervisor_id) REFERENCES public.users(id) ON UPDATE CASCADE;
+ALTER TABLE public.escala_history DROP CONSTRAINT IF EXISTS escala_history_approved_by_fkey, ADD CONSTRAINT escala_history_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(id) ON UPDATE CASCADE;
+ALTER TABLE public.audit_log DROP CONSTRAINT IF EXISTS audit_log_user_id_fkey, ADD CONSTRAINT audit_log_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON UPDATE CASCADE;
+ALTER TABLE public.ai_usage_logs DROP CONSTRAINT IF EXISTS ai_usage_logs_user_id_fkey, ADD CONSTRAINT ai_usage_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON UPDATE CASCADE;
+
+-- 4.2. Alinhar os IDs (Atualiza o ID da public.users para ser igual ao da auth.users)
+UPDATE public.users pu
+SET id = au.id
+FROM auth.users au
+WHERE pu.email = au.email AND pu.id != au.id;
+
+-- 4.3. Criar a Trigger perfeita para novos cadastros (Lida com o BP NOT NULL)
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user();
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  default_name text;
+  generated_bp text;
+BEGIN
+  -- Define um nome padrão se não vier no metadata
+  default_name := COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1));
+  
+  -- Gera um BP temporário baseado no ID (ex: BP-1a2b3c4d)
+  generated_bp := 'BP-' || substr(new.id::text, 1, 8);
+
+  INSERT INTO public.users (id, email, name, bp, roles)
+  VALUES (
+    new.id,
+    new.email,
+    default_name,
+    generated_bp,
+    ARRAY['pending']
+  );
+  
+  RETURN new;
+END;
+$$;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 4.4. Garantir que a relação 1:1 seja obrigatória no banco
+ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_id_fkey;
+ALTER TABLE public.users ADD CONSTRAINT users_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+-- 5. SINCRONIZAR USUÁRIOS DO AUTH PARA A TABELA PUBLIC.USERS (Caso ainda falte alguém)
+-- Atualiza o admin existente pelo email
+UPDATE public.users 
+SET roles = ARRAY['admin'] 
+WHERE email = 'bernardo.real@latam.com';
+
+-- Insere o admin caso ele não exista de forma alguma
 INSERT INTO public.users (id, email, name, bp, roles)
 SELECT 
     id, 
@@ -993,8 +1056,9 @@ SELECT
     ARRAY['admin']
 FROM auth.users
 WHERE email = 'bernardo.real@latam.com'
-ON CONFLICT (id) DO UPDATE SET roles = ARRAY['admin'];
+AND NOT EXISTS (SELECT 1 FROM public.users WHERE email = 'bernardo.real@latam.com');
 
+-- Insere os outros usuários caso não existam
 INSERT INTO public.users (id, email, name, bp, roles)
 SELECT 
     id, 
@@ -1004,7 +1068,7 @@ SELECT
     ARRAY['pending']
 FROM auth.users
 WHERE email != 'bernardo.real@latam.com'
-ON CONFLICT (id) DO NOTHING;
+AND NOT EXISTS (SELECT 1 FROM public.users WHERE email = auth.users.email);
 `;
                   navigator.clipboard.writeText(sql);
                   alert('SQL de reparo copiado para a área de transferência! Execute-o no SQL Editor do Supabase.');
