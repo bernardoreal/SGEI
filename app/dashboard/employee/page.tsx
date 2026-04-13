@@ -104,7 +104,7 @@ export default function EmployeeDashboard() {
       // 3. Inscrever para atualizações em tempo real
       const scheduleChannel = supabase
         .channel('public:schedules')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'schedules' }, fetchSchedule)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, fetchSchedule)
         .subscribe();
 
       const requestsChannel = supabase

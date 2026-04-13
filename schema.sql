@@ -108,8 +108,12 @@ CREATE TABLE IF NOT EXISTS schedule_details (
     date DATE NOT NULL,
     shift VARCHAR(20) CHECK (shift IN ('manhã', 'tarde', 'noite')),
     status VARCHAR(20) CHECK (status IN ('trabalhado', 'folga', 'indisponibilidade')),
+    code VARCHAR(10), -- New column to store exact shift/off code (e.g., T079, FAGR)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Ensure code column exists if table was created previously
+ALTER TABLE schedule_details ADD COLUMN IF NOT EXISTS code VARCHAR(10);
 
 -- 7. Schedule Feedback
 CREATE TABLE IF NOT EXISTS schedule_feedback (
@@ -367,10 +371,10 @@ DROP POLICY IF EXISTS "Admins and Managers can view base config" ON base_configu
 CREATE POLICY "Admins and Managers can view base config" ON base_configuration
     FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "Admins can manage base config" ON base_configuration;
-CREATE POLICY "Admins can manage base config" ON base_configuration
+DROP POLICY IF EXISTS "Admins and Supervisors can manage base config" ON base_configuration;
+CREATE POLICY "Admins and Supervisors can manage base config" ON base_configuration
     FOR ALL USING (
-        check_is_admin()
+        check_is_admin() OR check_is_supervisor()
     );
 
 -- System Settings Policies

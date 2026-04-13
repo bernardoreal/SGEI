@@ -10,6 +10,7 @@ import {
   AlertTriangle, 
   CheckCircle,
   Clock,
+  History,
   ThumbsUp,
   ThumbsDown,
   Edit2,
@@ -61,7 +62,8 @@ export default function SupervisorDashboard() {
   const [filteredEmployees, setFilteredEmployees] = useState<any[]>([]);
   const [shiftRequests, setShiftRequests] = useState<any[]>([]);
   const [scheduleHistory, setScheduleHistory] = useState<any[]>([]);
-  const [aiSchedule, setAiSchedule] = useState<any | null>(null);
+  const [aiSchedules, setAiSchedules] = useState<any[]>([]);
+  const [currentScheduleIndex, setCurrentScheduleIndex] = useState(0);
   const [viewedSchedule, setViewedSchedule] = useState<any | null>(null);
   const [validationErrors, setValidationErrors] = useState<any[]>([]);
   const [feedbackGiven, setFeedbackGiven] = useState(false);
@@ -73,8 +75,12 @@ export default function SupervisorDashboard() {
   const [updatingRequest, setUpdatingRequest] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<any | null>(null);
+  const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
   const [knowledgeFiles, setKnowledgeFiles] = useState<any[]>([]);
   const [uploadingKb, setUploadingKb] = useState(false);
+  const [baseConfig, setBaseConfig] = useState({ min_coverage_per_shift: 3, min_cat6_per_shift: 2 });
+  const [showConfig, setShowConfig] = useState(false);
+  const [savingConfig, setSavingConfig] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -103,12 +109,79 @@ export default function SupervisorDashboard() {
       if (reqData) setShiftRequests(reqData);
       if (kbData) setKnowledgeFiles(kbData);
 
+      // Buscar configuração da base
+      const { data: configBaseData } = await supabase
+        .from('base_configuration')
+        .select('*')
+        .limit(1)
+        .maybeSingle();
+      
+      if (configBaseData) {
+        setBaseConfig({
+          min_coverage_per_shift: configBaseData.min_coverage_per_shift,
+          min_cat6_per_shift: configBaseData.min_cat6_per_shift
+        });
+      }
+
       const { data: historyData } = await supabase
         .from('schedules')
         .select('*, created_by_user:users(name)')
         .order('created_at', { ascending: false })
         .limit(6);
-      if (historyData) setScheduleHistory(historyData);
+      
+      if (historyData && historyData.length > 0) {
+        setScheduleHistory(historyData);
+        
+        // Carregar as escalas publicadas mais recentes para o carrossel
+        const recentPublished = [];
+        for (const schedule of historyData.slice(0, 2)) { // Pega as 2 mais recentes
+          const { data: details } = await supabase
+            .from('schedule_details')
+            .select('*, base_jpa(name, bp)')
+            .eq('schedule_id', schedule.id)
+            .order('date', { ascending: true });
+          
+          if (details && details.length > 0) {
+            const monthNames = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
+            const startDate = new Date(schedule.start_date + 'T12:00:00Z');
+            const month = monthNames[startDate.getUTCMonth()];
+            const year = startDate.getUTCFullYear().toString();
+
+            const groupedData = details.reduce((acc: any, detail: any) => {
+              const bp = detail.bp;
+              if (!acc[bp]) {
+                const emp = empData?.find(e => e.bp === bp);
+                acc[bp] = {
+                  area: "OPERAÇÃO",
+                  turno: detail.shift === 'manhã' ? 'MANHÃ' : 'TARDE',
+                  bp: bp,
+                  funcao: emp?.cargo || emp?.position || 'AUXILIAR',
+                  nome: emp?.name || detail.base_jpa?.name || 'Desconhecido',
+                  tarefa: "",
+                  days: []
+                };
+              }
+              acc[bp].days.push({
+                date: new Date(detail.date + 'T12:00:00Z').getUTCDate().toString().padStart(2, '0') + '/' + (new Date(detail.date + 'T12:00:00Z').getUTCMonth() + 1).toString().padStart(2, '0'),
+                code: detail.code || (detail.status === 'folga' ? 'FOLG' : 'T000')
+              });
+              return acc;
+            }, {});
+
+            recentPublished.push({
+              id: schedule.id,
+              month,
+              year,
+              status: 'published',
+              data: Object.values(groupedData)
+            });
+          }
+        }
+        if (recentPublished.length > 0) {
+          setAiSchedules(recentPublished);
+          setCurrentScheduleIndex(0);
+        }
+      }
 
       // Buscar configuração de IA
       try {
@@ -129,6 +202,15 @@ export default function SupervisorDashboard() {
     };
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const current = aiSchedules[currentScheduleIndex];
+    if (current?.status === 'published' && current.id) {
+      setEditingScheduleId(current.id);
+    } else {
+      setEditingScheduleId(null);
+    }
+  }, [currentScheduleIndex, aiSchedules]);
 
   const validateSchedule = (scheduleData: any) => {
     const errors: any[] = [];
@@ -214,10 +296,10 @@ export default function SupervisorDashboard() {
         return employee?.cat_6;
       });
 
-      if (cat6Working.length < 2) {
+      if (cat6Working.length < baseConfig.min_cat6_per_shift) {
         errors.push({
           date: data[0].days[i].date,
-          message: `Alerta CAT 6: Apenas ${cat6Working.length} colaborador(es) com CAT 6 trabalhando neste dia. Recomendado: mínimo 2.`,
+          message: `Alerta CAT 6: Apenas ${cat6Working.length} colaborador(es) com CAT 6 trabalhando neste dia. Mínimo configurado: ${baseConfig.min_cat6_per_shift}.`,
           type: 'warning'
         });
       }
@@ -235,8 +317,9 @@ export default function SupervisorDashboard() {
   };
 
   const handleSaveFeedback = async () => {
-    if (feedbackData.rating === 0) {
-      alert('Por favor, selecione uma classificação em estrelas.');
+    const aiSchedule = aiSchedules[currentScheduleIndex];
+    if (!aiSchedule || feedbackData.rating === 0) {
+      if (feedbackData.rating === 0) alert('Por favor, selecione uma classificação em estrelas.');
       return;
     }
 
@@ -282,6 +365,13 @@ export default function SupervisorDashboard() {
     setLoading(true);
     setError(null);
     try {
+      // Determinar mês alvo (próximo mês)
+      const now = new Date();
+      const targetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const monthNames = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
+      const targetMonth = monthNames[targetDate.getMonth()];
+      const targetYear = targetDate.getFullYear().toString();
+
       // 1. Buscar histórico do mês anterior (últimos 7 dias)
       const { data: lastSchedules } = await supabase
         .from('schedules')
@@ -317,7 +407,25 @@ export default function SupervisorDashboard() {
         restricoes: e.operational_restrictions
       }));
 
-      // 3. Preparar Base de Conhecimento
+      // 3. Buscar solicitações aprovadas para o período alvo
+      const firstDay = `${targetYear}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-01`;
+      const lastDay = `${targetYear}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-31`; // Simplificado
+
+      const { data: approvedRequests } = await supabase
+        .from('shift_requests')
+        .select('*')
+        .eq('status', 'aprovado')
+        .gte('requested_date', firstDay)
+        .lte('requested_date', lastDay);
+
+      const requestsContext = approvedRequests?.map(r => ({
+        bp: r.requester_bp,
+        data: r.requested_date,
+        tipo: r.requested_shift,
+        motivo: r.reason
+      })) || [];
+
+      // 4. Preparar Base de Conhecimento
       let kbContext = '';
       if (knowledgeFiles && knowledgeFiles.length > 0) {
         const { data: kbData } = await supabase.from('knowledge_base').select('content');
@@ -327,7 +435,7 @@ export default function SupervisorDashboard() {
       }
 
       const prompt = `
-        Gere uma escala MENSAL para o terminal JPA (João Pessoa) seguindo o modelo LATAM.
+        Gere uma escala MENSAL para o terminal JPA (João Pessoa) seguindo o modelo LATAM para o mês de ${targetMonth} de ${targetYear}.
         
         REGRAS CRÍTICAS:
         1. VARIAÇÕES SEMANAIS (DINAMISMO): A IA deve alternar padrões de trabalho a cada semana para cada colaborador.
@@ -338,24 +446,26 @@ export default function SupervisorDashboard() {
            - Semana 4: Ritmo 5x2 (5 dias trab, 2 folgas - use FAGR aqui)
         2. FAGR (FOLGA AGRUPADA): OBRIGATÓRIO e LIMITADO a EXATAMENTE 1 VEZ POR MÊS por colaborador. Não pode haver mais de uma FAGR no mês.
         3. MÁXIMO CONSECUTIVO: Nunca ultrapassar 5 dias seguidos de trabalho.
-        4. COBERTURA MÍNIMA: Manhã(3), Tarde(3), Noite(2).
-        5. CAT 6: Mínimo 2 colaboradores CAT 6 ativos em todos os dias.
+        4. COBERTURA MÍNIMA: Garantir pelo menos ${baseConfig.min_coverage_per_shift} colaboradores por turno (Manhã e Tarde).
+        5. CAT 6: Mínimo ${baseConfig.min_cat6_per_shift} colaboradores CAT 6 ativos em todos os dias.
         6. RESPEITAR: horario_atribuido, folgas_fixas e periodo_ferias (FE).
-        7. SIGLAS: FE (Férias), FOLG (Folga), FC (Compensa), FAGR (Agrupada), FS (Solicitada).
-        8. TURNOS: ${SHIFT_LEGEND.map(s => `${s.desc}(${s.code})`).join(', ')}.
-
+        7. SOLICITAÇÕES APROVADAS (INDISPONIBILIDADE): Respeitar OBRIGATORIAMENTE as solicitações aprovadas. Se for "Indisponibilidade Total", o colaborador deve estar de FOLGA (FOLG) ou COMPENSA (FC) naquele dia. Se for um horário específico (ex: 08:00-12:00), garanta que o turno atribuído não conflite com esse horário.
+        8. SIGLAS: FE (Férias), FOLG (Folga), FC (Compensa), FAGR (Agrupada), FS (Solicitada).
+        9. TURNOS: ${SHIFT_LEGEND.map(s => `${s.desc}(${s.code})`).join(', ')}.
+ 
         HISTÓRICO: ${historyContext}
         COLABORADORES: ${JSON.stringify(employeeContext)}
+        SOLICITAÇÕES APROVADAS PARA ${targetMonth}: ${JSON.stringify(requestsContext)}
         ${kbContext}
 
         SAÍDA JSON APENAS:
         {
-          "month": "ABRIL", "year": "2026",
+          "month": "${targetMonth}", "year": "${targetYear}",
           "data": [
             {
               "area": "OPERAÇÃO", "turno": "MANHÃ/TARDE", "bp": "string",
               "funcao": "LÍDER", "nome": "string", "tarefa": "string",
-              "days": [{ "date": "01/04", "code": "T079" }, ...]
+              "days": [{ "date": "01/${String(targetDate.getMonth() + 1).padStart(2, '0')}", "code": "T079" }, ...]
             }
           ]
         }
@@ -456,7 +566,19 @@ export default function SupervisorDashboard() {
       }
       
       validateSchedule(parsedData);
-      setAiSchedule(parsedData);
+      
+      // Adicionar à lista de escalas (carrossel)
+      const newSchedules = [...aiSchedules];
+      const existingIndex = newSchedules.findIndex(s => s.month === parsedData.month && s.year === parsedData.year);
+      if (existingIndex >= 0) {
+        newSchedules[existingIndex] = parsedData;
+        setCurrentScheduleIndex(existingIndex);
+      } else {
+        newSchedules.push(parsedData);
+        setCurrentScheduleIndex(newSchedules.length - 1);
+      }
+      setAiSchedules(newSchedules);
+      
       setFeedbackGiven(false);
       setFeedbackData({ rating: 0, comment: '', strengths: [], weaknesses: [] });
     } catch (err: any) {
@@ -518,6 +640,8 @@ export default function SupervisorDashboard() {
   };
 
   const handleFeedback = async (type: 'boa' | 'ruim') => {
+    const currentSchedule = aiSchedules[currentScheduleIndex];
+    if (!currentSchedule) return;
     setFeedbackGiven(true);
     alert(`Feedback enviado: ${type}. A IA aprenderá com isso!`);
   };
@@ -636,6 +760,7 @@ export default function SupervisorDashboard() {
   };
 
   const handleExportPDF = () => {
+    const aiSchedule = aiSchedules[currentScheduleIndex];
     if (!aiSchedule) return;
 
     const doc = new jsPDF({
@@ -780,7 +905,7 @@ export default function SupervisorDashboard() {
 
     autoTable(doc, {
       head: [['RESPONSÁVEL', 'TAREFAS DIÁRIAS']],
-      body: aiSchedule.data.map((row: any) => [row.nome, row.tarefa || '']),
+      body: aiSchedules[currentScheduleIndex]?.data.map((row: any) => [row.nome, row.tarefa || '']) || [],
       startY: finalY + 6,
       margin: { left: 10 + colWidth + 5 },
       tableWidth: colWidth,
@@ -880,7 +1005,8 @@ export default function SupervisorDashboard() {
   };
 
   const handlePublishSchedule = async () => {
-    if (!aiSchedule) return;
+    const currentSchedule = aiSchedules[currentScheduleIndex];
+    if (!currentSchedule) return;
     setSaving(true);
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -889,32 +1015,64 @@ export default function SupervisorDashboard() {
         return;
       }
       
-      // 1. Criar registro da escala
-      const { data: schedule, error: sError } = await supabase
-        .from('schedules')
-        .insert([{
-          base_id: employees[0]?.base_id || '00000000-0000-0000-0000-000000000000',
-          start_date: `${aiSchedule.year}-${aiSchedule.month === 'ABRIL' ? '04' : '01'}-01`, // Simplificado para demo
-          end_date: `${aiSchedule.year}-${aiSchedule.month === 'ABRIL' ? '04' : '01'}-30`,
-          published_at: new Date().toISOString(),
-          created_by: session?.user?.id
-        }])
-        .select()
-        .single();
+      const monthMap: { [key: string]: string } = {
+        'JANEIRO': '01', 'FEVEREIRO': '02', 'MARÇO': '03', 'ABRIL': '04',
+        'MAIO': '05', 'JUNHO': '06', 'JULHO': '07', 'AGOSTO': '08',
+        'SETEMBRO': '09', 'OUTUBRO': '10', 'NOVEMBRO': '11', 'DEZEMBRO': '12'
+      };
+      const monthNum = monthMap[currentSchedule.month.toUpperCase()] || '01';
 
-      if (sError) throw sError;
+      let scheduleId = editingScheduleId;
 
-      // 2. Criar detalhes da escala
+      if (editingScheduleId) {
+        // 1. Atualizar registro da escala existente
+        const { error: uError } = await supabase
+          .from('schedules')
+          .update({
+            published_at: new Date().toISOString(),
+            created_by: session?.user?.id
+          })
+          .eq('id', editingScheduleId);
+
+        if (uError) throw uError;
+
+        // 2. Remover detalhes antigos para reinserir os novos
+        const { error: delError } = await supabase
+          .from('schedule_details')
+          .delete()
+          .eq('schedule_id', editingScheduleId);
+
+        if (delError) throw delError;
+      } else {
+        // 1. Criar novo registro da escala
+        const { data: schedule, error: sError } = await supabase
+          .from('schedules')
+          .insert([{
+            base_id: employees[0]?.base_id || '00000000-0000-0000-0000-000000000000',
+            start_date: `${currentSchedule.year}-${monthNum}-01`,
+            end_date: `${currentSchedule.year}-${monthNum}-30`,
+            published_at: new Date().toISOString(),
+            created_by: session?.user?.id
+          }])
+          .select()
+          .single();
+
+        if (sError) throw sError;
+        scheduleId = schedule.id;
+      }
+
+      // 3. Criar novos detalhes da escala
       const details = [];
-      for (const emp of aiSchedule.data) {
+      for (const emp of currentSchedule.data) {
         for (const day of emp.days) {
           const [d, m] = day.date.split('/');
           details.push({
-            schedule_id: schedule.id,
+            schedule_id: scheduleId,
             bp: emp.bp,
-            date: `${aiSchedule.year}-${m}-${d}`,
+            date: `${currentSchedule.year}-${m}-${d}`,
             shift: day.code.startsWith('T') ? 'manhã' : 'tarde', // Mapeamento simplificado
-            status: (day.code === 'FOLG' || day.code === 'FAGR' || day.code === 'FC') ? 'folga' : 'trabalhado'
+            status: (day.code === 'FOLG' || day.code === 'FAGR' || day.code === 'FC') ? 'folga' : 'trabalhado',
+            code: day.code // Salvando o código original
           });
         }
       }
@@ -925,13 +1083,68 @@ export default function SupervisorDashboard() {
 
       if (dError) throw dError;
 
-      alert('Escala publicada com sucesso!');
-      setAiSchedule(null);
+      alert(editingScheduleId ? 'Escala republicada com sucesso! Os colaboradores verão a atualização automaticamente.' : 'Escala publicada com sucesso!');
+      
+      // Atualizar o status na lista local em vez de remover
+      setAiSchedules(prev => prev.map((s, i) => i === currentScheduleIndex ? { ...s, status: 'published', id: scheduleId } : s));
+      
+      setEditingScheduleId(null);
+
+      // 4. Atualizar histórico local
+      const { data: historyData } = await supabase
+        .from('schedules')
+        .select('*, created_by_user:users(name)')
+        .order('created_at', { ascending: false })
+        .limit(6);
+      if (historyData) setScheduleHistory(historyData);
+
     } catch (err: any) {
       console.error('Erro ao publicar escala:', err);
       alert('Erro ao publicar: ' + err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveBaseConfig = async () => {
+    setSavingConfig(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data: existingConfig } = await supabase
+        .from('base_configuration')
+        .select('id')
+        .limit(1)
+        .maybeSingle();
+
+      if (existingConfig) {
+        const { error } = await supabase
+          .from('base_configuration')
+          .update({
+            min_coverage_per_shift: baseConfig.min_coverage_per_shift,
+            min_cat6_per_shift: baseConfig.min_cat6_per_shift,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingConfig.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('base_configuration')
+          .insert([{
+            min_coverage_per_shift: baseConfig.min_coverage_per_shift,
+            min_cat6_per_shift: baseConfig.min_cat6_per_shift,
+            base_id: employees[0]?.base_id || null // Fallback
+          }]);
+        if (error) throw error;
+      }
+      
+      setShowConfig(false);
+      alert('Configurações da base salvas com sucesso!');
+      await logAudit(session?.user?.id || '', 'UPDATE', 'base_configuration', null, null, baseConfig);
+    } catch (err: any) {
+      console.error('Erro ao salvar config:', err);
+      alert('Erro ao salvar configurações: ' + err.message);
+    } finally {
+      setSavingConfig(false);
     }
   };
 
@@ -947,14 +1160,25 @@ export default function SupervisorDashboard() {
             </span>
           </p>
         </div>
-        <button 
-          onClick={generateScheduleAI}
-          disabled={loading || configLoading}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 disabled:bg-gray-400"
-        >
-          {loading ? <Clock className="animate-spin" /> : <Sparkles />}
-          {loading ? 'Gerando...' : (configLoading ? 'Carregando Config...' : 'Gerar Escala com IA')}
-        </button>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-wrap gap-2">
+            <button 
+              onClick={() => setShowConfig(true)}
+              className="flex items-center gap-2 bg-white text-slate-600 border border-slate-200 px-4 py-3 rounded-xl font-medium hover:bg-slate-50 transition shadow-sm"
+            >
+              <Info size={18} />
+              Configurar Base
+            </button>
+            <button 
+              onClick={generateScheduleAI}
+              disabled={loading || configLoading}
+              className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 disabled:bg-gray-400"
+            >
+              {loading ? <Clock className="animate-spin" /> : <Sparkles />}
+              {loading ? 'Gerando...' : (configLoading ? 'Carregando Config...' : 'Gerar Escala com IA')}
+            </button>
+          </div>
+        </div>
       </div>
 
       {error && (
@@ -966,7 +1190,7 @@ export default function SupervisorDashboard() {
 
       {/* Indicador de Progresso Proeminente */}
       <AnimatePresence>
-        {loading && !aiSchedule && (
+        {loading && aiSchedules.length === 0 && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1013,10 +1237,344 @@ export default function SupervisorDashboard() {
         )}
       </AnimatePresence>
 
+      {aiSchedules.length > 0 && (
+        <div className="space-y-6">
+          {/* Carousel Header / Navigation */}
+          <div className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-indigo-50">
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                <Calendar size={20} />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900">Escalas Ativas / Rascunhos ({aiSchedules.length})</h3>
+                <p className="text-xs text-slate-500">Alterne entre as escalas geradas para revisão ou consulta</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setCurrentScheduleIndex(prev => Math.max(0, prev - 1))}
+                disabled={currentScheduleIndex === 0}
+                className="p-2 hover:bg-slate-100 rounded-lg disabled:opacity-30 transition-all"
+              >
+                <ArrowRightLeft size={20} className="rotate-180" />
+              </button>
+              <div className="flex gap-1 px-4">
+                {aiSchedules.map((s, i) => (
+                  <button
+                    key={`${s.month}-${s.year}-${s.status || 'draft'}`}
+                    onClick={() => setCurrentScheduleIndex(i)}
+                    className={`h-2 rounded-full transition-all flex items-center justify-center relative ${currentScheduleIndex === i ? 'w-12 bg-latam-indigo' : 'w-3 bg-slate-200'}`}
+                    title={`${s.month} ${s.year} (${s.status === 'published' ? 'Publicada' : 'Rascunho'})`}
+                  >
+                    {currentScheduleIndex === i && (
+                      <span className="text-[6px] text-white font-bold uppercase">
+                        {s.status === 'published' ? 'PUB' : 'RAS'}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <button 
+                onClick={() => setCurrentScheduleIndex(prev => Math.min(aiSchedules.length - 1, prev + 1))}
+                disabled={currentScheduleIndex === aiSchedules.length - 1}
+                className="p-2 hover:bg-slate-100 rounded-lg disabled:opacity-30 transition-all"
+              >
+                <ArrowRightLeft size={20} />
+              </button>
+            </div>
+          </div>
 
+          <motion.div 
+            key={`${aiSchedules[currentScheduleIndex].month}-${aiSchedules[currentScheduleIndex].year}`}
+            initial={{ opacity: 0, x: 20 }} 
+            animate={{ opacity: 1, x: 0 }} 
+            className="bg-white p-8 rounded-2xl shadow-xl border border-indigo-100 -mx-4 sm:-mx-6 lg:-mx-8 mb-8"
+          >
+            <div className="flex justify-between items-center mb-8">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600">
+                  <FileText size={24} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-indigo-900">
+                    {editingScheduleId ? (aiSchedules[currentScheduleIndex].status === 'published' ? `Escala Publicada - ${aiSchedules[currentScheduleIndex].month} ${aiSchedules[currentScheduleIndex].year}` : 'Editando Escala Publicada') : `Proposta de Escala - ${aiSchedules[currentScheduleIndex].month} ${aiSchedules[currentScheduleIndex].year}`}
+                  </h2>
+                  <p className="text-sm text-slate-500">
+                    Modelo LATAM - Status: {aiSchedules[currentScheduleIndex].status === 'published' ? 'Publicado' : 'Rascunho'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                {!feedbackGiven && (
+                  <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+                    <span className="text-xs font-bold text-slate-400 px-2 uppercase">Avaliar:</span>
+                    <button onClick={() => handleFeedback('boa')} className="p-2 bg-white text-green-600 rounded-lg hover:bg-green-50 shadow-sm transition-all"><ThumbsUp size={18} /></button>
+                    <button onClick={() => handleFeedback('ruim')} className="p-2 bg-white text-red-600 rounded-lg hover:bg-red-50 shadow-sm transition-all"><ThumbsDown size={18} /></button>
+                  </div>
+                )}
+                <button 
+                  onClick={handleExportPDF}
+                  className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-200 transition no-print"
+                >
+                  <Download size={18} /> Exportar PDF
+                </button>
+                <button 
+                  onClick={handlePrint}
+                  className="flex items-center gap-2 bg-latam-indigo text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-[#001a54] transition shadow-md no-print"
+                >
+                  <Printer size={18} /> Imprimir
+                </button>
+              </div>
+            </div>
 
-      <div className="grid grid-cols-1 gap-8">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div className="mb-6 bg-indigo-50 border border-indigo-100 text-indigo-700 px-4 py-3 rounded-xl flex items-center gap-3 text-sm">
+              <Sparkles size={18} className="text-indigo-500" />
+              <p>Esta escala é uma <strong>sugestão gerada por IA</strong>. Por favor, revise todos os horários e atribuições antes de validar e publicar.</p>
+            </div>
+
+            <div className="print-content">
+              {/* Cabeçalho exclusivo para impressão */}
+              <div className="hidden print:block mb-8 border-b-4 border-latam-indigo pb-4">
+                <div className="flex justify-between items-end">
+                  <div>
+                    <h1 className="text-4xl font-black text-latam-indigo leading-none">LATAM</h1>
+                    <p className="text-xs font-bold tracking-[0.2em] text-latam-indigo">AIRLINES</p>
+                  </div>
+                  <div className="text-right">
+                    <h2 className="text-xl font-bold text-slate-800 uppercase">Escala de Revezamento - JPA</h2>
+                    <p className="text-sm text-slate-500 font-medium">{aiSchedules[currentScheduleIndex].month} / {aiSchedules[currentScheduleIndex].year}</p>
+                  </div>
+                </div>
+              </div>
+
+              {validationErrors.length > 0 && (
+                <div className="mb-8 p-5 bg-white border-2 border-amber-200 rounded-[24px] shadow-sm overflow-hidden relative no-print">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-amber-400" />
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-black text-amber-900 flex items-center gap-2 uppercase tracking-wider">
+                      <AlertTriangle size={18} className="text-amber-500" />
+                      Análise de Conformidade (HITL)
+                    </h3>
+                    <span className="px-2 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-lg uppercase">
+                      {validationErrors.filter(e => e.type === 'error').length} Erros Críticos
+                    </span>
+                  </div>
+                  {(() => {
+                    const groupedErrors = validationErrors.reduce((acc: any, err: any) => {
+                      let groupKey = 'Geral / Mensal';
+                      if (err.date) {
+                        const parts = err.date.split('/');
+                        if (parts.length === 2) {
+                          const dayOfMonth = parseInt(parts[0], 10);
+                          if (!isNaN(dayOfMonth)) {
+                            const weekNum = Math.ceil(dayOfMonth / 7);
+                            groupKey = `Semana ${weekNum}`;
+                          }
+                        } else {
+                          const d = new Date(err.date);
+                          if (!isNaN(d.getTime())) {
+                            const dayOfMonth = d.getUTCDate();
+                            const weekNum = Math.ceil(dayOfMonth / 7);
+                            groupKey = `Semana ${weekNum}`;
+                          }
+                        }
+                      }
+                      if (!acc[groupKey]) acc[groupKey] = [];
+                      acc[groupKey].push(err);
+                      return acc;
+                    }, {});
+
+                    const sortedGroupKeys = Object.keys(groupedErrors).sort((a, b) => {
+                      if (a === 'Geral / Mensal') return -1;
+                      if (b === 'Geral / Mensal') return 1;
+                      return a.localeCompare(b);
+                    });
+
+                    return (
+                      <div className="space-y-6 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                        {sortedGroupKeys.map(groupKey => (
+                          <div key={groupKey} className="space-y-3">
+                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">{groupKey}</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {groupedErrors[groupKey].map((err: any, idx: number) => {
+                                let dateLabel = '';
+                                if (err.date) {
+                                  const parts = err.date.split('/');
+                                  if (parts.length === 2) {
+                                    dateLabel = `${parts[0]}/${parts[1]}`;
+                                  } else {
+                                    const d = new Date(err.date);
+                                    if (!isNaN(d.getTime())) {
+                                      dateLabel = d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+                                    } else {
+                                      dateLabel = err.date;
+                                    }
+                                  }
+                                }
+                                
+                                const title = err.nome ? `${err.nome}${dateLabel ? ` - ${dateLabel}` : ''}` : (dateLabel || 'Aviso');
+
+                                return (
+                                  <div key={idx} className={`text-[11px] p-3 rounded-xl flex items-start gap-3 transition-all border ${err.type === 'error' ? 'bg-red-50 text-red-800 border-red-100' : 'bg-amber-50 text-amber-800 border-amber-100'}`}>
+                                    <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${err.type === 'error' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                                    <div className="space-y-1">
+                                      <div className="font-black uppercase tracking-tight">{title}</div>
+                                      <div className="font-medium leading-relaxed opacity-80">{err.message}</div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                  <p className="mt-4 text-[10px] text-slate-400 italic">
+                    * Toda escala gerada por IA deve ser revisada manualmente antes da publicação.
+                  </p>
+                </div>
+              )}
+
+              <LATAMScheduleTable 
+                month={aiSchedules[currentScheduleIndex].month} 
+                year={aiSchedules[currentScheduleIndex].year} 
+                data={aiSchedules[currentScheduleIndex].data} 
+                validationErrors={validationErrors}
+                onDataChange={(newData) => {
+                  const updatedSchedules = [...aiSchedules];
+                  updatedSchedules[currentScheduleIndex] = { ...updatedSchedules[currentScheduleIndex], data: newData };
+                  setAiSchedules(updatedSchedules);
+                  validateSchedule(updatedSchedules[currentScheduleIndex]);
+                }}
+              />
+
+              {/* Sistema de Feedback Detalhado */}
+              {!feedbackGiven && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-12 p-8 bg-slate-50 rounded-[32px] border border-slate-200 shadow-inner no-print"
+                >
+                  <div className="flex flex-col md:flex-row gap-8">
+                    <div className="w-full space-y-6">
+                      <div>
+                        <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
+                          <ThumbsUp size={24} className="text-latam-indigo" />
+                          Avaliação da Inteligência Artificial
+                        </h3>
+                        <p className="text-sm text-slate-500 mt-1">Seu feedback é essencial para treinarmos o motor de escalas JPA.</p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() => setFeedbackData({ ...feedbackData, rating: star })}
+                            className={`p-1 transition-all transform hover:scale-110 ${feedbackData.rating >= star ? 'text-amber-400' : 'text-slate-300'}`}
+                          >
+                            <Sparkles size={32} fill={feedbackData.rating >= star ? 'currentColor' : 'none'} />
+                          </button>
+                        ))}
+                        <span className="ml-4 text-sm font-bold text-slate-400 uppercase tracking-widest">
+                          {feedbackData.rating > 0 ? `${feedbackData.rating} Estrelas` : 'Avalie a precisão'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pontos Fortes</label>
+                          <div className="flex flex-wrap gap-2">
+                            {['Cobertura Ideal', 'Regra 5x1 OK', 'Folgas FAGR OK', 'Turnos Equilibrados'].map(tag => (
+                              <button
+                                key={tag}
+                                onClick={() => {
+                                  const strengths = feedbackData.strengths.includes(tag)
+                                    ? feedbackData.strengths.filter(s => s !== tag)
+                                    : [...feedbackData.strengths, tag];
+                                  setFeedbackData({ ...feedbackData, strengths });
+                                }}
+                                className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${feedbackData.strengths.includes(tag) ? 'bg-emerald-100 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200 text-slate-500 hover:border-emerald-200'}`}
+                              >
+                                {tag}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pontos Fracos</label>
+                          <div className="flex flex-wrap gap-2">
+                            {['Muitas Férias', 'Furo de Cobertura', 'Turno Incorreto', 'Violação 5x1'].map(tag => (
+                              <button
+                                key={tag}
+                                onClick={() => {
+                                  const weaknesses = feedbackData.weaknesses.includes(tag)
+                                    ? feedbackData.weaknesses.filter(w => w !== tag)
+                                    : [...feedbackData.weaknesses, tag];
+                                  setFeedbackData({ ...feedbackData, weaknesses });
+                                }}
+                                className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${feedbackData.weaknesses.includes(tag) ? 'bg-red-100 border-red-200 text-red-700' : 'bg-white border-slate-200 text-slate-500 hover:border-red-200'}`}
+                              >
+                                {tag}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="w-full space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Comentários Adicionais</label>
+                        <textarea
+                          value={feedbackData.comment}
+                          onChange={(e) => setFeedbackData({ ...feedbackData, comment: e.target.value })}
+                          placeholder="Ex: O colaborador Bernardo ficou com turno de madrugada indevidamente..."
+                          className="w-full h-32 p-4 bg-white border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-latam-indigo outline-none transition-all resize-none"
+                        />
+                      </div>
+                      <button
+                        onClick={handleSaveFeedback}
+                        disabled={savingFeedback || feedbackData.rating === 0}
+                        className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-black transition shadow-lg disabled:bg-slate-300 flex items-center justify-center gap-2"
+                      >
+                        {savingFeedback ? 'Enviando...' : 'Enviar Feedback para Treinamento'}
+                        <ArrowRightLeft size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+
+            <div className="mt-10 flex justify-end gap-4">
+              <button 
+                onClick={() => {
+                  const newSchedules = aiSchedules.filter((_, i) => i !== currentScheduleIndex);
+                  setAiSchedules(newSchedules);
+                  if (currentScheduleIndex >= newSchedules.length) {
+                    setCurrentScheduleIndex(Math.max(0, newSchedules.length - 1));
+                  }
+                  setEditingScheduleId(null);
+                }}
+                className="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition"
+              >
+                {aiSchedules[currentScheduleIndex].status === 'published' ? 'Remover do Carrossel' : (editingScheduleId ? 'Cancelar Edição' : 'Descartar')}
+              </button>
+              <button 
+                onClick={handlePublishSchedule}
+                disabled={saving}
+                className="flex items-center gap-2 bg-latam-indigo text-white px-8 py-3 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-200 disabled:bg-slate-300"
+              >
+                <CheckCircle size={20} />
+                {saving ? 'Publicando...' : (aiSchedules[currentScheduleIndex].status === 'published' || editingScheduleId ? 'Validar e Republicar' : 'Validar e Publicar Escala')}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Users className="text-indigo-600" /> Gestão Detalhada de Equipe
@@ -1153,280 +1711,6 @@ export default function SupervisorDashboard() {
             </table>
           </div>
         </div>
-      </div>
-
-      {aiSchedule && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 rounded-2xl shadow-xl border border-indigo-100 -mx-4 sm:-mx-6 lg:-mx-8 mb-8">
-          <div className="flex justify-between items-center mb-8">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600">
-                <FileText size={24} />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-indigo-900">Proposta de Escala IA</h2>
-                <p className="text-sm text-slate-500">Modelo LATAM - Status: Rascunho</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              {!feedbackGiven && (
-                <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
-                  <span className="text-xs font-bold text-slate-400 px-2 uppercase">Avaliar:</span>
-                  <button onClick={() => handleFeedback('boa')} className="p-2 bg-white text-green-600 rounded-lg hover:bg-green-50 shadow-sm transition-all"><ThumbsUp size={18} /></button>
-                  <button onClick={() => handleFeedback('ruim')} className="p-2 bg-white text-red-600 rounded-lg hover:bg-red-50 shadow-sm transition-all"><ThumbsDown size={18} /></button>
-                </div>
-              )}
-              <button 
-                onClick={handleExportPDF}
-                className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-200 transition no-print"
-              >
-                <Download size={18} /> Exportar PDF
-              </button>
-              <button 
-                onClick={handlePrint}
-                className="flex items-center gap-2 bg-latam-indigo text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-[#001a54] transition shadow-md no-print"
-              >
-                <Printer size={18} /> Imprimir
-              </button>
-            </div>
-          </div>
-
-          <div className="mb-6 bg-indigo-50 border border-indigo-100 text-indigo-700 px-4 py-3 rounded-xl flex items-center gap-3 text-sm">
-            <Sparkles size={18} className="text-indigo-500" />
-            <p>Esta escala é uma <strong>sugestão gerada por IA</strong>. Por favor, revise todos os horários e atribuições antes de validar e publicar.</p>
-          </div>
-
-          <div className="print-content">
-            {/* Cabeçalho exclusivo para impressão */}
-            <div className="hidden print:block mb-8 border-b-4 border-latam-indigo pb-4">
-              <div className="flex justify-between items-end">
-                <div>
-                  <h1 className="text-4xl font-black text-latam-indigo leading-none">LATAM</h1>
-                  <p className="text-xs font-bold tracking-[0.2em] text-latam-indigo">AIRLINES</p>
-                </div>
-                <div className="text-right">
-                  <h2 className="text-xl font-bold text-slate-800 uppercase">Escala de Revezamento - JPA</h2>
-                  <p className="text-sm text-slate-500 font-medium">{aiSchedule.month} / {aiSchedule.year}</p>
-                </div>
-              </div>
-            </div>
-
-            {validationErrors.length > 0 && (
-              <div className="mb-8 p-5 bg-white border-2 border-amber-200 rounded-[24px] shadow-sm overflow-hidden relative no-print">
-                <div className="absolute top-0 left-0 w-full h-1 bg-amber-400" />
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-black text-amber-900 flex items-center gap-2 uppercase tracking-wider">
-                    <AlertTriangle size={18} className="text-amber-500" />
-                    Análise de Conformidade (HITL)
-                  </h3>
-                  <span className="px-2 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-lg uppercase">
-                    {validationErrors.filter(e => e.type === 'error').length} Erros Críticos
-                  </span>
-                </div>
-                {(() => {
-                  const groupedErrors = validationErrors.reduce((acc: any, err: any) => {
-                    let groupKey = 'Geral / Mensal';
-                    if (err.date) {
-                      const parts = err.date.split('/');
-                      if (parts.length === 2) {
-                        const dayOfMonth = parseInt(parts[0], 10);
-                        if (!isNaN(dayOfMonth)) {
-                          const weekNum = Math.ceil(dayOfMonth / 7);
-                          groupKey = `Semana ${weekNum}`;
-                        }
-                      } else {
-                        const d = new Date(err.date);
-                        if (!isNaN(d.getTime())) {
-                          const dayOfMonth = d.getUTCDate();
-                          const weekNum = Math.ceil(dayOfMonth / 7);
-                          groupKey = `Semana ${weekNum}`;
-                        }
-                      }
-                    }
-                    if (!acc[groupKey]) acc[groupKey] = [];
-                    acc[groupKey].push(err);
-                    return acc;
-                  }, {});
-
-                  const sortedGroupKeys = Object.keys(groupedErrors).sort((a, b) => {
-                    if (a === 'Geral / Mensal') return -1;
-                    if (b === 'Geral / Mensal') return 1;
-                    return a.localeCompare(b);
-                  });
-
-                  return (
-                    <div className="space-y-6 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                      {sortedGroupKeys.map(groupKey => (
-                        <div key={groupKey} className="space-y-3">
-                          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">{groupKey}</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {groupedErrors[groupKey].map((err: any, idx: number) => {
-                              let dateLabel = '';
-                              if (err.date) {
-                                const parts = err.date.split('/');
-                                if (parts.length === 2) {
-                                  dateLabel = `${parts[0]}/${parts[1]}`;
-                                } else {
-                                  const d = new Date(err.date);
-                                  if (!isNaN(d.getTime())) {
-                                    dateLabel = d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-                                  } else {
-                                    dateLabel = err.date;
-                                  }
-                                }
-                              }
-                              
-                              const title = err.nome ? `${err.nome}${dateLabel ? ` - ${dateLabel}` : ''}` : (dateLabel || 'Aviso');
-
-                              return (
-                                <div key={idx} className={`text-[11px] p-3 rounded-xl flex items-start gap-3 transition-all border ${err.type === 'error' ? 'bg-red-50 text-red-800 border-red-100' : 'bg-amber-50 text-amber-800 border-amber-100'}`}>
-                                  <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${err.type === 'error' ? 'bg-red-500' : 'bg-amber-500'}`} />
-                                  <div className="space-y-1">
-                                    <div className="font-black uppercase tracking-tight">{title}</div>
-                                    <div className="font-medium leading-relaxed opacity-80">{err.message}</div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-                <p className="mt-4 text-[10px] text-slate-400 italic">
-                  * Toda escala gerada por IA deve ser revisada manualmente antes da publicação.
-                </p>
-              </div>
-            )}
-
-            <LATAMScheduleTable 
-              month={aiSchedule.month} 
-              year={aiSchedule.year} 
-              data={aiSchedule.data} 
-              validationErrors={validationErrors}
-              onDataChange={(newData) => {
-                const updatedSchedule = { ...aiSchedule, data: newData };
-                setAiSchedule(updatedSchedule);
-                validateSchedule(updatedSchedule);
-              }}
-            />
-
-            {/* Sistema de Feedback Detalhado */}
-            {!feedbackGiven && (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-12 p-8 bg-slate-50 rounded-[32px] border border-slate-200 shadow-inner no-print"
-              >
-                <div className="flex flex-col md:flex-row gap-8">
-                  <div className="w-full space-y-6">
-                    <div>
-                      <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
-                        <ThumbsUp size={24} className="text-latam-indigo" />
-                        Avaliação da Inteligência Artificial
-                      </h3>
-                      <p className="text-sm text-slate-500 mt-1">Seu feedback é essencial para treinarmos o motor de escalas JPA.</p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          onClick={() => setFeedbackData({ ...feedbackData, rating: star })}
-                          className={`p-1 transition-all transform hover:scale-110 ${feedbackData.rating >= star ? 'text-amber-400' : 'text-slate-300'}`}
-                        >
-                          <Sparkles size={32} fill={feedbackData.rating >= star ? 'currentColor' : 'none'} />
-                        </button>
-                      ))}
-                      <span className="ml-4 text-sm font-bold text-slate-400 uppercase tracking-widest">
-                        {feedbackData.rating > 0 ? `${feedbackData.rating} Estrelas` : 'Avalie a precisão'}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pontos Fortes</label>
-                        <div className="flex flex-wrap gap-2">
-                          {['Cobertura Ideal', 'Regra 5x1 OK', 'Folgas FAGR OK', 'Turnos Equilibrados'].map(tag => (
-                            <button
-                              key={tag}
-                              onClick={() => {
-                                const strengths = feedbackData.strengths.includes(tag)
-                                  ? feedbackData.strengths.filter(s => s !== tag)
-                                  : [...feedbackData.strengths, tag];
-                                setFeedbackData({ ...feedbackData, strengths });
-                              }}
-                              className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${feedbackData.strengths.includes(tag) ? 'bg-emerald-100 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200 text-slate-500 hover:border-emerald-200'}`}
-                            >
-                              {tag}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pontos Fracos</label>
-                        <div className="flex flex-wrap gap-2">
-                          {['Muitas Férias', 'Furo de Cobertura', 'Turno Incorreto', 'Violação 5x1'].map(tag => (
-                            <button
-                              key={tag}
-                              onClick={() => {
-                                const weaknesses = feedbackData.weaknesses.includes(tag)
-                                  ? feedbackData.weaknesses.filter(w => w !== tag)
-                                  : [...feedbackData.weaknesses, tag];
-                                setFeedbackData({ ...feedbackData, weaknesses });
-                              }}
-                              className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${feedbackData.weaknesses.includes(tag) ? 'bg-red-100 border-red-200 text-red-700' : 'bg-white border-slate-200 text-slate-500 hover:border-red-200'}`}
-                            >
-                              {tag}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="w-full space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Comentários Adicionais</label>
-                      <textarea
-                        value={feedbackData.comment}
-                        onChange={(e) => setFeedbackData({ ...feedbackData, comment: e.target.value })}
-                        placeholder="Ex: O colaborador Bernardo ficou com turno de madrugada indevidamente..."
-                        className="w-full h-32 p-4 bg-white border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-latam-indigo outline-none transition-all resize-none"
-                      />
-                    </div>
-                    <button
-                      onClick={handleSaveFeedback}
-                      disabled={savingFeedback || feedbackData.rating === 0}
-                      className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-black transition shadow-lg disabled:bg-slate-300 flex items-center justify-center gap-2"
-                    >
-                      {savingFeedback ? 'Enviando...' : 'Enviar Feedback para Treinamento'}
-                      <ArrowRightLeft size={16} />
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </div>
-
-          <div className="mt-10 flex justify-end gap-4">
-            <button 
-              onClick={() => setAiSchedule(null)}
-              className="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition"
-            >
-              Descartar
-            </button>
-            <button 
-              onClick={handlePublishSchedule}
-              disabled={saving}
-              className="flex items-center gap-2 bg-latam-indigo text-white px-8 py-3 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-200 disabled:bg-slate-300"
-            >
-              <CheckCircle size={20} />
-              {saving ? 'Publicando...' : 'Validar e Publicar Escala'}
-            </button>
-          </div>
-        </motion.div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -1448,16 +1732,16 @@ export default function SupervisorDashboard() {
             <FileText className="text-indigo-600" /> Roteiro de Atividades
           </h2>
           <div className="space-y-4">
-            {aiSchedule?.data.map((row: any, idx: number) => (
+            {aiSchedules[currentScheduleIndex]?.data.map((row: any, idx: number) => (
               <div key={row.bp} className="text-xs p-3 bg-gray-50 rounded-lg">
                 <div className="font-bold text-gray-900">{row.nome}</div>
                 <input 
                   type="text"
                   value={row.tarefa || ''}
                   onChange={(e) => {
-                    const newData = [...aiSchedule.data];
-                    newData[idx].tarefa = e.target.value;
-                    setAiSchedule({ ...aiSchedule, data: newData });
+                    const updatedSchedules = [...aiSchedules];
+                    updatedSchedules[currentScheduleIndex].data[idx].tarefa = e.target.value;
+                    setAiSchedules(updatedSchedules);
                   }}
                   className="w-full mt-1 bg-white border border-gray-200 focus:ring-1 focus:ring-indigo-500 outline-none p-1.5 rounded text-gray-600"
                   placeholder="Sem tarefas"
@@ -1479,6 +1763,54 @@ export default function SupervisorDashboard() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Histórico de Escalas Section */}
+      <div className="mt-8 bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+            <History className="text-latam-indigo" size={24} />
+            Histórico de Escalas Publicadas
+          </h2>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {scheduleHistory.length === 0 ? (
+            <div className="col-span-full text-center py-8 text-slate-400">
+              Nenhuma escala publicada anteriormente.
+            </div>
+          ) : (
+            scheduleHistory.map(schedule => (
+              <div key={schedule.id} className="p-4 border border-slate-100 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors group">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <div className="font-bold text-slate-900 uppercase">
+                      {new Date(schedule.start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      Publicada em: {new Date(schedule.published_at).toLocaleDateString('pt-BR')}
+                    </div>
+                  </div>
+                  <div className="px-2 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-lg uppercase">
+                    Publicada
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-[10px] text-slate-400">
+                    Por: {schedule.created_by_user?.name || 'Sistema'}
+                  </div>
+                  <button 
+                    onClick={() => viewSchedule(schedule)}
+                    className="flex items-center gap-1 text-xs font-bold text-latam-indigo hover:underline"
+                  >
+                    <Search size={14} /> Visualizar / Editar
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -1613,7 +1945,7 @@ export default function SupervisorDashboard() {
         </div>
       </div>
 
-      <AnimatePresence>
+    <AnimatePresence>
         {viewedSchedule && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
             <motion.div 
@@ -1624,7 +1956,24 @@ export default function SupervisorDashboard() {
             >
               <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <h3 className="text-lg font-bold text-slate-900">Visualizar Escala - {new Date(viewedSchedule.start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()}</h3>
-                <button onClick={() => setViewedSchedule(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => {
+                      setAiSchedule({
+                        month: new Date(viewedSchedule.start_date).toLocaleDateString('pt-BR', { month: 'long' }).toUpperCase(),
+                        year: new Date(viewedSchedule.start_date).getFullYear().toString(),
+                        data: viewedSchedule.data
+                      });
+                      setEditingScheduleId(viewedSchedule.id);
+                      setViewedSchedule(null);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-700 transition shadow-md"
+                  >
+                    <Edit2 size={16} /> Editar esta Escala
+                  </button>
+                  <button onClick={() => setViewedSchedule(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+                </div>
               </div>
               <div className="p-6 overflow-y-auto">
                 <LATAMScheduleTable 
@@ -1633,6 +1982,93 @@ export default function SupervisorDashboard() {
                   data={viewedSchedule.data}
                   onDataChange={() => {}}
                 />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showConfig && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-[32px] shadow-2xl w-full max-w-md overflow-hidden"
+            >
+              <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Configurações da Base</h3>
+                  <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Parâmetros Operacionais JPA</p>
+                </div>
+                <button onClick={() => setShowConfig(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-white rounded-full transition-all">
+                  <X size={24} />
+                </button>
+              </div>
+              
+              <div className="p-8 space-y-8">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+                      <Users size={18} />
+                    </div>
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Cobertura por Turno</label>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <input 
+                      type="range" 
+                      min="1" 
+                      max="10" 
+                      value={baseConfig.min_coverage_per_shift}
+                      onChange={(e) => setBaseConfig({...baseConfig, min_coverage_per_shift: parseInt(e.target.value)})}
+                      className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-latam-indigo"
+                    />
+                    <span className="w-12 h-12 flex items-center justify-center bg-indigo-50 text-latam-indigo font-black rounded-2xl border border-indigo-100">
+                      {baseConfig.min_coverage_per_shift}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 italic">Mínimo de colaboradores ativos em cada turno (Manhã/Tarde).</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
+                      <CheckCircle size={18} />
+                    </div>
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Cobertura CAT 6</label>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <input 
+                      type="range" 
+                      min="1" 
+                      max="5" 
+                      value={baseConfig.min_cat6_per_shift}
+                      onChange={(e) => setBaseConfig({...baseConfig, min_cat6_per_shift: parseInt(e.target.value)})}
+                      className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                    />
+                    <span className="w-12 h-12 flex items-center justify-center bg-emerald-50 text-emerald-600 font-black rounded-2xl border border-emerald-100">
+                      {baseConfig.min_cat6_per_shift}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 italic">Mínimo de colaboradores com certificação CAT 6 ativos por dia.</p>
+                </div>
+
+                <div className="pt-6 flex gap-3">
+                  <button 
+                    onClick={() => setShowConfig(false)}
+                    className="flex-1 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 transition-all border border-transparent hover:border-slate-200"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={handleSaveBaseConfig}
+                    disabled={savingConfig}
+                    className="flex-1 bg-latam-indigo text-white py-4 rounded-2xl font-bold hover:bg-[#001a54] transition-all shadow-xl shadow-indigo-100 disabled:bg-slate-300"
+                  >
+                    {savingConfig ? 'Salvando...' : 'Salvar Config'}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>

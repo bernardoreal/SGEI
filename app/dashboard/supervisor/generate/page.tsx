@@ -11,6 +11,25 @@ export default function ScheduleGenerator() {
   const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-3-flash-preview' });
   const [configLoading, setConfigLoading] = useState(true);
   const [employees, setEmployees] = useState<any[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
+
+  const months = [
+    { value: '01', label: 'Janeiro' },
+    { value: '02', label: 'Fevereiro' },
+    { value: '03', label: 'Março' },
+    { value: '04', label: 'Abril' },
+    { value: '05', label: 'Maio' },
+    { value: '06', label: 'Junho' },
+    { value: '07', label: 'Julho' },
+    { value: '08', label: 'Agosto' },
+    { value: '09', label: 'Setembro' },
+    { value: '10', label: 'Outubro' },
+    { value: '11', label: 'Novembro' },
+    { value: '12', label: 'Dezembro' },
+  ];
+
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -29,6 +48,9 @@ export default function ScheduleGenerator() {
         if (empData) {
           setEmployees(empData);
         }
+        
+        // Set default month to current
+        setSelectedMonth(currentMonth.toString().padStart(2, '0'));
       } catch (err) {
         console.error('Error fetching data:', err);
       } finally {
@@ -36,14 +58,18 @@ export default function ScheduleGenerator() {
       }
     };
     fetchData();
-  }, []);
+  }, [currentMonth]);
 
   const generateSchedule = async () => {
+    if (!selectedMonth) {
+      alert('Por favor, selecione um mês.');
+      return;
+    }
     setLoading(true);
     setResult(null);
     try {
       const prompt = `
-        Gere uma escala de trabalho mensal para a base JPA da LATAM Cargo.
+        Gere uma escala de trabalho para o mês ${selectedMonth}/${currentYear} para a base JPA da LATAM Cargo.
         Regras de Negócio:
         - Padrão: 5x1 (5 dias trabalhados para 1 de folga).
         - Jornada: 8 horas diárias (7h trabalhadas + 1h de intervalo).
@@ -123,7 +149,25 @@ export default function ScheduleGenerator() {
             </div>
           </div>
 
-          <div className="flex justify-center">
+          <div className="flex justify-center items-center gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-bold text-gray-700">Mês da Escala</label>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+              >
+                {months.map((month) => (
+                  <option 
+                    key={month.value} 
+                    value={month.value}
+                    disabled={parseInt(month.value) < currentMonth}
+                  >
+                    {month.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button
               onClick={generateSchedule}
               disabled={loading || configLoading}
