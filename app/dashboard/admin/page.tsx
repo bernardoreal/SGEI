@@ -872,203 +872,150 @@ export default function AdminDashboard() {
               </button>
               <button 
                 onClick={() => {
-                  const sql = `-- Execute este SQL no Editor do Supabase:
+                  const sql = `-- ==========================================
+-- SCRIPT DE ENDURECIMENTO DE SEGURANÇA (HARDENING)
+-- ==========================================
 
--- 1. Remover a função problemática para evitar conflitos (CASCADE remove as políticas dependentes)
-DROP FUNCTION IF EXISTS public.is_admin() CASCADE;
-
--- 2. Políticas Universais de Leitura (Garante que os contadores funcionem)
--- USERS
-ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins can view all users" ON public.users;
-DROP POLICY IF EXISTS "Admins can manage users" ON public.users;
-DROP POLICY IF EXISTS "Users can view own data" ON public.users;
-DROP POLICY IF EXISTS "Users can update own data" ON public.users;
-DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.users;
-DROP POLICY IF EXISTS "Enable all access for admin email" ON public.users;
-DROP POLICY IF EXISTS "Enable read access for all" ON public.users;
-
-CREATE POLICY "Enable read access for all" ON public.users FOR SELECT USING (true);
-CREATE POLICY "Enable all access for admin email" ON public.users FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
-CREATE POLICY "Users can update own data" ON public.users FOR UPDATE USING (id = auth.uid());
-
--- BASES
-ALTER TABLE public.bases ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Everyone can view bases" ON public.bases;
-DROP POLICY IF EXISTS "Admins can manage bases" ON public.bases;
-DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.bases;
-DROP POLICY IF EXISTS "Enable all access for admin email" ON public.bases;
-DROP POLICY IF EXISTS "Enable read access for all" ON public.bases;
-
-CREATE POLICY "Enable read access for all" ON public.bases FOR SELECT USING (true);
-CREATE POLICY "Enable all access for admin email" ON public.bases FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
-
--- ROLES
-ALTER TABLE public.roles ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Everyone can view roles" ON public.roles;
-CREATE POLICY "Everyone can view roles" ON public.roles FOR SELECT USING (true);
-
--- BASE_JPA
-ALTER TABLE public.base_jpa ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Everyone can view base_jpa" ON public.base_jpa;
-DROP POLICY IF EXISTS "Admins can manage base_jpa" ON public.base_jpa;
-DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.base_jpa;
-DROP POLICY IF EXISTS "Enable all access for admin email" ON public.base_jpa;
-DROP POLICY IF EXISTS "Enable read access for all" ON public.base_jpa;
-
-CREATE POLICY "Enable read access for all" ON public.base_jpa FOR SELECT USING (true);
-CREATE POLICY "Enable all access for admin email" ON public.base_jpa FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
-
--- AUDIT_LOG
-ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins can view audit logs" ON public.audit_log;
-DROP POLICY IF EXISTS "Admins can insert audit logs" ON public.audit_log;
-DROP POLICY IF EXISTS "Enable read access for admin" ON public.audit_log;
-DROP POLICY IF EXISTS "Enable insert for authenticated" ON public.audit_log;
-DROP POLICY IF EXISTS "Enable read access for all" ON public.audit_log;
-
-CREATE POLICY "Enable read access for all" ON public.audit_log FOR SELECT USING (true);
-CREATE POLICY "Enable insert for authenticated" ON public.audit_log FOR INSERT WITH CHECK (true);
-CREATE POLICY "Enable all access for admin email" ON public.audit_log FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
-
--- SYSTEM_SETTINGS
-ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Everyone can view system settings" ON public.system_settings;
-DROP POLICY IF EXISTS "Admins can manage system settings" ON public.system_settings;
-DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.system_settings;
-DROP POLICY IF EXISTS "Enable all access for admin email" ON public.system_settings;
-DROP POLICY IF EXISTS "Enable read access for all" ON public.system_settings;
-
-CREATE POLICY "Enable read access for all" ON public.system_settings FOR SELECT USING (true);
-CREATE POLICY "Enable all access for admin email" ON public.system_settings FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
-
--- KNOWLEDGE_BASE
-ALTER TABLE public.knowledge_base ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Supervisors can manage knowledge base" ON public.knowledge_base;
-DROP POLICY IF EXISTS "Everyone can view knowledge base" ON public.knowledge_base;
-DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.knowledge_base;
-DROP POLICY IF EXISTS "Enable all access for admin email" ON public.knowledge_base;
-DROP POLICY IF EXISTS "Enable read access for all" ON public.knowledge_base;
-
-CREATE POLICY "Enable read access for all" ON public.knowledge_base FOR SELECT USING (true);
-CREATE POLICY "Enable all access for admin email" ON public.knowledge_base FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
-
--- AI_USAGE_LOGS
-ALTER TABLE public.ai_usage_logs ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Enable read access for all authenticated users" ON public.ai_usage_logs;
-DROP POLICY IF EXISTS "Enable insert for anon" ON public.ai_usage_logs;
-DROP POLICY IF EXISTS "Enable all access for admin email" ON public.ai_usage_logs;
-DROP POLICY IF EXISTS "Enable read access for all" ON public.ai_usage_logs;
-
-CREATE POLICY "Enable read access for all" ON public.ai_usage_logs FOR SELECT USING (true);
-CREATE POLICY "Enable insert for anon" ON public.ai_usage_logs FOR INSERT WITH CHECK (true);
-CREATE POLICY "Enable all access for admin email" ON public.ai_usage_logs FOR ALL USING (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
-
--- 3. INSERIR DADOS BÁSICOS CASO ESTEJAM FALTANDO
-INSERT INTO public.roles (name, description) VALUES 
-('admin', 'Administrador Global'),
-('manager', 'Gerente Global'),
-('coordinator', 'Coordenador Global'),
-('supervisor', 'Supervisor de Base'),
-('employee', 'Colaborador')
-ON CONFLICT (name) DO NOTHING;
-
-INSERT INTO public.bases (code_iata, name) VALUES 
-('JPA', 'João Pessoa'),
-('REC', 'Recife'),
-('NAT', 'Natal'),
-('MCZ', 'Maceió'),
-('FOR', 'Fortaleza'),
-('SSA', 'Salvador')
-ON CONFLICT (code_iata) DO NOTHING;
-
--- 4. CORREÇÃO ARQUITETURAL: ALINHAR IDs E ARRUMAR O GATILHO (TRIGGER)
--- 4.1. Alterar as chaves estrangeiras para ON UPDATE CASCADE para permitir a mudança do ID
-ALTER TABLE public.bases DROP CONSTRAINT IF EXISTS bases_supervisor_id_fkey, ADD CONSTRAINT bases_supervisor_id_fkey FOREIGN KEY (supervisor_id) REFERENCES public.users(id) ON UPDATE CASCADE;
-ALTER TABLE public.bases DROP CONSTRAINT IF EXISTS bases_coordinator_id_fkey, ADD CONSTRAINT bases_coordinator_id_fkey FOREIGN KEY (coordinator_id) REFERENCES public.users(id) ON UPDATE CASCADE;
-ALTER TABLE public.bases DROP CONSTRAINT IF EXISTS bases_manager_id_fkey, ADD CONSTRAINT bases_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES public.users(id) ON UPDATE CASCADE;
-
-ALTER TABLE public.escala_drafts DROP CONSTRAINT IF EXISTS escala_drafts_created_by_fkey, ADD CONSTRAINT escala_drafts_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id) ON UPDATE CASCADE;
-ALTER TABLE public.escalas DROP CONSTRAINT IF EXISTS escalas_supervisor_id_fkey, ADD CONSTRAINT escalas_supervisor_id_fkey FOREIGN KEY (supervisor_id) REFERENCES public.users(id) ON UPDATE CASCADE;
-ALTER TABLE public.escala_history DROP CONSTRAINT IF EXISTS escala_history_approved_by_fkey, ADD CONSTRAINT escala_history_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(id) ON UPDATE CASCADE;
-ALTER TABLE public.audit_log DROP CONSTRAINT IF EXISTS audit_log_user_id_fkey, ADD CONSTRAINT audit_log_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON UPDATE CASCADE;
-ALTER TABLE public.ai_usage_logs DROP CONSTRAINT IF EXISTS ai_usage_logs_user_id_fkey, ADD CONSTRAINT ai_usage_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON UPDATE CASCADE;
-
--- 4.2. Alinhar os IDs (Atualiza o ID da public.users para ser igual ao da auth.users)
-UPDATE public.users pu
-SET id = au.id
-FROM auth.users au
-WHERE pu.email = au.email AND pu.id != au.id;
-
--- 4.3. Criar a Trigger perfeita para novos cadastros (Lida com o BP NOT NULL)
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-DROP FUNCTION IF EXISTS public.handle_new_user();
-
-CREATE OR REPLACE FUNCTION public.handle_new_user()
+-- 1. INJEÇÃO DE CUSTOM CLAIMS NO JWT
+-- Cria uma função segura que copia a função (role) do usuário para o app_metadata do Auth
+CREATE OR REPLACE FUNCTION public.sync_roles_to_app_metadata()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = public
 AS $$
-DECLARE
-  default_name text;
-  generated_bp text;
 BEGIN
-  -- Define um nome padrão se não vier no metadata
-  default_name := COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1));
-  
-  -- Gera um BP temporário baseado no ID (ex: BP-1a2b3c4d)
-  generated_bp := 'BP-' || substr(new.id::text, 1, 8);
-
-  INSERT INTO public.users (id, email, name, bp, roles)
-  VALUES (
-    new.id,
-    new.email,
-    default_name,
-    generated_bp,
-    ARRAY['pending']
-  );
-  
-  RETURN new;
+  UPDATE auth.users
+  SET raw_app_meta_data = jsonb_set(
+    COALESCE(raw_app_meta_data, '{}'::jsonb),
+    '{roles}',
+    to_jsonb(NEW.roles)
+  )
+  WHERE id = NEW.id;
+  RETURN NEW;
 END;
 $$;
 
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+-- Cria o gatilho para manter o JWT sempre atualizado
+DROP TRIGGER IF EXISTS on_user_role_change ON public.users;
+CREATE TRIGGER on_user_role_change
+  AFTER INSERT OR UPDATE OF roles ON public.users
+  FOR EACH ROW EXECUTE FUNCTION public.sync_roles_to_app_metadata();
 
--- 4.4. Garantir que a relação 1:1 seja obrigatória no banco
-ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_id_fkey;
-ALTER TABLE public.users ADD CONSTRAINT users_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
+-- Força a sincronização imediata para todos os usuários existentes
+UPDATE auth.users au
+SET raw_app_meta_data = jsonb_set(
+  COALESCE(au.raw_app_meta_data, '{}'::jsonb),
+  '{roles}',
+  to_jsonb(pu.roles)
+)
+FROM public.users pu
+WHERE au.id = pu.id;
 
--- 5. SINCRONIZAR USUÁRIOS DO AUTH PARA A TABELA PUBLIC.USERS (Caso ainda falte alguém)
--- Atualiza o admin existente pelo email
-UPDATE public.users 
-SET roles = ARRAY['admin'] 
-WHERE email = 'bernardo.real@latam.com';
+-- 2. FUNÇÃO AUXILIAR PARA LER O JWT (COM FALLBACK)
+CREATE OR REPLACE FUNCTION public.has_role(role_name text)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT 
+    -- 1. Tenta ler do JWT (Rápido e seguro, para o futuro e middleware)
+    COALESCE((auth.jwt() -> 'app_metadata' -> 'roles') ? role_name, false)
+    OR 
+    -- 2. Fallback de segurança: Verifica direto na tabela (Garante que não quebre a sessão atual)
+    EXISTS (
+      SELECT 1 FROM public.users 
+      WHERE id = auth.uid() AND role_name = ANY(roles)
+    )
+    OR
+    -- 3. Super Admin Fallback (Garante que você nunca perca acesso)
+    (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
+$$;
 
--- Insere o admin caso ele não exista de forma alguma
-INSERT INTO public.users (id, email, name, bp, roles)
-SELECT 
-    id, 
-    email, 
-    COALESCE(raw_user_meta_data->>'full_name', 'Admin LATAM'), 
-    'BP-' || substr(id::text, 1, 8),
-    ARRAY['admin']
-FROM auth.users
-WHERE email = 'bernardo.real@latam.com'
-AND NOT EXISTS (SELECT 1 FROM public.users WHERE email = 'bernardo.real@latam.com');
+-- 3. PROTEÇÃO CONTRA ESCALONAMENTO DE PRIVILÉGIOS (COLUMN-LEVEL SECURITY)
+-- Impede que usuários comuns alterem suas próprias permissões, matrícula ou status
+CREATE OR REPLACE FUNCTION public.protect_secure_columns()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF NOT public.has_role('admin') THEN
+    IF NEW.roles IS DISTINCT FROM OLD.roles OR
+       NEW.bp IS DISTINCT FROM OLD.bp OR
+       NEW.is_active IS DISTINCT FROM OLD.is_active THEN
+      RAISE EXCEPTION 'Security Violation: Privilege Escalation Attempt Blocked.';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
 
--- Insere os outros usuários caso não existam
-INSERT INTO public.users (id, email, name, bp, roles)
-SELECT 
-    id, 
-    email, 
-    COALESCE(raw_user_meta_data->>'full_name', 'Usuário ' || substr(id::text, 1, 4)), 
-    'BP-' || substr(id::text, 1, 8),
-    ARRAY['pending']
-FROM auth.users
-WHERE email != 'bernardo.real@latam.com'
-AND NOT EXISTS (SELECT 1 FROM public.users WHERE email = auth.users.email);
+DROP TRIGGER IF EXISTS ensure_secure_columns ON public.users;
+CREATE TRIGGER ensure_secure_columns
+  BEFORE UPDATE ON public.users
+  FOR EACH ROW EXECUTE FUNCTION public.protect_secure_columns();
+
+-- 4. REESCREVENDO O RLS (FECHANDO AS BRECHAS DO "USING TRUE")
+
+-- USERS
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable read access for all" ON public.users;
+DROP POLICY IF EXISTS "Users can update own data" ON public.users;
+DROP POLICY IF EXISTS "Enable all access for admin email" ON public.users;
+DROP POLICY IF EXISTS "Admins can view all users" ON public.users;
+DROP POLICY IF EXISTS "Users can view themselves" ON public.users;
+DROP POLICY IF EXISTS "Admins can manage all users" ON public.users;
+DROP POLICY IF EXISTS "Users can update themselves" ON public.users;
+
+-- Admins veem todos. Usuários veem a si mesmos.
+CREATE POLICY "Admins can view all users" ON public.users FOR SELECT USING (public.has_role('admin'));
+CREATE POLICY "Users can view themselves" ON public.users FOR SELECT USING (id = auth.uid());
+
+-- Admins gerenciam todos. Usuários atualizam a si mesmos (protegidos pelo trigger acima).
+CREATE POLICY "Admins can manage all users" ON public.users FOR ALL USING (public.has_role('admin'));
+CREATE POLICY "Users can update themselves" ON public.users FOR UPDATE USING (id = auth.uid());
+
+-- AUDIT_LOG & AI_USAGE_LOGS (Dados Sensíveis)
+ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable read access for all" ON public.audit_log;
+DROP POLICY IF EXISTS "Enable insert for authenticated" ON public.audit_log;
+DROP POLICY IF EXISTS "Admins can view audit log" ON public.audit_log;
+CREATE POLICY "Admins can view audit log" ON public.audit_log FOR SELECT USING (public.has_role('admin'));
+CREATE POLICY "Enable insert for authenticated" ON public.audit_log FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+ALTER TABLE public.ai_usage_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable read access for all" ON public.ai_usage_logs;
+DROP POLICY IF EXISTS "Enable insert for anon" ON public.ai_usage_logs;
+DROP POLICY IF EXISTS "Admins can view ai logs" ON public.ai_usage_logs;
+CREATE POLICY "Admins can view ai logs" ON public.ai_usage_logs FOR SELECT USING (public.has_role('admin'));
+CREATE POLICY "Enable insert for anon" ON public.ai_usage_logs FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- BASES, ROLES, KNOWLEDGE_BASE (Dados Públicos de Leitura)
+-- Mantemos a leitura para todos os autenticados, pois o app precisa listar as bases e roles nos formulários
+ALTER TABLE public.bases ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable read access for all" ON public.bases;
+DROP POLICY IF EXISTS "Authenticated can view bases" ON public.bases;
+DROP POLICY IF EXISTS "Admins can manage bases" ON public.bases;
+CREATE POLICY "Authenticated can view bases" ON public.bases FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Admins can manage bases" ON public.bases FOR ALL USING (public.has_role('admin'));
+
+ALTER TABLE public.roles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Everyone can view roles" ON public.roles;
+DROP POLICY IF EXISTS "Authenticated can view roles" ON public.roles;
+CREATE POLICY "Authenticated can view roles" ON public.roles FOR SELECT USING (auth.role() = 'authenticated');
+
+ALTER TABLE public.knowledge_base ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable read access for all" ON public.knowledge_base;
+DROP POLICY IF EXISTS "Authenticated can view KB" ON public.knowledge_base;
+DROP POLICY IF EXISTS "Admins can manage KB" ON public.knowledge_base;
+CREATE POLICY "Authenticated can view KB" ON public.knowledge_base FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Admins can manage KB" ON public.knowledge_base FOR ALL USING (public.has_role('admin'));
+
+ALTER TABLE public.base_jpa ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable read access for all" ON public.base_jpa;
+DROP POLICY IF EXISTS "Authenticated can view base_jpa" ON public.base_jpa;
+DROP POLICY IF EXISTS "Admins can manage base_jpa" ON public.base_jpa;
+CREATE POLICY "Authenticated can view base_jpa" ON public.base_jpa FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Admins can manage base_jpa" ON public.base_jpa FOR ALL USING (public.has_role('admin'));
 `;
                   navigator.clipboard.writeText(sql);
                   alert('SQL de reparo copiado para a área de transferência! Execute-o no SQL Editor do Supabase.');
