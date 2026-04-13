@@ -705,24 +705,26 @@ export default function AdminDashboard() {
       {/* Header & Storage Alerts */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-latam-indigo rounded-2xl flex items-center justify-center shadow-lg shadow-latam-indigo/20">
+          <div className="w-14 h-14 bg-latam-indigo rounded-2xl flex items-center justify-center shadow-lg shadow-latam-indigo/20 shrink-0">
             <ShieldCheck className="text-white" size={28} />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Painel de Controle Global</h1>
-            <p className="text-gray-500 mt-1">Visão geral da infraestrutura e governança da LATAM Cargo.</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Painel de Controle Global</h1>
+            <p className="text-sm md:text-base text-gray-500 mt-1">Visão geral da infraestrutura e governança da LATAM Cargo.</p>
           </div>
         </div>
         
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full md:w-auto">
           {/* View Mode Dropdown */}
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <button 
               onClick={() => setShowViewDropdown(!showViewDropdown)}
-              className="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
+              className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 bg-white border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
             >
-              <Eye size={18} className="text-latam-indigo" />
-              <span>Visualizar como...</span>
+              <div className="flex items-center gap-2">
+                <Eye size={18} className="text-latam-indigo" />
+                <span>Visualizar como...</span>
+              </div>
               <ChevronDown size={16} className={`transition-transform ${showViewDropdown ? 'rotate-180' : ''}`} />
             </button>
 
@@ -732,7 +734,7 @@ export default function AdminDashboard() {
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden"
+                  className="absolute right-0 left-0 sm:left-auto mt-2 w-full sm:w-56 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden"
                 >
                   <div className="p-2 space-y-1">
                     <button 
@@ -794,7 +796,7 @@ export default function AdminDashboard() {
               setEmergencyMode('create');
               setShowAddUserModal(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-latam-indigo text-white rounded-xl text-sm font-bold hover:bg-[#001a54] transition shadow-lg shadow-latam-indigo/20"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-latam-indigo text-white rounded-xl text-sm font-bold hover:bg-[#001a54] transition shadow-lg shadow-latam-indigo/20 w-full sm:w-auto"
           >
             <UserPlus size={16} />
             Gestão Emergencial
@@ -803,7 +805,7 @@ export default function AdminDashboard() {
             href="https://supabase.com/dashboard" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-600/20"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-600/20 w-full sm:w-auto"
           >
             <ExternalLink size={16} />
             Supabase Dashboard
@@ -813,7 +815,7 @@ export default function AdminDashboard() {
               <motion.div 
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium shadow-sm ${getStorageColor()}`}
+                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm w-full sm:w-auto ${getStorageColor()}`}
               >
                 <AlertTriangle size={16} />
                 <span>Alerta de Espaço: {storageUsed}MB / 500MB</span>
@@ -1064,7 +1066,7 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
               <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
                 <button 
                   onClick={() => setShowRoleModal(false)}
-                  className="px-6 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-100 transition"
+                  className="w-full sm:w-auto px-6 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-100 transition"
                 >
                   Fechar
                 </button>
@@ -1171,7 +1173,7 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
               <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
                 <button 
                   onClick={() => setShowBaseModal(false)}
-                  className="px-6 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-100 transition"
+                  className="w-full sm:w-auto px-6 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-100 transition"
                 >
                   Fechar
                 </button>
@@ -1297,18 +1299,18 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                     </div>
                   </div>
 
-                  <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+                  <div className="p-6 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row justify-end gap-3">
                     <button 
                       type="button"
                       onClick={() => setShowAddUserModal(false)}
-                      className="px-6 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-100 transition"
+                      className="w-full sm:w-auto px-6 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-100 transition"
                     >
                       Cancelar
                     </button>
                     <button 
                       type="submit"
                       disabled={loading}
-                      className="px-6 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition shadow-sm disabled:opacity-50"
+                      className="w-full sm:w-auto px-6 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition shadow-sm disabled:opacity-50"
                     >
                       {loading ? 'Cadastrando...' : 'Cadastrar Usuário'}
                     </button>
@@ -1412,7 +1414,7 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                         disabled={updatingBaseId === base.id}
                         value={base.supervisor_id || ''}
                         onChange={(e) => handleUpdateBaseAssignment(base.id, 'supervisor_id', e.target.value || null)}
-                        className="text-xs py-1.5 px-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white w-full max-w-[150px]"
+                        className="text-xs py-1.5 px-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white w-full min-w-[130px] max-w-[150px]"
                       >
                         <option value="">Não atribuído</option>
                         {users.filter(u => (u.roles || []).some(r => ['supervisor', 'admin'].includes(r))).map(u => (
@@ -1425,7 +1427,7 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                         disabled={updatingBaseId === base.id}
                         value={base.coordinator_id || ''}
                         onChange={(e) => handleUpdateBaseAssignment(base.id, 'coordinator_id', e.target.value || null)}
-                        className="text-xs py-1.5 px-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white w-full max-w-[150px]"
+                        className="text-xs py-1.5 px-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white w-full min-w-[130px] max-w-[150px]"
                       >
                         <option value="">Não atribuído</option>
                         {users.filter(u => (u.roles || []).some(r => ['coordinator', 'admin'].includes(r))).map(u => (
@@ -1438,7 +1440,7 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                         disabled={updatingBaseId === base.id}
                         value={base.manager_id || ''}
                         onChange={(e) => handleUpdateBaseAssignment(base.id, 'manager_id', e.target.value || null)}
-                        className="text-xs py-1.5 px-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white w-full max-w-[150px]"
+                        className="text-xs py-1.5 px-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white w-full min-w-[130px] max-w-[150px]"
                       >
                         <option value="">Não atribuído</option>
                         {users.filter(u => (u.roles || []).some(r => ['manager', 'admin'].includes(r))).map(u => (
@@ -1657,8 +1659,8 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                 Gestão de Usuários
               </h2>
               
-              <div className="flex items-center gap-2">
-                <div className="relative">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                <div className="relative w-full sm:w-auto">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                   <input 
                     type="text" 
@@ -1669,7 +1671,7 @@ CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
                   />
                 </div>
                 <select 
-                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-full sm:w-auto"
                   value={selectedBase}
                   onChange={(e) => setSelectedBase(e.target.value)}
                 >
