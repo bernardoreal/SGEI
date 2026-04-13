@@ -1403,6 +1403,72 @@ export default function SupervisorDashboard() {
         </div>
       </div>
 
+      {/* Trocas e Solicitações Section */}
+      <div className="mt-8 bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+            <ArrowRightLeft className="text-latam-indigo" size={24} />
+            Trocas e Solicitações
+          </h2>
+        </div>
+        
+        <div className="space-y-4">
+          {shiftRequests.length === 0 ? (
+            <div className="text-center py-8 text-slate-400">
+              Nenhuma solicitação pendente.
+            </div>
+          ) : (
+            shiftRequests.map(request => (
+              <div key={request.id} className="flex items-center justify-between p-4 border border-slate-100 rounded-2xl bg-slate-50">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-latam-indigo/10 flex items-center justify-center text-latam-indigo font-bold">
+                    {request.employee_name.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-900">{request.employee_name}</div>
+                    <div className="text-sm text-slate-500">
+                      Solicita troca do dia <span className="font-medium text-slate-700">{new Date(request.date).toLocaleDateString('pt-BR')}</span> 
+                      {request.target_employee_name && (
+                        <span> com <span className="font-medium text-slate-700">{request.target_employee_name}</span></span>
+                      )}
+                    </div>
+                    <div className="text-xs text-slate-400 mt-1">Motivo: {request.reason}</div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {request.status === 'pending' || request.status === 'pendente' ? (
+                    <>
+                      <button 
+                        onClick={() => handleUpdateRequestStatus(request.id, 'aprovado')}
+                        disabled={updatingRequest === request.id}
+                        className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors disabled:opacity-50"
+                        title="Aprovar"
+                      >
+                        <CheckCircle size={20} />
+                      </button>
+                      <button 
+                        onClick={() => handleUpdateRequestStatus(request.id, 'rejeitado')}
+                        disabled={updatingRequest === request.id}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
+                        title="Rejeitar"
+                      >
+                        <X size={20} />
+                      </button>
+                    </>
+                  ) : (
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      request.status === 'aprovado' || request.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {request.status === 'aprovado' || request.status === 'approved' ? 'Aprovado' : 'Rejeitado'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
       <AnimatePresence>
         {viewedSchedule && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">

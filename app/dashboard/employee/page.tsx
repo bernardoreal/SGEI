@@ -102,13 +102,26 @@ export default function EmployeeDashboard() {
       fetchSchedule();
 
       // 3. Inscrever para atualizações em tempo real
-      const channel = supabase
+      const scheduleChannel = supabase
         .channel('public:schedules')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'schedules' }, fetchSchedule)
         .subscribe();
 
+      const requestsChannel = supabase
+        .channel('public:shift_requests')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'shift_requests',
+          filter: `requester_bp=eq.${userData?.bp}`
+        }, () => {
+          if (userData?.bp) fetchRequests(userData.bp);
+        })
+        .subscribe();
+
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(scheduleChannel);
+        supabase.removeChannel(requestsChannel);
       };
     };
 
@@ -378,11 +391,11 @@ export default function EmployeeDashboard() {
                             {new Date(req.requested_date).toLocaleDateString('pt-BR')}
                           </span>
                           <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
-                            req.status === 'aprovado' ? 'bg-green-100 text-green-700' :
-                            req.status === 'rejeitado' ? 'bg-red-100 text-red-700' :
+                            (req.status === 'aprovado' || req.status === 'approved') ? 'bg-green-100 text-green-700' :
+                            (req.status === 'rejeitado' || req.status === 'rejected') ? 'bg-red-100 text-red-700' :
                             'bg-amber-100 text-amber-700'
                           }`}>
-                            {req.status}
+                            {req.status === 'approved' ? 'aprovado' : req.status === 'rejected' ? 'rejeitado' : req.status}
                           </span>
                         </div>
                         <p className="text-xs text-slate-500 mb-2 line-clamp-2">{req.reason}</p>

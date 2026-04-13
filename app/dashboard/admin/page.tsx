@@ -862,31 +862,45 @@ export default function AdminDashboard() {
               <button 
                 onClick={() => {
                   const sql = `-- Execute este SQL no Editor do Supabase:
--- 1. Políticas para Bases
-CREATE POLICY "Everyone can view bases" ON bases FOR SELECT USING (true);
-CREATE POLICY "Admins can manage bases" ON bases FOR ALL USING (
-    (auth.jwt() ->> 'email' = 'bernardo.real@latam.com') OR
-    EXISTS (SELECT 1 FROM users WHERE email = auth.jwt() ->> 'email' AND 'admin' = ANY(roles))
-);
 
--- 2. Políticas para Roles
+-- 1. Criar função segura para verificar admin (evita loop infinito de RLS)
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT (auth.jwt() ->> 'email' = 'bernardo.real@latam.com') OR EXISTS (
+    SELECT 1 FROM public.users
+    WHERE email = auth.jwt() ->> 'email' AND 'admin' = ANY(roles)
+  );
+$$;
+
+-- 2. Políticas para Bases
+DROP POLICY IF EXISTS "Everyone can view bases" ON bases;
+CREATE POLICY "Everyone can view bases" ON bases FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins can manage bases" ON bases;
+CREATE POLICY "Admins can manage bases" ON bases FOR ALL USING (public.is_admin());
+
+-- 3. Políticas para Roles
+DROP POLICY IF EXISTS "Everyone can view roles" ON roles;
 CREATE POLICY "Everyone can view roles" ON roles FOR SELECT USING (true);
 
--- 3. Políticas para Auditoria
-CREATE POLICY "Admins can view audit logs" ON audit_log FOR SELECT USING (
-    (auth.jwt() ->> 'email' = 'bernardo.real@latam.com') OR
-    EXISTS (SELECT 1 FROM users WHERE email = auth.jwt() ->> 'email' AND 'admin' = ANY(roles))
-);
+-- 4. Políticas para Auditoria
+DROP POLICY IF EXISTS "Admins can view audit logs" ON audit_log;
+CREATE POLICY "Admins can view audit logs" ON audit_log FOR SELECT USING (public.is_admin());
 
--- 4. Políticas para Usuários
-CREATE POLICY "Admins can view all users" ON users FOR SELECT USING (
-    (auth.jwt() ->> 'email' = 'bernardo.real@latam.com') OR
-    EXISTS (SELECT 1 FROM users WHERE email = auth.jwt() ->> 'email' AND 'admin' = ANY(roles))
-);
-CREATE POLICY "Admins can manage users" ON users FOR ALL USING (
-    (auth.jwt() ->> 'email' = 'bernardo.real@latam.com') OR
-    EXISTS (SELECT 1 FROM users WHERE email = auth.jwt() ->> 'email' AND 'admin' = ANY(roles))
-);`;
+-- 5. Políticas para Usuários
+DROP POLICY IF EXISTS "Admins can view all users" ON users;
+CREATE POLICY "Admins can view all users" ON users FOR SELECT USING (public.is_admin());
+
+DROP POLICY IF EXISTS "Admins can manage users" ON users;
+CREATE POLICY "Admins can manage users" ON users FOR ALL USING (public.is_admin());
+
+DROP POLICY IF EXISTS "Users can view own data" ON users;
+CREATE POLICY "Users can view own data" ON users FOR SELECT USING (id = auth.uid());
+`;
                   navigator.clipboard.writeText(sql);
                   alert('SQL de reparo copiado para a área de transferência! Execute-o no SQL Editor do Supabase.');
                 }}
