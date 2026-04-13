@@ -32,7 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center gap-2">
@@ -60,7 +60,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </nav>
       <main className="py-8">
-        <div className={`${isSupervisor ? 'max-w-full' : 'max-w-7xl'} mx-auto px-4 sm:px-6 lg:px-8`}>
+        <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
           {children}
         </div>
       </main>

@@ -1369,10 +1369,20 @@ export default function SupervisorDashboard() {
             <FileText className="text-indigo-600" /> Roteiro de Atividades
           </h2>
           <div className="space-y-4">
-            {aiSchedule?.data.map((row: any) => (
+            {aiSchedule?.data.map((row: any, idx: number) => (
               <div key={row.bp} className="text-xs p-3 bg-gray-50 rounded-lg">
                 <div className="font-bold text-gray-900">{row.nome}</div>
-                <div className="text-gray-600 truncate">{row.tarefa || 'Sem tarefas'}</div>
+                <input 
+                  type="text"
+                  value={row.tarefa || ''}
+                  onChange={(e) => {
+                    const newData = [...aiSchedule.data];
+                    newData[idx].tarefa = e.target.value;
+                    setAiSchedule({ ...aiSchedule, data: newData });
+                  }}
+                  className="w-full mt-1 bg-white border border-gray-200 focus:ring-1 focus:ring-indigo-500 outline-none p-1.5 rounded text-gray-600"
+                  placeholder="Sem tarefas"
+                />
               </div>
             ))}
           </div>
