@@ -984,14 +984,24 @@ ON CONFLICT (code_iata) DO NOTHING;
 
 -- 4. SINCRONIZAR USUÁRIOS DO AUTH PARA A TABELA PUBLIC.USERS
 -- Isso garante que, se o trigger falhou, os usuários apareçam no painel
-INSERT INTO public.users (id, email, name, roles)
-SELECT id, email, raw_user_meta_data->>'full_name', ARRAY['admin']
+INSERT INTO public.users (id, email, name, bp, roles)
+SELECT 
+    id, 
+    email, 
+    COALESCE(raw_user_meta_data->>'full_name', 'Admin LATAM'), 
+    'BP-' || substr(id::text, 1, 8),
+    ARRAY['admin']
 FROM auth.users
 WHERE email = 'bernardo.real@latam.com'
 ON CONFLICT (id) DO UPDATE SET roles = ARRAY['admin'];
 
-INSERT INTO public.users (id, email, name, roles)
-SELECT id, email, raw_user_meta_data->>'full_name', ARRAY['pending']
+INSERT INTO public.users (id, email, name, bp, roles)
+SELECT 
+    id, 
+    email, 
+    COALESCE(raw_user_meta_data->>'full_name', 'Usuário ' || substr(id::text, 1, 4)), 
+    'BP-' || substr(id::text, 1, 8),
+    ARRAY['pending']
 FROM auth.users
 WHERE email != 'bernardo.real@latam.com'
 ON CONFLICT (id) DO NOTHING;
