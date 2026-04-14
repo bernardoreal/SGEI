@@ -161,7 +161,7 @@ export default function SupervisorDashboard() {
             const groupedData = details.reduce((acc: any, detail: any) => {
               const bp = detail.bp;
               if (!acc[bp]) {
-                const emp = empData?.find(e => e.bp === bp);
+                const emp = empData?.find((e: any) => e.bp === bp);
                 acc[bp] = {
                   area: "OPERAÇÃO",
                   turno: detail.shift === 'manhã' ? 'MANHÃ' : 'TARDE',
@@ -429,7 +429,7 @@ export default function SupervisorDashboard() {
         .gte('requested_date', firstDay)
         .lte('requested_date', lastDay);
 
-      const requestsContext = approvedRequests?.map(r => ({
+      const requestsContext = approvedRequests?.map((r: any) => ({
         bp: r.requester_bp,
         data: r.requested_date,
         tipo: r.requested_shift,
@@ -441,7 +441,7 @@ export default function SupervisorDashboard() {
       if (knowledgeFiles && knowledgeFiles.length > 0) {
         const { data: kbData } = await supabase.from('knowledge_base').select('content');
         if (kbData && kbData.length > 0) {
-          kbContext = `\n\nBASE DE CONHECIMENTO (EXEMPLOS DE ESCALAS ANTERIORES):\n${kbData.map(kb => kb.content).join('\n\n---\n\n')}\n\nUse esses exemplos para entender o padrão de preenchimento e distribuição de turnos.`;
+          kbContext = `\n\nBASE DE CONHECIMENTO (EXEMPLOS DE ESCALAS ANTERIORES):\n${kbData.map((kb: any) => kb.content).join('\n\n---\n\n')}\n\nUse esses exemplos para entender o padrão de preenchimento e distribuição de turnos.`;
         }
       }
 

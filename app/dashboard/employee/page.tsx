@@ -176,7 +176,7 @@ export default function EmployeeDashboard() {
       theme: 'grid',
       styles: { fontSize: 8, cellPadding: 2 },
       headStyles: { fillColor: [0, 33, 105], textColor: [255, 255, 255] },
-      didParseCell: (data) => {
+      didParseCell: (data: any) => {
         if (data.section === 'body' && data.column.index === 3) {
           if (data.cell.raw === 'FOLGA') {
             data.cell.styles.fillColor = [220, 252, 231];

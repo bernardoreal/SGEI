@@ -215,7 +215,7 @@ export default function AdminDashboard() {
       setOpenRouterInfo(orInfo);
 
       // Ensure admin_employee role exists
-      if (rolesRes.data && !rolesRes.data.find(r => r.name === 'admin_employee')) {
+      if (rolesRes.data && !rolesRes.data.find((r: any) => r.name === 'admin_employee')) {
         await supabase.from('roles').insert([{ name: 'admin_employee', description: 'Admin com função de Colaborador (Híbrido)' }]);
       }
 
@@ -263,7 +263,7 @@ export default function AdminDashboard() {
       if (userRoles.length === 0 || (userRoles.length === 1 && userRoles[0] === 'pending')) {
         acc['pending'] = (acc['pending'] || 0) + 1;
       } else {
-        userRoles.forEach(role => {
+        userRoles.forEach((role: any) => {
           acc[role] = (acc[role] || 0) + 1;
         });
       }

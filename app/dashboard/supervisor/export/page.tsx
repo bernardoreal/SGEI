@@ -22,7 +22,7 @@ export default function ExportPage() {
     doc.text('Escala de Trabalho', 10, 10);
     autoTable(doc, {
       head: [['BP', 'Data', 'Turno', 'Status']],
-      body: data.map(d => [d.bp, d.date, d.shift, d.status]),
+      body: data.map((d: any) => [d.bp, d.date, d.shift, d.status]),
     });
     doc.save('escala.pdf');
     setLoading(false);

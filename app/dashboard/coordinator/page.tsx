@@ -62,7 +62,7 @@ export default function CoordinatorDashboard() {
       if (basesError) throw basesError;
 
       // 2. Fetch Stats for each base
-      const basesWithStats = await Promise.all((basesData || []).map(async (base) => {
+      const basesWithStats = await Promise.all((basesData || []).map(async (base: any) => {
         // Count employees
         const { count: empCount } = await supabase
           .from('base_employees')
@@ -140,7 +140,7 @@ export default function CoordinatorDashboard() {
           const groupedData = details.reduce((acc: any, detail: any) => {
             const bp = detail.bp;
             if (!acc[bp]) {
-              const emp = employees?.find(e => e.bp === bp);
+              const emp = employees?.find((e: any) => e.bp === bp);
               acc[bp] = {
                 area: "OPERAÇÃO",
                 turno: detail.shift === 'manhã' ? 'MANHÃ' : 'TARDE',
