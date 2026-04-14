@@ -2039,7 +2039,6 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
                           </td>
                         </tr>
                       ))}
-                    </>
                 </tbody>
               </table>
             </div>
