@@ -8,6 +8,11 @@ export async function logAudit(
   oldData: any = null,
   newData: any = null
 ) {
+  if (!supabase || typeof supabase.from !== 'function') {
+    console.warn('Supabase not configured. Audit log skipped:', action);
+    return;
+  }
+
   const { error } = await supabase.from('audit_log').insert({
     user_id: userId,
     action,

@@ -1,8 +1,9 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase, handleSupabaseSessionError } from '@/lib/supabase';
+import { supabase, handleSupabaseSessionError, isSupabaseConfigured } from '@/lib/supabase';
 import { useRouter, usePathname } from 'next/navigation';
+import { AlertTriangle } from 'lucide-react';
 
 const AuthContext = createContext<{
   user: any | null;
@@ -17,10 +18,16 @@ export const useAuth = () => useContext(AuthContext);
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [configured, setConfigured] = useState(isSupabaseConfigured());
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
+    if (!configured) {
+      setLoading(false);
+      return;
+    }
+
     const checkAuth = async () => {
       try {
         // Usamos getSession() apenas para inicialização
@@ -61,7 +68,38 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     return () => {
       subscription.unsubscribe();
     };
-  }, [router, pathname]);
+  }, [router, pathname, configured]);
+
+  if (!configured) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 border border-red-100">
+          <div className="flex flex-col items-center text-center">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6">
+              <AlertTriangle className="w-8 h-8 text-red-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Configuração Necessária</h1>
+            <p className="text-gray-600 mb-8">
+              As variáveis de ambiente do Supabase não foram encontradas. 
+              Por favor, configure <code className="bg-gray-100 px-1 rounded text-red-600">NEXT_PUBLIC_SUPABASE_URL</code> e 
+              <code className="bg-gray-100 px-1 rounded text-red-600">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> no painel de segredos do AI Studio.
+            </p>
+            <div className="w-full space-y-3">
+              <div className="text-sm text-left bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <p className="font-semibold text-gray-700 mb-1">Passos para resolver:</p>
+                <ol className="list-decimal list-inside text-gray-600 space-y-1">
+                  <li>Acesse as Configurações (ícone de engrenagem)</li>
+                  <li>Vá para a aba &quot;Secrets&quot;</li>
+                  <li>Adicione as chaves mencionadas acima</li>
+                  <li>O preview será reiniciado automaticamente</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{ user, loading }}>

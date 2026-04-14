@@ -1970,11 +1970,12 @@ export default function SupervisorDashboard() {
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={() => {
-                      setAiSchedule({
+                      setAiSchedules([{
                         month: new Date(viewedSchedule.start_date).toLocaleDateString('pt-BR', { month: 'long' }).toUpperCase(),
                         year: new Date(viewedSchedule.start_date).getFullYear().toString(),
                         data: viewedSchedule.data
-                      });
+                      }]);
+                      setCurrentScheduleIndex(0);
                       setEditingScheduleId(viewedSchedule.id);
                       setViewedSchedule(null);
                       window.scrollTo({ top: 0, behavior: 'smooth' });

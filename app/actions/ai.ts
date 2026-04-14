@@ -46,7 +46,7 @@ export async function generateWithOpenRouter(prompt: string, model: string, empl
     const usage = data.usage;
 
     // Log usage to Supabase
-    if (usage) {
+    if (supabase && typeof supabase.from === 'function') {
       supabase.from('ai_usage_logs').insert([{
         model: model,
         provider: 'openrouter',
@@ -170,7 +170,7 @@ export async function generateWithGemini(prompt: string, model: string, employee
     }
 
     // Log usage to Supabase (opcional e seguro)
-    if (supabase) {
+    if (supabase && typeof supabase.from === 'function') {
       const usage = data.usageMetadata;
       if (usage) {
         supabase.from('ai_usage_logs').insert([{
