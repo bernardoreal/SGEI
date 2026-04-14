@@ -280,9 +280,13 @@ export default function AdminDashboard() {
       }
 
       if (usersRes.data) {
-        setUsers(usersRes.data);
+        console.log('Setting users state:', usersRes.data);
+        setUsers([...usersRes.data]);
       }
-      if (basesRes.data) setBases(basesRes.data);
+      if (basesRes.data) {
+        console.log('Setting bases state:', basesRes.data);
+        setBases([...basesRes.data]);
+      }
       if (logsRes.data) setLogs(logsRes.data);
 
       // Fetch Suggestions
@@ -1975,7 +1979,9 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
                       </td>
                     </tr>
                   ) : (
-                    filteredUsers.map(user => (
+                    <>
+                      {console.log('Rendering filtered users:', filteredUsers)}
+                      {filteredUsers.map(user => (
                       <tr key={user.id} className="hover:bg-gray-50 transition-colors group">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -2051,6 +2057,7 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
                       </tr>
                     ))
                   )}
+                  </>
                 </tbody>
               </table>
             </div>
