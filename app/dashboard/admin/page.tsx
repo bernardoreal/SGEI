@@ -1980,84 +1980,66 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
                     </tr>
                   ) : (
                     <>
-                      {console.log('Rendering filtered users:', filteredUsers)}
-                      {filteredUsers.map(user => (
-                      <tr key={user.id} className="hover:bg-gray-50 transition-colors group">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-700 font-bold">
-                              {user.name.charAt(0)}
+                      {console.log('Rendering ALL users:', users)}
+                      {users.map(user => (
+                        <tr key={user.id} className="hover:bg-gray-50 transition-colors group">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-700 font-bold">
+                                {user.name.charAt(0)}
+                              </div>
+                              <div>
+                                <div className="font-medium text-gray-900">{user.name}</div>
+                                <div className="text-xs text-gray-500">{user.email}</div>
+                              </div>
                             </div>
-                            <div>
-                              <div className="font-medium text-gray-900">{user.name}</div>
-                              <div className="text-xs text-gray-500">{user.email}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            {user.roles && user.roles.length > 0 && user.roles[0] !== 'pending' ? (
+                              <div className="flex flex-wrap gap-1">
+                                {user.roles.includes('supervisor') ? (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold capitalize bg-amber-50 text-amber-700 border border-amber-100">
+                                    Supervisor
+                                  </span>
+                                ) : user.roles.length > 1 ? (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold capitalize bg-blue-50 text-blue-700">
+                                    {user.roles[1] === 'employee' ? 'Colaborador' : user.roles[1]}
+                                  </span>
+                                ) : (
+                                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold capitalize ${
+                                    user.roles[0] === 'admin' ? 'bg-indigo-50 text-indigo-700' : 'bg-blue-50 text-blue-700'
+                                  }`}>
+                                    {user.roles[0] === 'admin' ? 'Administrador' : 
+                                     user.roles[0] === 'employee' ? 'Colaborador' : user.roles[0]}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 flex items-center gap-1 w-fit">
+                                <Clock size={12} /> Pendente
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {bases.find(b => b.id === user.base_id)?.code_iata || '-'}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            {new Date(user.created_at).toLocaleDateString('pt-BR')}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button 
+                                onClick={() => handleDeleteUser(user.id, user.name)}
+                                className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors"
+                                title="Remoção Emergencial"
+                              >
+                                <X size={16} />
+                              </button>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          {user.roles && user.roles.length > 0 && user.roles[0] !== 'pending' ? (
-                            <div className="flex flex-wrap gap-1">
-                              {/* If hybrid role, show the second role as primary display in manager view, prioritize supervisor */}
-                              {user.roles.includes('supervisor') ? (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold capitalize bg-amber-50 text-amber-700 border border-amber-100">
-                                  Supervisor
-                                </span>
-                              ) : user.roles.length > 1 ? (
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold capitalize bg-blue-50 text-blue-700">
-                                  {user.roles[1] === 'employee' ? 'Colaborador' : user.roles[1]}
-                                </span>
-                              ) : (
-                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold capitalize ${
-                                  user.roles[0] === 'admin' ? 'bg-indigo-50 text-indigo-700' : 'bg-blue-50 text-blue-700'
-                                }`}>
-                                  {user.roles[0] === 'admin' ? 'Administrador' : 
-                                   user.roles[0] === 'employee' ? 'Colaborador' : user.roles[0]}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 flex items-center gap-1 w-fit">
-                              <Clock size={12} /> Pendente
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {bases.find(b => b.id === user.base_id)?.code_iata || '-'}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">
-                          {new Date(user.created_at).toLocaleDateString('pt-BR')}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button 
-                              onClick={() => handleSyncToOperational(user)}
-                              disabled={syncingUserId === user.id || !user.base_id}
-                              className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 text-xs font-bold ${
-                                user.base_id 
-                                ? 'text-emerald-600 hover:bg-emerald-50' 
-                                : 'text-gray-300 cursor-not-allowed'
-                              }`}
-                              title="Vincular como Colaborador Operacional (Híbrido)"
-                            >
-                              {syncingUserId === user.id ? '...' : <Sparkles size={14} />}
-                              Híbrido
-                            </button>
-                            <button className="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
-                              Gerenciar
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteUser(user.id, user.name)}
-                              className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors"
-                              title="Remoção Emergencial"
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                  </>
+                          </td>
+                        </tr>
+                      ))}
+                    </>
                 </tbody>
               </table>
             </div>
