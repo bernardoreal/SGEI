@@ -842,7 +842,7 @@ export default function SupervisorDashboard() {
         // Dias (index 5 em diante)
         ...Array.from({ length: days.length }, (_, i) => ({
           [i + 5]: { cellWidth: 6 }
-        })).reduce((acc, curr) => ({ ...acc, ...curr }), {})
+        })).reduce((acc: any, curr: any) => ({ ...acc, ...curr }), {})
       },
       didParseCell: (data) => {
         if (data.section === 'body' && data.column.index > 4) {

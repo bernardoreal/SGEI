@@ -98,8 +98,8 @@ export default function CoordinatorDashboard() {
       setBases(basesWithStats);
 
       // 3. Aggregate Global Stats
-      const totalEmp = basesWithStats.reduce((acc, b) => acc + b.employeeCount, 0);
-      const totalPending = basesWithStats.reduce((acc, b) => acc + b.pendingRequests, 0);
+      const totalEmp = basesWithStats.reduce((acc: number, b: any) => acc + b.employeeCount, 0);
+      const totalPending = basesWithStats.reduce((acc: number, b: any) => acc + b.pendingRequests, 0);
       const totalPublished = basesWithStats.filter(b => b.status === 'published').length;
 
       setStats({

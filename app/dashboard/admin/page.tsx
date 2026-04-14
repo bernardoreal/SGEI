@@ -194,7 +194,7 @@ export default function AdminDashboard() {
           .select('prompt_tokens, completion_tokens, total_tokens, provider, created_at');
         
         if (usageData) {
-          const stats = usageData.reduce((acc, curr) => ({
+          const stats = usageData.reduce((acc: any, curr: any) => ({
             prompt: acc.prompt + (curr.prompt_tokens || 0),
             completion: acc.completion + (curr.completion_tokens || 0),
             total: acc.total + (curr.total_tokens || 0)
@@ -258,7 +258,7 @@ export default function AdminDashboard() {
     const total = users.length;
     const activeBases = bases.length;
     
-    const roleCounts = users.reduce((acc: any, user) => {
+    const roleCounts = users.reduce((acc: any, user: any) => {
       const userRoles = user.roles || [];
       if (userRoles.length === 0 || (userRoles.length === 1 && userRoles[0] === 'pending')) {
         acc['pending'] = (acc['pending'] || 0) + 1;
