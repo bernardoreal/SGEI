@@ -1,3 +1,53 @@
+function RoleCard({ label, count, color }: { label: string, count: number, color: string }) {
+  const colorClasses: any = {
+    red: 'border-latam-crimson/20 bg-latam-crimson/5 text-latam-crimson',
+    purple: 'border-purple-100 bg-purple-50/30 text-purple-700',
+    blue: 'border-blue-100 bg-blue-50/30 text-blue-700',
+    indigo: 'border-latam-indigo/20 bg-latam-indigo/5 text-latam-indigo',
+    green: 'border-green-100 bg-green-50/30 text-green-700',
+  };
+
+  return (
+    <motion.div 
+      whileHover={{ y: -2 }}
+      className={`p-4 rounded-2xl border shadow-sm transition-all ${colorClasses[color] || 'border-slate-100 bg-slate-50/30 text-slate-700'}`}
+    >
+      <div className="text-2xl font-black">{count}</div>
+      <div className="text-[10px] font-bold uppercase tracking-widest opacity-80">{label}</div>
+    </motion.div>
+  );
+}
+
+function StatCard({ title, value, icon, trend, color, highlight = false }: any) {
+  const colorClasses: any = {
+    blue: 'border-blue-100 bg-blue-50/30',
+    amber: 'border-amber-100 bg-amber-50/30',
+    indigo: 'border-latam-indigo/10 bg-latam-indigo/5',
+    emerald: 'border-emerald-100 bg-emerald-50/30',
+  };
+
+  return (
+    <motion.div 
+      whileHover={{ y: -4 }}
+      className={`p-6 rounded-3xl border shadow-sm transition-all ${colorClasses[color] || 'border-slate-100 bg-slate-50/30'} ${highlight ? 'ring-2 ring-latam-crimson ring-offset-2' : ''}`}
+    >
+      <div className="flex justify-between items-start mb-4">
+        <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-100 text-latam-indigo">
+          {icon}
+        </div>
+        <div className="text-[10px] font-bold text-slate-400 flex items-center gap-1 uppercase tracking-widest">
+          {trend}
+          <ArrowUpRight size={12} className="text-latam-crimson" />
+        </div>
+      </div>
+      <div>
+        <div className="text-3xl font-black text-slate-900 tracking-tight">{value}</div>
+        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{title}</div>
+      </div>
+    </motion.div>
+  );
+}
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -1952,88 +2002,35 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <div className="w-full text-left">
                   {loading ? (
-                    <tbody className="divide-y divide-gray-50">
-                    <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-gray-400">
+                    <div className="divide-y divide-gray-50">
+                    <div>
+                      <div colSpan={5} className="px-6 py-12 text-center text-gray-400">
                         <div className="flex flex-col items-center gap-2">
                           <div className="w-8 h-8 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
                           <span>Carregando usuários...</span>
                         </div>
-                      </td>
-                    </tr>
-                    </tbody>
+                      </div>
+                    </div>
+                    </div>
                   ) : filteredUsers.length === 0 ? (
-                    <tbody className="divide-y divide-gray-50">
-                    <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-gray-400">
+                    <div className="divide-y divide-gray-50">
+                    <div>
+                      <div colSpan={5} className="px-6 py-12 text-center text-gray-400">
                         Nenhum usuário encontrado com os filtros atuais.
-                      </td>
-                    </tr>
-                    </tbody>
+                      </div>
+                    </div>
+                    </div>
                   ) : (
-                    <tbody>
+                    <div>
                       {users.map(user => (
-                        <tr key={user.id} className="hover:bg-gray-50 transition-colors group">
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-700 font-bold">
-                                {user.name.charAt(0)}
-                              </div>
-                              <div>
-                                <div className="font-medium text-gray-900">{user.name}</div>
-                                <div className="text-xs text-gray-500">{user.email}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            {user.roles && user.roles.length > 0 && user.roles[0] !== 'pending' ? (
-                              <div className="flex flex-wrap gap-1">
-                                {user.roles.includes('supervisor') ? (
-                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold capitalize bg-amber-50 text-amber-700 border border-amber-100">
-                                    Supervisor
-                                  </span>
-                                ) : user.roles.length > 1 ? (
-                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold capitalize bg-blue-50 text-blue-700">
-                                    {user.roles[1] === 'employee' ? 'Colaborador' : user.roles[1]}
-                                  </span>
-                                ) : (
-                                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold capitalize ${
-                                    user.roles[0] === 'admin' ? 'bg-indigo-50 text-indigo-700' : 'bg-blue-50 text-blue-700'
-                                  }`}>
-                                    {user.roles[0] === 'admin' ? 'Administrador' : 
-                                     user.roles[0] === 'employee' ? 'Colaborador' : user.roles[0]}
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 flex items-center gap-1 w-fit">
-                                <Clock size={12} /> Pendente
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">
-                            {bases.find(b => b.id === user.base_id)?.code_iata || '-'}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {new Date(user.created_at).toLocaleDateString('pt-BR')}
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button 
-                                onClick={() => handleDeleteUser(user.id, user.name)}
-                                className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors"
-                                title="Remoção Emergencial"
-                              >
-                                <X size={16} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
+                        <div key={user.id}>
+                          <div>{user.name}</div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
