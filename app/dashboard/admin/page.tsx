@@ -202,7 +202,7 @@ export default function AdminDashboard() {
           setTokenStats(stats);
 
           // Count Gemini requests today
-          const geminiToday = usageData.filter(log => 
+          const geminiToday = usageData.filter((log: any) => 
             log.provider === 'gemini' && new Date(log.created_at) >= today
           ).length;
           setGeminiDailyRequests(geminiToday);
