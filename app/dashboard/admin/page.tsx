@@ -108,7 +108,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const channel = supabase
       .channel('users-insert')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'users' }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'users' }, (payload: any) => {
         const newUser = payload.new as any;
         const notification = { id: Date.now().toString(), message: `Novo usuário cadastrado: ${newUser.name || newUser.email}` };
         setNotifications(prev => [...prev, notification]);
