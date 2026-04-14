@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { MessageSquarePlus, Send, CheckCircle2 } from 'lucide-react';
+import { MessageSquarePlus, Send, CheckCircle2, Clock, Activity, CheckCircle, Archive } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface SuggestionSectionProps {
@@ -16,6 +16,43 @@ export default function SuggestionSection({ userId, userName, userRole }: Sugges
   const [priority, setPriority] = useState('média');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [mySuggestions, setMySuggestions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchMySuggestions = async () => {
+      const { data } = await supabase
+        .from('system_suggestions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (data) setMySuggestions(data);
+    };
+
+    fetchMySuggestions();
+
+    const channel = supabase
+      .channel('my-suggestions-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'system_suggestions',
+        filter: `user_id=eq.${userId}`
+      }, (payload: any) => {
+        if (payload.eventType === 'INSERT') {
+          setMySuggestions(prev => [payload.new, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          setMySuggestions(prev => prev.map(s => s.id === payload.new.id ? payload.new : s));
+        } else if (payload.eventType === 'DELETE') {
+          setMySuggestions(prev => prev.filter(s => s.id !== payload.old.id));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,81 +83,145 @@ export default function SuggestionSection({ userId, userName, userRole }: Sugges
     }
   };
 
+  const getStatusIcon = (status: string) => {
+    switch(status) {
+      case 'pendente': return <Clock size={14} className="text-amber-500" />;
+      case 'em_analise': return <Activity size={14} className="text-blue-500" />;
+      case 'implementado': return <CheckCircle size={14} className="text-emerald-500" />;
+      case 'arquivado': return <Archive size={14} className="text-slate-500" />;
+      default: return <Clock size={14} className="text-amber-500" />;
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch(status) {
+      case 'pendente': return 'Pendente';
+      case 'em_analise': return 'Em Análise';
+      case 'implementado': return 'Em Progresso'; // Ajustado para refletir o Kanban
+      case 'arquivado': return 'Finalizado'; // Ajustado para refletir o Kanban
+      default: return 'Pendente';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch(status) {
+      case 'pendente': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'em_analise': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'implementado': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'arquivado': return 'bg-slate-50 text-slate-700 border-slate-200';
+      default: return 'bg-amber-50 text-amber-700 border-amber-200';
+    }
+  };
+
   return (
-    <div className="mt-12 bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-          <MessageSquarePlus size={20} />
+    <div className="mt-12 space-y-6">
+      <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+            <MessageSquarePlus size={20} />
+          </div>
+          <div>
+            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Sugestões de Melhoria</h3>
+            <p className="text-slate-500 text-sm font-medium">Sua opinião é fundamental para evoluirmos o sistema.</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Sugestões de Melhoria</h3>
-          <p className="text-slate-500 text-sm font-medium">Sua opinião é fundamental para evoluirmos o sistema.</p>
-        </div>
+
+        <AnimatePresence mode="wait">
+          {submitted ? (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-emerald-50 border border-emerald-100 p-8 rounded-2xl text-center"
+            >
+              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 size={32} />
+              </div>
+              <h4 className="text-lg font-bold text-emerald-900 mb-2">Sugestão Enviada!</h4>
+              <p className="text-emerald-700 font-medium">Obrigado pela sua contribuição. Nossa equipe irá analisar sua sugestão.</p>
+            </motion.div>
+          ) : (
+            <motion.form 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              onSubmit={handleSubmit}
+              className="space-y-4"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-3">
+                  <textarea
+                    value={suggestion}
+                    onChange={(e) => setSuggestion(e.target.value)}
+                    placeholder="Descreva sua sugestão de melhoria ou nova funcionalidade..."
+                    className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none min-h-[120px] resize-none"
+                    required
+                  />
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">Prioridade</label>
+                    <select
+                      value={priority}
+                      onChange={(e) => setPriority(e.target.value)}
+                      className="w-full p-3 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-700"
+                    >
+                      <option value="baixa">Baixa</option>
+                      <option value="média">Média</option>
+                      <option value="alta">Alta</option>
+                      <option value="crítica">Crítica</option>
+                    </select>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading || !suggestion.trim()}
+                    className="w-full bg-latam-indigo text-white py-4 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-100 disabled:bg-slate-300 flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        Enviar <Send size={16} />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </motion.form>
+          )}
+        </AnimatePresence>
       </div>
 
-      <AnimatePresence mode="wait">
-        {submitted ? (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-emerald-50 border border-emerald-100 p-8 rounded-2xl text-center"
-          >
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 size={32} />
-            </div>
-            <h4 className="text-lg font-bold text-emerald-900 mb-2">Sugestão Enviada!</h4>
-            <p className="text-emerald-700 font-medium">Obrigado pela sua contribuição. Nossa equipe irá analisar sua sugestão.</p>
-          </motion.div>
-        ) : (
-          <motion.form 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            onSubmit={handleSubmit}
-            className="space-y-4"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="md:col-span-3">
-                <textarea
-                  value={suggestion}
-                  onChange={(e) => setSuggestion(e.target.value)}
-                  placeholder="Descreva sua sugestão de melhoria ou nova funcionalidade..."
-                  className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none min-h-[120px] resize-none"
-                  required
-                />
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">Prioridade</label>
-                  <select
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value)}
-                    className="w-full p-3 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-700"
-                  >
-                    <option value="baixa">Baixa</option>
-                    <option value="média">Média</option>
-                    <option value="alta">Alta</option>
-                    <option value="crítica">Crítica</option>
-                  </select>
+      {mySuggestions.length > 0 && (
+        <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
+          <h4 className="font-bold text-slate-900 mb-6">Minhas Solicitações</h4>
+          <div className="space-y-4">
+            {mySuggestions.map(s => (
+              <div key={s.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex-1">
+                  <p className="text-sm text-slate-700 mb-2">{s.suggestion}</p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-medium text-slate-400">
+                      {new Date(s.created_at).toLocaleDateString('pt-BR')}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${
+                      s.priority === 'crítica' ? 'bg-red-100 text-red-700' :
+                      s.priority === 'alta' ? 'bg-orange-100 text-orange-700' :
+                      s.priority === 'média' ? 'bg-blue-100 text-blue-700' :
+                      'bg-slate-200 text-slate-600'
+                    }`}>
+                      {s.priority}
+                    </span>
+                  </div>
                 </div>
-                <button
-                  type="submit"
-                  disabled={loading || !suggestion.trim()}
-                  className="w-full bg-latam-indigo text-white py-4 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-100 disabled:bg-slate-300 flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      Enviar <Send size={16} />
-                    </>
-                  )}
-                </button>
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${getStatusColor(s.status)}`}>
+                  {getStatusIcon(s.status)}
+                  <span className="text-xs font-bold uppercase tracking-wider">{getStatusText(s.status)}</span>
+                </div>
               </div>
-            </div>
-          </motion.form>
-        )}
-      </AnimatePresence>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

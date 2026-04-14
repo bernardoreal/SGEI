@@ -25,7 +25,9 @@ import {
   Info,
   BookOpen,
   Trash2,
-  Upload
+  Upload,
+  Database,
+  ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import SuggestionSection from '@/components/SuggestionSection';
@@ -191,6 +193,31 @@ export default function SupervisorDashboard() {
         if (recentPublished.length > 0) {
           setAiSchedules(recentPublished);
           setCurrentScheduleIndex(0);
+        }
+
+        // Buscar rascunhos da IA
+        try {
+          const { data: draftData, error: draftError } = await supabase
+            .from('escala_drafts')
+            .select('*')
+            .order('created_at', { ascending: false });
+          
+          if (draftError) {
+            if (draftError.code === '42P01') {
+              console.warn('Tabela escala_drafts não encontrada. Por favor, execute o schema.sql no Supabase.');
+            } else {
+              throw draftError;
+            }
+          } else if (draftData && draftData.length > 0) {
+            const drafts = draftData.map(d => ({
+              ...(d.content as any),
+              id: d.id,
+              status: 'draft'
+            }));
+            setAiSchedules(prev => [...drafts, ...prev]);
+          }
+        } catch (err) {
+          console.error('Erro ao carregar rascunhos:', err);
         }
       }
 
@@ -1015,6 +1042,60 @@ export default function SupervisorDashboard() {
     }
   };
 
+  const handleSaveDraft = async () => {
+    const currentSchedule = aiSchedules[currentScheduleIndex];
+    if (!currentSchedule) return;
+    
+    setSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Sessão expirada. Faça login novamente.');
+
+      const draftData = {
+        base_id: employees[0]?.base_id || '00000000-0000-0000-0000-000000000000',
+        month: currentSchedule.month,
+        year: currentSchedule.year.toString(),
+        content: currentSchedule,
+        created_by: session.user.id
+      };
+
+      let result;
+      if (currentSchedule.id && currentSchedule.status === 'draft') {
+        result = await supabase
+          .from('escala_drafts')
+          .update(draftData)
+          .eq('id', currentSchedule.id);
+      } else {
+        result = await supabase
+          .from('escala_drafts')
+          .insert([draftData])
+          .select()
+          .single();
+      }
+
+      if (result.error) throw result.error;
+
+      alert('Rascunho salvo com sucesso!');
+      if (!currentSchedule.id && result.data) {
+        setAiSchedules(prev => prev.map((s, i) => i === currentScheduleIndex ? { ...s, id: result.data.id, status: 'draft' } : s));
+      }
+    } catch (err: any) {
+      console.error('Erro ao salvar rascunho:', err);
+      alert('Erro ao salvar rascunho: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleValidateAndPublish = async () => {
+    if (validationErrors.filter(e => e.type === 'error').length > 0) {
+      if (!confirm('Existem erros críticos de conformidade. Deseja publicar mesmo assim?')) {
+        return;
+      }
+    }
+    await handlePublishSchedule();
+  };
+
   const handlePublishSchedule = async () => {
     const currentSchedule = aiSchedules[currentScheduleIndex];
     if (!currentSchedule) return;
@@ -1093,6 +1174,14 @@ export default function SupervisorDashboard() {
         .insert(details);
 
       if (dError) throw dError;
+
+      // 4. Se era um rascunho, remover da tabela de rascunhos
+      if (currentSchedule.status === 'draft' && currentSchedule.id) {
+        await supabase
+          .from('escala_drafts')
+          .delete()
+          .eq('id', currentSchedule.id);
+      }
 
       alert(editingScheduleId ? 'Escala republicada com sucesso! Os colaboradores verão a atualização automaticamente.' : 'Escala publicada com sucesso!');
       
@@ -1572,12 +1661,22 @@ export default function SupervisorDashboard() {
               >
                 {aiSchedules[currentScheduleIndex].status === 'published' ? 'Remover do Carrossel' : (editingScheduleId ? 'Cancelar Edição' : 'Descartar')}
               </button>
+              {aiSchedules[currentScheduleIndex].status !== 'published' && (
+                <button 
+                  onClick={handleSaveDraft}
+                  disabled={saving}
+                  className="flex items-center gap-2 bg-white text-indigo-600 border border-indigo-200 px-6 py-3 rounded-xl font-bold hover:bg-indigo-50 transition shadow-sm disabled:bg-slate-50"
+                >
+                  <Database size={20} />
+                  {saving ? 'Salvando...' : 'Salvar Rascunho'}
+                </button>
+              )}
               <button 
-                onClick={handlePublishSchedule}
+                onClick={handleValidateAndPublish}
                 disabled={saving}
                 className="flex items-center gap-2 bg-latam-indigo text-white px-8 py-3 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-200 disabled:bg-slate-300"
               >
-                <CheckCircle size={20} />
+                <ShieldCheck size={20} />
                 {saving ? 'Publicando...' : (aiSchedules[currentScheduleIndex].status === 'published' || editingScheduleId ? 'Validar e Republicar' : 'Validar e Publicar Escala')}
               </button>
             </div>

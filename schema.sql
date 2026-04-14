@@ -100,9 +100,28 @@ CREATE TABLE IF NOT EXISTS schedules (
     end_date DATE NOT NULL,
     published_at TIMESTAMP WITH TIME ZONE,
     created_by UUID REFERENCES users(id),
+    content TEXT, -- Armazena o rascunho em Markdown ou JSON
+    status VARCHAR(20) DEFAULT 'rascunho', -- rascunho, publicado, arquivado
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Ensure columns exist if table was created previously
+ALTER TABLE schedules ADD COLUMN IF NOT EXISTS content TEXT;
+ALTER TABLE schedules ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'rascunho';
+
+-- 5.1 Escala Drafts (Specific table for AI drafts if needed)
+CREATE TABLE IF NOT EXISTS escala_drafts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    base_id UUID REFERENCES bases(id),
+    month TEXT NOT NULL,
+    year TEXT NOT NULL,
+    content JSONB NOT NULL,
+    created_by UUID REFERENCES users(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+ALTER TABLE escala_drafts ENABLE ROW LEVEL SECURITY;
 
 -- 6. Schedule Details
 CREATE TABLE IF NOT EXISTS schedule_details (
@@ -192,8 +211,9 @@ CREATE TABLE IF NOT EXISTS system_suggestions (
     user_role TEXT,
     suggestion TEXT NOT NULL,
     priority TEXT CHECK (priority IN ('baixa', 'média', 'alta', 'crítica')),
-    status TEXT DEFAULT 'pendente' CHECK (status IN ('pendente', 'em_analise', 'implementado', 'arquivado')),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    status TEXT DEFAULT 'pendente' CHECK (status IN ('pendente', 'em_analise', 'implementado', 'arquivado', 'finalizado')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Seed Data
@@ -389,6 +409,18 @@ CREATE POLICY "Supervisors can manage their base schedules" ON schedules
         check_is_supervisor() AND 
         EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND base_id = schedules.base_id)
     );
+
+-- Escala Drafts Policies
+DROP POLICY IF EXISTS "Supervisors can manage their base drafts" ON escala_drafts;
+CREATE POLICY "Supervisors can manage their base drafts" ON escala_drafts
+    FOR ALL USING (
+        check_is_supervisor() AND 
+        EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND base_id = escala_drafts.base_id)
+    );
+
+DROP POLICY IF EXISTS "Admins can view all drafts" ON escala_drafts;
+CREATE POLICY "Admins can view all drafts" ON escala_drafts
+    FOR SELECT USING (check_is_admin());
 
 -- Bases Policies
 DROP POLICY IF EXISTS "Everyone can view bases" ON bases;

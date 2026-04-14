@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getOpenRouterKeyInfo } from '@/app/actions/ai';
 import { 
@@ -12,6 +12,7 @@ import {
   HardDrive, 
   AlertTriangle, 
   CheckCircle,
+  CheckCircle2,
   Clock,
   Search,
   ArrowUpRight,
@@ -27,7 +28,10 @@ import {
   Briefcase,
   Map as MapIcon,
   ClipboardList,
-  User as UserIcon
+  User as UserIcon,
+  Trash2,
+  GripVertical,
+  History
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -42,6 +46,10 @@ import {
   Pie
 } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { generateWithGemini } from '@/app/actions/ai';
 
 // Import other dashboards for preview
 import ManagerDashboard from '../manager/page';
@@ -99,6 +107,58 @@ export default function AdminDashboard() {
   const [openRouterInfo, setOpenRouterInfo] = useState<any>(null);
   const [tokenStats, setTokenStats] = useState({ prompt: 0, completion: 0, total: 0 });
   const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [analysis, setAnalysis] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const pendingSuggestions = useMemo(() => 
+    suggestions.filter(s => s.status === 'pendente' || !s.status),
+    [suggestions]
+  );
+
+  const finalizedHistory = useMemo(() => 
+    suggestions
+      .filter(s => s.status === 'finalizado' || s.status === 'implementado')
+      .sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()),
+    [suggestions]
+  );
+
+  const analyzeSuggestions = useCallback(async () => {
+    if (pendingSuggestions.length === 0) {
+      setAnalysis(null);
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      const prompt = `
+        Analise as seguintes solicitações de melhoria pendentes para o sistema SGEI (Sistema de Gestão de Escalas Inteligente) da LATAM Cargo:
+        
+        ${pendingSuggestions.map((s, i) => `${i+1}. [Prioridade: ${s.priority}] ${s.suggestion}`).join('\n')}
+        
+        Sua análise deve cobrir:
+        1. Aspectos técnicos (o que precisa ser alterado no código/banco).
+        2. Viabilidade e dificuldade de implementação (Baixa, Média, Alta).
+        3. Ordem sugerida para implementação com justificativa clara para cada uma.
+        
+        Responda em Markdown, de forma profissional e executiva. Use tabelas se necessário.
+      `;
+
+      const result = await generateWithGemini(prompt, llmConfig.model);
+      setAnalysis(result);
+    } catch (err) {
+      console.error('Erro na análise de IA:', err);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, [pendingSuggestions, llmConfig.model]);
+
+  useEffect(() => {
+    if (pendingSuggestions.length > 0) {
+      analyzeSuggestions();
+    } else {
+      setAnalysis(null);
+    }
+  }, [pendingSuggestions.length, analyzeSuggestions]);
   const [geminiDailyRequests, setGeminiDailyRequests] = useState(0);
   const [loadingStats, setLoadingStats] = useState(false);
   const [notifications, setNotifications] = useState<{ id: string; message: string }[]>([]);
@@ -718,6 +778,49 @@ export default function AdminDashboard() {
       </div>
     );
   }
+
+  const handleUpdateSuggestionStatus = async (id: string, newStatus: string) => {
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from('system_suggestions')
+      .update({ 
+        status: newStatus,
+        updated_at: now
+      })
+      .eq('id', id);
+    
+    if (!error) {
+      setSuggestions(prev => prev.map(s => s.id === id ? { ...s, status: newStatus, updated_at: now } : s));
+    }
+  };
+
+  const handleDeleteSuggestion = async (id: string) => {
+    const { error } = await supabase
+      .from('system_suggestions')
+      .delete()
+      .eq('id', id);
+    
+    if (!error) {
+      setSuggestions(prev => prev.filter(s => s.id !== id));
+    }
+  };
+
+  const onDragEnd = (result: any) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    const newStatus = destination.droppableId;
+    handleUpdateSuggestionStatus(draggableId, newStatus);
+  };
+
+  const kanbanColumns = {
+    pendente: { title: 'Pendente', items: suggestions.filter(s => s.status === 'pendente' || !s.status) },
+    em_analise: { title: 'Em Análise', items: suggestions.filter(s => s.status === 'em_analise') },
+    em_progresso: { title: 'Em Progresso', items: suggestions.filter(s => s.status === 'em_progresso' || s.status === 'implementado') },
+    finalizado: { title: 'Finalizado', items: suggestions.filter(s => s.status === 'finalizado' || s.status === 'arquivado') }
+  };
 
   return (
     <div className="space-y-8 pb-12">
@@ -2049,7 +2152,7 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
         </div>
       </div>
 
-      {/* Seção de Sugestões de Melhoria (Admin View) */}
+      {/* Seção de Sugestões de Melhoria (Admin View - Kanban) */}
       <div className="mt-12 bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -2058,7 +2161,7 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
             </div>
             <div>
               <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Sugestões de Melhoria</h3>
-              <p className="text-slate-500 font-medium">Feedback enviado pelos supervisores, coordenadores e gerentes.</p>
+              <p className="text-slate-500 font-medium">Gerencie as solicitações de melhoria via Kanban drag-and-drop.</p>
             </div>
           </div>
           <div className="bg-slate-50 px-4 py-2 rounded-xl text-xs font-bold text-slate-500 uppercase tracking-widest">
@@ -2066,75 +2169,219 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
           </div>
         </div>
 
-        <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left border-separate border-spacing-y-2">
-            <thead>
-              <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                <th className="px-6 py-4">Data</th>
-                <th className="px-6 py-4">Usuário / Role</th>
-                <th className="px-6 py-4">Sugestão de Melhoria</th>
-                <th className="px-6 py-4">Prioridade</th>
-                <th className="px-6 py-4">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {suggestions.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-medium italic bg-slate-50/50 rounded-3xl">
-                    Nenhuma sugestão enviada até o momento.
-                  </td>
-                </tr>
-              ) : (
-                suggestions.map((s) => (
-                  <tr key={s.id} className="group hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 bg-white border-y border-l border-slate-100 rounded-l-2xl text-sm font-medium text-slate-600">
-                      {new Date(s.created_at).toLocaleDateString('pt-BR')}
-                    </td>
-                    <td className="px-6 py-4 bg-white border-y border-slate-100">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-900">{s.user_name}</span>
-                        <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{s.user_role}</span>
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {Object.entries(kanbanColumns).map(([columnId, column]) => (
+              <div key={columnId} className="flex flex-col h-full min-h-[500px] bg-slate-50/50 rounded-[24px] p-4 border border-slate-100">
+                <div className="flex items-center justify-between mb-4 px-2">
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      columnId === 'pendente' ? 'bg-slate-400' :
+                      columnId === 'em_analise' ? 'bg-blue-400' :
+                      columnId === 'em_progresso' ? 'bg-orange-400' :
+                      'bg-green-400'
+                    }`} />
+                    {column.title}
+                  </h4>
+                  <span className="bg-white px-2 py-0.5 rounded-lg text-[10px] font-bold text-slate-400 border border-slate-100">
+                    {column.items.length}
+                  </span>
+                </div>
+
+                <Droppable droppableId={columnId}>
+                  {(provided, snapshot) => (
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className={`flex-1 space-y-3 transition-colors rounded-xl ${snapshot.isDraggingOver ? 'bg-indigo-50/50' : ''}`}
+                    >
+                      {column.items.map((item, index) => (
+                        <Draggable key={item.id} draggableId={item.id} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`bg-white p-4 rounded-2xl shadow-sm border border-slate-100 group transition-all ${snapshot.isDragging ? 'shadow-xl ring-2 ring-indigo-500/20 rotate-2' : 'hover:border-indigo-200'}`}
+                            >
+                              <div className="flex items-start justify-between gap-2 mb-3">
+                                <div className="flex items-center gap-2">
+                                  <div {...provided.dragHandleProps} className="text-slate-300 hover:text-slate-400 cursor-grab active:cursor-grabbing">
+                                    <GripVertical size={14} />
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-xs font-bold text-slate-900">{item.user_name}</span>
+                                    <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{item.user_role}</span>
+                                  </div>
+                                </div>
+                                <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
+                                  item.priority === 'crítica' ? 'bg-red-100 text-red-700' :
+                                  item.priority === 'alta' ? 'bg-orange-100 text-orange-700' :
+                                  item.priority === 'média' ? 'bg-blue-100 text-blue-700' :
+                                  'bg-slate-100 text-slate-600'
+                                }`}>
+                                  {item.priority}
+                                </span>
+                              </div>
+                              
+                              <p className="text-xs text-slate-600 leading-relaxed mb-4 line-clamp-3 group-hover:line-clamp-none transition-all">
+                                {item.suggestion}
+                              </p>
+
+                              <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase">
+                                  {new Date(item.created_at).toLocaleDateString('pt-BR')}
+                                </span>
+                                {columnId === 'finalizado' && (
+                                  <button 
+                                    onClick={() => handleDeleteSuggestion(item.id)}
+                                    className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                    title="Excluir Sugestão"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </div>
+            ))}
+          </div>
+        </DragDropContext>
+
+        {/* AI Analysis Section */}
+        <AnimatePresence>
+          {(isAnalyzing || analysis) && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="mt-12 bg-white rounded-[32px] shadow-xl border border-slate-100 overflow-hidden"
+            >
+              <div className="p-8 bg-slate-900 text-white flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <Sparkles className="text-white" size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black uppercase tracking-tighter">Análise Estratégica de Solicitações</h3>
+                    <p className="text-slate-400 text-xs font-medium">Insights gerados por IA sobre viabilidade e priorização técnica.</p>
+                  </div>
+                </div>
+                {isAnalyzing && (
+                  <div className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-xl border border-white/10">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span className="text-[10px] font-black uppercase tracking-widest animate-pulse">Analisando...</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-8">
+                {isAnalyzing && !analysis ? (
+                  <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                    <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center animate-bounce">
+                      <Cpu className="text-indigo-500" size={32} />
+                    </div>
+                    <p className="text-slate-400 font-bold text-sm animate-pulse">Processando requisitos técnicos...</p>
+                  </div>
+                ) : (
+                  <div className="prose prose-slate max-w-none prose-headings:text-slate-900 prose-headings:font-black prose-p:text-slate-600 prose-strong:text-slate-900 prose-table:border prose-table:border-slate-100 prose-th:bg-slate-50 prose-th:p-3 prose-td:p-3">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {analysis || ''}
+                    </ReactMarkdown>
+                  </div>
+                )}
+                
+                <div className="mt-8 pt-8 border-t border-slate-100 flex justify-end">
+                  <button 
+                    onClick={analyzeSuggestions}
+                    disabled={isAnalyzing}
+                    className="flex items-center gap-2 px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-black uppercase tracking-widest transition-all disabled:opacity-50"
+                  >
+                    <Activity size={16} />
+                    Recalcular Análise
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Implementation History Section */}
+        <div className="mt-12 space-y-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <History className="text-white" size={24} />
+            </div>
+            <div>
+              <h3 className="text-xl font-black uppercase tracking-tighter">Histórico de Implementações</h3>
+              <p className="text-slate-500 text-xs font-medium">Registro cronológico de melhorias concluídas e entregues.</p>
+            </div>
+          </div>
+
+          {finalizedHistory.length === 0 ? (
+            <div className="bg-slate-50 rounded-[32px] p-12 border border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
+              <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center mb-4 text-slate-300">
+                <CheckCircle size={32} />
+              </div>
+              <p className="text-slate-400 font-bold text-sm">Nenhuma melhoria finalizada até o momento.</p>
+              <p className="text-slate-300 text-xs mt-1">Mova cards para a coluna &quot;Finalizado&quot; para popular este histórico.</p>
+            </div>
+          ) : (
+            <div className="relative space-y-4">
+              {/* Vertical Line */}
+              <div className="absolute left-[23px] top-0 bottom-0 w-0.5 bg-slate-100" />
+
+              {finalizedHistory.map((item, idx) => (
+                <motion.div 
+                  key={item.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="relative pl-16"
+                >
+                  {/* Timeline Dot */}
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-2xl border-2 border-emerald-500 shadow-sm flex items-center justify-center z-10">
+                    <CheckCircle2 className="text-emerald-500" size={20} />
+                  </div>
+
+                  <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-black text-slate-900 uppercase tracking-tight">{item.user_name}</span>
+                          <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.user_role}</span>
+                        </div>
+                        <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                          {item.suggestion}
+                        </p>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 bg-white border-y border-slate-100 max-w-md">
-                      <p className="text-sm text-slate-700 leading-relaxed">{s.suggestion}</p>
-                    </td>
-                    <td className="px-6 py-4 bg-white border-y border-slate-100">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        s.priority === 'crítica' ? 'bg-red-100 text-red-700' :
-                        s.priority === 'alta' ? 'bg-orange-100 text-orange-700' :
-                        s.priority === 'média' ? 'bg-blue-100 text-blue-700' :
-                        'bg-slate-100 text-slate-600'
-                      }`}>
-                        {s.priority}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 bg-white border-y border-r border-slate-100 rounded-r-2xl">
-                      <select 
-                        value={s.status}
-                        onChange={async (e) => {
-                          const newStatus = e.target.value;
-                          const { error } = await supabase
-                            .from('system_suggestions')
-                            .update({ status: newStatus })
-                            .eq('id', s.id);
-                          if (!error) {
-                            setSuggestions(prev => prev.map(item => item.id === s.id ? { ...item, status: newStatus } : item));
-                          }
-                        }}
-                        className="text-xs font-bold bg-slate-100 border-none rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="pendente">Pendente</option>
-                        <option value="em_analise">Em Análise</option>
-                        <option value="implementado">Implementado</option>
-                        <option value="arquivado">Arquivado</option>
-                      </select>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                      <div className="flex flex-col items-end shrink-0">
+                        <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-1 rounded-lg mb-1">
+                          Concluído
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">
+                          {new Date(item.updated_at || item.created_at).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

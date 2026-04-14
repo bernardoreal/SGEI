@@ -3,12 +3,15 @@
 import { useAuth } from '@/components/AuthProvider';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { LogOut, X, AlertTriangle } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -46,12 +49,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="text-[10px] text-gray-400 uppercase font-bold">Sessão Ativa</div>
               </div>
               <button
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  router.push('/');
-                }}
-                className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-latam-crimson transition-colors border border-gray-100 rounded-xl hover:bg-red-50"
+                onClick={() => setShowLogoutModal(true)}
+                className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-latam-crimson transition-colors border border-gray-100 rounded-xl hover:bg-red-50 flex items-center gap-2"
               >
+                <LogOut size={16} />
                 Sair
               </button>
             </div>
@@ -63,6 +64,56 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </div>
       </main>
+
+      <AnimatePresence>
+        {showLogoutModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-latam-indigo/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-[24px] shadow-2xl border border-gray-100 w-full max-w-sm overflow-hidden"
+            >
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-latam-crimson">
+                    <AlertTriangle size={24} />
+                  </div>
+                  <button 
+                    onClick={() => setShowLogoutModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <h3 className="text-xl font-bold text-latam-indigo mb-2">Confirmar Saída</h3>
+                <p className="text-sm text-gray-500 mb-8 leading-relaxed">
+                  Tem certeza que deseja sair do sistema? Suas alterações não salvas podem ser perdidas.
+                </p>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowLogoutModal(false)}
+                    className="flex-1 px-4 py-3 border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 transition-colors text-sm"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      router.push('/');
+                    }}
+                    className="flex-1 bg-latam-crimson hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-latam-crimson/20 text-sm"
+                  >
+                    Confirmar Sair
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

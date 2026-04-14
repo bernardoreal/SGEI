@@ -100,16 +100,42 @@ export default function ScheduleGenerator() {
     if (!result) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('schedules')
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Sessão expirada.');
+
+      // Tentar salvar na tabela escala_drafts (nova estrutura)
+      const { error } = await supabase
+        .from('escala_drafts')
         .insert([{
-          content: result,
-          status: 'rascunho',
-          created_at: new Date().toISOString()
+          base_id: employees[0]?.base_id,
+          month: months.find(m => m.value === selectedMonth)?.label.toUpperCase() || 'JANEIRO',
+          year: currentYear.toString(),
+          content: {
+            month: months.find(m => m.value === selectedMonth)?.label.toUpperCase() || 'JANEIRO',
+            year: currentYear,
+            data: [] // A IA gera Markdown aqui, o dashboard supervisor processa JSON. 
+                     // Idealmente a IA deveria gerar JSON direto para o dashboard.
+          },
+          created_by: session.user.id
         }]);
 
-      if (error) throw error;
-      alert('Escala salva com sucesso!');
+      if (error) {
+        if (error.code === '42P01') {
+          // Fallback para tabela schedules se escala_drafts não existir
+          const { error: sError } = await supabase
+            .from('schedules')
+            .insert([{
+              content: result,
+              status: 'rascunho',
+              created_by: session.user.id
+            }]);
+          if (sError) throw sError;
+        } else {
+          throw error;
+        }
+      }
+      
+      alert('Escala salva como rascunho com sucesso!');
     } catch (error: any) {
       console.error('Error saving schedule:', error);
       alert(`Erro ao salvar escala: ${error.message}`);
