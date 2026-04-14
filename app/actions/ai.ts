@@ -54,7 +54,7 @@ export async function generateWithOpenRouter(prompt: string, model: string, empl
         completion_tokens: usage.completion_tokens || 0,
         total_tokens: usage.total_tokens || 0,
         cost: data.usage.cost || 0
-      }]).then(({ error }) => {
+      }]).then(({ error }: { error: any }) => {
         if (error) console.error('Erro ao logar uso de IA (OpenRouter):', error);
       });
     }
@@ -179,7 +179,7 @@ export async function generateWithGemini(prompt: string, model: string, employee
           prompt_tokens: usage.promptTokenCount,
           completion_tokens: usage.candidatesTokenCount,
           total_tokens: usage.totalTokenCount
-        }]).then(({ error }) => {
+        }]).then(({ error }: { error: any }) => {
           if (error) console.error('Erro ao logar uso de IA:', error);
         });
       }
