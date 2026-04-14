@@ -209,7 +209,7 @@ export default function SupervisorDashboard() {
               throw draftError;
             }
           } else if (draftData && draftData.length > 0) {
-            const drafts = draftData.map(d => ({
+            const drafts = draftData.map((d: any) => ({
               ...(d.content as any),
               id: d.id,
               status: 'draft'
