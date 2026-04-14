@@ -1993,13 +1993,13 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                            user.role === 'admin' ? 'bg-latam-crimson/10 text-latam-crimson' :
-                            user.role === 'manager' ? 'bg-purple-100 text-purple-700' :
-                            user.role === 'coordinator' ? 'bg-blue-100 text-blue-700' :
-                            user.role === 'supervisor' ? 'bg-latam-indigo/10 text-latam-indigo' :
+                            user.roles?.includes('admin') ? 'bg-latam-crimson/10 text-latam-crimson' :
+                            user.roles?.includes('manager') ? 'bg-purple-100 text-purple-700' :
+                            user.roles?.includes('coordinator') ? 'bg-blue-100 text-blue-700' :
+                            user.roles?.includes('supervisor') ? 'bg-latam-indigo/10 text-latam-indigo' :
                             'bg-gray-100 text-gray-600'
                           }`}>
-                            {user.role}
+                            {user.roles?.[0] || 'N/A'}
                           </span>
                         </td>
                         <td className="px-6 py-4">
@@ -2009,12 +2009,9 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
                         </td>
                         <td className="px-6 py-4 text-right">
                           <button 
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setIsEditModalOpen(true);
-                            }}
                             className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                            title="Editar Usuário"
+                            title="Ações indisponíveis nesta view"
+                            disabled
                           >
                             <Edit2 size={16} />
                           </button>
