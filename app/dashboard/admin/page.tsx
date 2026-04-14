@@ -1953,17 +1953,8 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
 
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-                  <tr>
-                    <th className="px-6 py-4 font-medium">Usuário</th>
-                    <th className="px-6 py-4 font-medium">Cargo / Role</th>
-                    <th className="px-6 py-4 font-medium">Base</th>
-                    <th className="px-6 py-4 font-medium">Data Cadastro</th>
-                    <th className="px-6 py-4 font-medium text-right">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
                   {loading ? (
+                    <tbody className="divide-y divide-gray-50">
                     <tr>
                       <td colSpan={5} className="px-6 py-12 text-center text-gray-400">
                         <div className="flex flex-col items-center gap-2">
@@ -1972,15 +1963,17 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
                         </div>
                       </td>
                     </tr>
+                    </tbody>
                   ) : filteredUsers.length === 0 ? (
+                    <tbody className="divide-y divide-gray-50">
                     <tr>
                       <td colSpan={5} className="px-6 py-12 text-center text-gray-400">
                         Nenhum usuário encontrado com os filtros atuais.
                       </td>
                     </tr>
+                    </tbody>
                   ) : (
-                    <>
-                      {console.log('Rendering ALL users:', users)}
+                    <tbody>
                       {users.map(user => (
                         <tr key={user.id} className="hover:bg-gray-50 transition-colors group">
                           <td className="px-6 py-4">
@@ -2044,8 +2037,6 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
         {/* Sidebar: Storage & Logs */}
         <div className="space-y-8">
