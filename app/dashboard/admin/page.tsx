@@ -280,14 +280,78 @@ export default function AdminDashboard() {
         await supabase.from('roles').insert([{ name: 'admin_employee', description: 'Admin com função de Colaborador (Híbrido)' }]);
       }
 
-      if (usersRes.data) {
-        console.log('Setting users state:', usersRes.data);
-        setUsers([...usersRes.data]);
+      let currentUsers = usersRes.data || [];
+      let currentBases = basesRes.data || [];
+
+      // Seed bases if empty
+      if (currentBases.length === 0) {
+        console.log('Bases table is empty. Seeding fallback bases...');
+        const fallbackBases = [
+          { code_iata: 'JPA', name: 'João Pessoa' },
+          { code_iata: 'REC', name: 'Recife' },
+          { code_iata: 'GIG', name: 'Rio de Janeiro (Galeão)' },
+          { code_iata: 'NAT', name: 'Natal' },
+          { code_iata: 'MCZ', name: 'Maceió' },
+          { code_iata: 'AJU', name: 'Aracaju' },
+          { code_iata: 'FOR', name: 'Fortaleza' },
+          { code_iata: 'THE', name: 'Teresina' },
+          { code_iata: 'SLZ', name: 'São Luís' },
+          { code_iata: 'IMP', name: 'Imperatriz' },
+          { code_iata: 'SSA', name: 'Salvador' },
+          { code_iata: 'IOS', name: 'Ilhéus' },
+          { code_iata: 'BPS', name: 'Porto Seguro' },
+          { code_iata: 'VDC', name: 'Vitória da Conquista' },
+          { code_iata: 'CNF', name: 'Belo Horizonte (Confins)' },
+          { code_iata: 'PLU', name: 'Belo Horizonte (Pampulha)' },
+          { code_iata: 'UDI', name: 'Uberlândia' },
+          { code_iata: 'VIX', name: 'Vitória' },
+          { code_iata: 'SDU', name: 'Rio de Janeiro (Santos Dumont)' }
+        ];
+        
+        const { data: insertedBases, error: seedError } = await supabase
+          .from('bases')
+          .insert(fallbackBases)
+          .select();
+          
+        if (seedError) {
+          console.error('Error seeding bases:', seedError);
+        } else if (insertedBases) {
+          currentBases = insertedBases;
+        }
       }
-      if (basesRes.data) {
-        console.log('Setting bases state:', basesRes.data);
-        setBases([...basesRes.data]);
+
+      // Ensure admin user exists in public.users if logged in as bernardo.real@latam.com
+      if (session?.user?.email === 'bernardo.real@latam.com') {
+        const adminExists = currentUsers.some((u: User) => u.email === 'bernardo.real@latam.com');
+        if (!adminExists) {
+          console.log('Admin user not found in public.users. Creating...');
+          const { data: newAdmin, error: adminError } = await supabase
+            .from('users')
+            .insert({
+              id: session.user.id,
+              bp: '000000',
+              email: 'bernardo.real@latam.com',
+              name: 'Bernardo Real (Admin)',
+              roles: ['admin', 'employee'],
+              is_active: true
+            })
+            .select()
+            .single();
+            
+          if (adminError) {
+            console.error('Error creating admin user:', adminError);
+          } else if (newAdmin) {
+            currentUsers = [newAdmin, ...currentUsers];
+          }
+        }
       }
+
+      console.log('Setting users state:', currentUsers);
+      setUsers([...currentUsers]);
+      
+      console.log('Setting bases state:', currentBases);
+      setBases([...currentBases]);
+
       if (logsRes.data) setLogs(logsRes.data);
 
       // Fetch Suggestions
