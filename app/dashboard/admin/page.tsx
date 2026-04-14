@@ -1823,13 +1823,20 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
                 >
                   {llmConfig.provider === 'gemini' ? (
                     <>
-                      <option value="gemini-3-flash-preview">Gemini 3 Flash (Mais Recente - Recomendado)</option>
-                      <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (Complexo/Raciocínio)</option>
-                      <option value="gemini-3.1-flash-lite-preview">Gemini 3.1 Flash Lite (Econômico)</option>
-                      <option value="gemini-flash-latest">Gemini Flash Latest (Sempre Atualizado)</option>
-                      <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Experimental)</option>
-                      <option value="gemini-1.5-pro">Gemini 1.5 Pro (Legado)</option>
-                      <option value="gemini-1.5-flash">Gemini 1.5 Flash (Legado)</option>
+                      <optgroup label="Modelos Gemini">
+                        <option value="gemini-3-flash-preview">Gemini 3 Flash (Mais Recente - Recomendado)</option>
+                        <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (Complexo/Raciocínio)</option>
+                        <option value="gemini-3.1-flash-lite-preview">Gemini 3.1 Flash Lite (Econômico)</option>
+                        <option value="gemini-flash-latest">Gemini Flash Latest (Sempre Atualizado)</option>
+                        <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Experimental)</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Legado)</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Legado)</option>
+                      </optgroup>
+                      <optgroup label="Modelos Gemma (100% Free - Open Weights)">
+                        <option value="gemma-2-27b-it">Gemma 2 27B (Alta Capacidade)</option>
+                        <option value="gemma-2-9b-it">Gemma 2 9B (Equilibrado)</option>
+                        <option value="gemma-2-2b-it">Gemma 2 2B (Rápido/Leve)</option>
+                      </optgroup>
                     </>
                   ) : (
                     <>

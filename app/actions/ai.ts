@@ -89,7 +89,11 @@ export async function generateWithGemini(prompt: string, model: string, employee
     'gemini-1.5-flash': 'gemini-1.5-flash',
     'gemini-1.5-flash-8b': 'gemini-1.5-flash-8b',
     'gemini-pro': 'gemini-pro',
-    'gemini-pro-vision': 'gemini-pro-vision'
+    'gemini-pro-vision': 'gemini-pro-vision',
+    // Modelos Gemma (Open Weights via Gemini API)
+    'gemma-2-2b-it': 'gemma-2-2b-it',
+    'gemma-2-9b-it': 'gemma-2-9b-it',
+    'gemma-2-27b-it': 'gemma-2-27b-it'
   };
 
   const targetModel = modelMap[model] || model || 'gemini-1.5-flash';
