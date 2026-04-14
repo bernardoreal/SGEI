@@ -1,53 +1,3 @@
-function RoleCard({ label, count, color }: { label: string, count: number, color: string }) {
-  const colorClasses: any = {
-    red: 'border-latam-crimson/20 bg-latam-crimson/5 text-latam-crimson',
-    purple: 'border-purple-100 bg-purple-50/30 text-purple-700',
-    blue: 'border-blue-100 bg-blue-50/30 text-blue-700',
-    indigo: 'border-latam-indigo/20 bg-latam-indigo/5 text-latam-indigo',
-    green: 'border-green-100 bg-green-50/30 text-green-700',
-  };
-
-  return (
-    <motion.div 
-      whileHover={{ y: -2 }}
-      className={`p-4 rounded-2xl border shadow-sm transition-all ${colorClasses[color] || 'border-slate-100 bg-slate-50/30 text-slate-700'}`}
-    >
-      <div className="text-2xl font-black">{count}</div>
-      <div className="text-[10px] font-bold uppercase tracking-widest opacity-80">{label}</div>
-    </motion.div>
-  );
-}
-
-function StatCard({ title, value, icon, trend, color, highlight = false }: any) {
-  const colorClasses: any = {
-    blue: 'border-blue-100 bg-blue-50/30',
-    amber: 'border-amber-100 bg-amber-50/30',
-    indigo: 'border-latam-indigo/10 bg-latam-indigo/5',
-    emerald: 'border-emerald-100 bg-emerald-50/30',
-  };
-
-  return (
-    <motion.div 
-      whileHover={{ y: -4 }}
-      className={`p-6 rounded-3xl border shadow-sm transition-all ${colorClasses[color] || 'border-slate-100 bg-slate-50/30'} ${highlight ? 'ring-2 ring-latam-crimson ring-offset-2' : ''}`}
-    >
-      <div className="flex justify-between items-start mb-4">
-        <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-100 text-latam-indigo">
-          {icon}
-        </div>
-        <div className="text-[10px] font-bold text-slate-400 flex items-center gap-1 uppercase tracking-widest">
-          {trend}
-          <ArrowUpRight size={12} className="text-latam-crimson" />
-        </div>
-      </div>
-      <div>
-        <div className="text-3xl font-black text-slate-900 tracking-tight">{value}</div>
-        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{title}</div>
-      </div>
-    </motion.div>
-  );
-}
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -81,7 +31,8 @@ import {
   User as UserIcon,
   Trash2,
   GripVertical,
-  History
+  History,
+  Edit2
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -2002,38 +1953,80 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
             </div>
 
             <div className="overflow-x-auto">
-              <div className="w-full text-left">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50/50 border-b border-gray-100">
+                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Colaborador</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">BP</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Função</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Base</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
                   {loading ? (
-                    <div className="divide-y divide-gray-50">
-                    <div>
-                      <div colSpan={5} className="px-6 py-12 text-center text-gray-400">
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center text-gray-400">
                         <div className="flex flex-col items-center gap-2">
                           <div className="w-8 h-8 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
                           <span>Carregando usuários...</span>
                         </div>
-                      </div>
-                    </div>
-                    </div>
+                      </td>
+                    </tr>
                   ) : filteredUsers.length === 0 ? (
-                    <div className="divide-y divide-gray-50">
-                    <div>
-                      <div colSpan={5} className="px-6 py-12 text-center text-gray-400">
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center text-gray-400">
                         Nenhum usuário encontrado com os filtros atuais.
-                      </div>
-                    </div>
-                    </div>
+                      </td>
+                    </tr>
                   ) : (
-                    <div>
-                      {users.map(user => (
-                        <div key={user.id}>
-                          <div>{user.name}</div>
-                        </div>
-                      ))}
-                    </div>
+                    filteredUsers.map(user => (
+                      <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-gray-900">{user.name}</span>
+                            <span className="text-xs text-gray-500">{user.email}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="font-mono text-sm text-gray-600">{user.bp}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                            user.role === 'admin' ? 'bg-latam-crimson/10 text-latam-crimson' :
+                            user.role === 'manager' ? 'bg-purple-100 text-purple-700' :
+                            user.role === 'coordinator' ? 'bg-blue-100 text-blue-700' :
+                            user.role === 'supervisor' ? 'bg-latam-indigo/10 text-latam-indigo' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm text-gray-600 font-medium">
+                            {bases.find(b => b.id === user.base_id)?.code_iata || 'N/A'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button 
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setIsEditModalOpen(true);
+                            }}
+                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="Editar Usuário"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
                   )}
-                </div>
-              </div>
+                </tbody>
+              </table>
             </div>
+            </div>
+          </div>
 
         {/* Sidebar: Storage & Logs */}
         <div className="space-y-8">
