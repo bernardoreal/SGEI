@@ -2039,11 +2039,11 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
                           </td>
                         </tr>
                       ))}
-                </tbody>
-              </table>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
         {/* Sidebar: Storage & Logs */}
         <div className="space-y-8">
