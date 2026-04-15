@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import SuggestionSection from '@/components/SuggestionSection';
+import InterimRoleModal from '@/components/InterimRoleModal';
 import LATAMScheduleTable, { SHIFT_LEGEND, SIGLA_LEGEND } from '@/components/LATAMScheduleTable';
 import { generateWithOpenRouter, generateWithGemini } from '@/app/actions/ai';
 import { logAudit } from '@/lib/audit';
@@ -85,6 +86,7 @@ export default function SupervisorDashboard() {
   const [uploadingKb, setUploadingKb] = useState(false);
   const [baseConfig, setBaseConfig] = useState({ min_coverage_per_shift: 3, min_cat6_per_shift: 2 });
   const [showConfig, setShowConfig] = useState(false);
+  const [showInterimModal, setShowInterimModal] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -1272,6 +1274,13 @@ export default function SupervisorDashboard() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex flex-wrap gap-2">
             <button 
+              onClick={() => setShowInterimModal(true)}
+              className="flex items-center gap-2 bg-white text-indigo-600 border border-indigo-200 px-4 py-3 rounded-xl font-medium hover:bg-indigo-50 transition shadow-sm"
+            >
+              <ArrowRightLeft size={18} />
+              Role Interino
+            </button>
+            <button 
               onClick={() => setShowConfig(true)}
               className="flex items-center gap-2 bg-white text-slate-600 border border-slate-200 px-4 py-3 rounded-xl font-medium hover:bg-slate-50 transition shadow-sm"
             >
@@ -1322,6 +1331,16 @@ export default function SupervisorDashboard() {
           <AlertTriangle />
           {error}
         </div>
+      )}
+
+      {user && (
+        <InterimRoleModal 
+          isOpen={showInterimModal} 
+          onClose={() => setShowInterimModal(false)}
+          roleType="supervisor"
+          baseId={user.base_id}
+          currentUserId={user.id}
+        />
       )}
 
       {/* Indicador de Progresso Proeminente */}

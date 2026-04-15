@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import SuggestionSection from '@/components/SuggestionSection';
+import InterimRoleModal from '@/components/InterimRoleModal';
 import LATAMScheduleTable from '@/components/LATAMScheduleTable';
 
 export default function CoordinatorDashboard() {
@@ -34,6 +35,7 @@ export default function CoordinatorDashboard() {
   const [baseDetails, setBaseDetails] = useState<any>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showInterimModal, setShowInterimModal] = useState(false);
 
   useEffect(() => {
     fetchGlobalData();
@@ -251,6 +253,13 @@ export default function CoordinatorDashboard() {
         </div>
         <div className="flex items-center gap-2 bg-white p-1 rounded-2xl shadow-sm border border-slate-100">
           <button 
+            onClick={() => setShowInterimModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl font-medium hover:bg-indigo-100 transition-all"
+          >
+            <ArrowRightLeft size={18} />
+            Role Interino
+          </button>
+          <button 
             onClick={() => fetchGlobalData()}
             className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-latam-indigo transition-all"
             title="Atualizar Dados"
@@ -260,7 +269,14 @@ export default function CoordinatorDashboard() {
         </div>
       </div>
 
-      {/* Debug Info for Bernardo */}
+      {user && (
+        <InterimRoleModal 
+          isOpen={showInterimModal} 
+          onClose={() => setShowInterimModal(false)}
+          roleType="coordenador"
+          currentUserId={user.id}
+        />
+      )}
       {user?.email === 'bernardo.real@latam.com' && (
         <div className="mb-6 p-4 bg-slate-800 rounded-xl text-slate-300 font-mono text-xs overflow-auto max-h-40">
           <div className="flex justify-between items-center mb-2">
