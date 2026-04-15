@@ -160,8 +160,8 @@ export default function CoordinatorDashboard() {
       const mergedEmployees = [...(opEmployees || [])];
       
       if (systemUsers) {
-        systemUsers.forEach(user => {
-          if (!mergedEmployees.find(e => e.bp === user.bp)) {
+        systemUsers.forEach((user: any) => {
+          if (!mergedEmployees.find((e: any) => e.bp === user.bp)) {
             mergedEmployees.push({
               bp: user.bp,
               name: user.name,
