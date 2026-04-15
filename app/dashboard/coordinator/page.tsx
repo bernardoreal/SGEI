@@ -386,6 +386,57 @@ export default function CoordinatorDashboard() {
                   </div>
                 </div>
 
+                {/* Employees List Card */}
+                <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-latam-indigo/10 text-latam-indigo rounded-xl flex items-center justify-center">
+                        <Users size={20} />
+                      </div>
+                      <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Colaboradores da Base</h3>
+                    </div>
+                    <span className="bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1 rounded-full uppercase">
+                      {baseDetails?.employees?.length || 0} Ativos
+                    </span>
+                  </div>
+
+                  {loadingDetails ? (
+                    <div className="animate-pulse space-y-4">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="h-16 bg-slate-50 rounded-2xl"></div>
+                      ))}
+                    </div>
+                  ) : baseDetails?.employees && baseDetails.employees.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {baseDetails.employees.map((emp: any) => (
+                        <div key={emp.bp} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-indigo-200 transition-colors">
+                          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center font-bold text-slate-400 border border-slate-100">
+                            {emp.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-slate-900 truncate">{emp.name}</p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{emp.bp}</span>
+                              <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                              <span className="text-[10px] font-bold text-indigo-600 uppercase truncate">{emp.cargo || emp.position || 'Auxiliar'}</span>
+                            </div>
+                          </div>
+                          {emp.cat_6 && (
+                            <div className="bg-amber-100 text-amber-700 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">
+                              CAT 6
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-10 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                      <Users size={32} className="text-slate-300 mx-auto mb-2" />
+                      <p className="text-slate-500 font-bold uppercase text-xs">Nenhum colaborador encontrado</p>
+                    </div>
+                  )}
+                </div>
+
                 {/* Schedule View */}
                 <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
                   <div className="flex items-center justify-between mb-8">
