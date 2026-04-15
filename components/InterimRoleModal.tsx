@@ -84,7 +84,7 @@ export default function InterimRoleModal({ isOpen, onClose, roleType, baseId, cu
           className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl"
         >
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-indigo-900">Atribuir {roleType} Interino</h2>
+            <h2 className="text-xl font-bold text-indigo-900">Atribuir {roleType.charAt(0).toUpperCase() + roleType.slice(1)} Interino</h2>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X /></button>
           </div>
 
