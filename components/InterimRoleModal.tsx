@@ -40,7 +40,10 @@ export default function InterimRoleModal({ isOpen, onClose, roleType, baseId, cu
 
   useEffect(() => {
     if (isOpen) {
-      fetchEmployees();
+      // Use a wrapper to call the async function
+      (async () => {
+        await fetchEmployees();
+      })();
     }
   }, [isOpen, fetchEmployees]);
 
