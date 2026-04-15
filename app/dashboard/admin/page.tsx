@@ -729,6 +729,19 @@ export default function AdminDashboard() {
     e.preventDefault();
     setLoading(true);
     try {
+      // 1. Check blacklist
+      const { data: blacklisted, error: blacklistError } = await supabase
+        .from('blacklist')
+        .select('id')
+        .or(`bp.eq.${newUserForm.bp},email.eq.${newUserForm.email}`)
+        .maybeSingle();
+
+      if (blacklistError) throw blacklistError;
+      if (blacklisted) {
+        throw new Error('Este colaborador está na lista negra (blacklist) e não pode ser cadastrado novamente.');
+      }
+
+      // 2. Proceed with user creation
       const { data, error } = await supabase
         .from('users')
         .insert([{
@@ -763,18 +776,40 @@ export default function AdminDashboard() {
     }
   };
 
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+
   const handleDeleteUser = async (userId: string, userName: string) => {
-    if (!confirm(`TEM CERTEZA? Esta é uma REMOÇÃO EMERGENCIAL. O acesso de ${userName} será interrompido imediatamente e seus dados serão deletados.`)) {
-      return;
+    const user = users.find(u => u.id === userId);
+    if (user) {
+      setUserToDelete(user);
     }
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    const { id: userId, name: userName, email, bp } = userToDelete;
 
     setUpdatingUserId(userId);
     try {
-      // First, unassign from any bases to avoid FK constraints
+      // 1. Add to blacklist
+      const { error: blacklistError } = await supabase
+        .from('blacklist')
+        .insert([{
+          bp: bp,
+          email: email,
+          name: userName,
+          reason: 'Desligamento emergencial'
+        }]);
+
+      if (blacklistError) throw blacklistError;
+
+      // 2. First, unassign from any bases to avoid FK constraints
       await supabase.from('bases').update({ supervisor_id: null }).eq('supervisor_id', userId);
       await supabase.from('bases').update({ coordinator_id: null }).eq('coordinator_id', userId);
       await supabase.from('bases').update({ manager_id: null }).eq('manager_id', userId);
 
+      // 3. Delete user
       const { error } = await supabase
         .from('users')
         .delete()
@@ -785,12 +820,13 @@ export default function AdminDashboard() {
       setUsers(prev => prev.filter(u => u.id !== userId));
       
       await supabase.from('audit_log').insert({
-        action: `REMOÇÃO EMERGENCIAL: Usuário ${userName} deletado`,
+        action: `REMOÇÃO EMERGENCIAL E BLACKLIST: Usuário ${userName} deletado e adicionado à blacklist`,
         table_name: 'users',
         record_id: userId as any
       });
 
-      alert('Usuário removido com sucesso!');
+      alert('Usuário removido e adicionado à blacklist com sucesso!');
+      setUserToDelete(null);
     } catch (error: any) {
       console.error('Error deleting user:', error);
       alert(`Erro ao remover usuário: ${error.message}`);
@@ -2287,7 +2323,47 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
-      {/* Modal de Diagnóstico */}
+      {/* Modal de Confirmação de Exclusão */}
+      {userToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600">
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900">Excluir Colaborador</h3>
+            </div>
+            <p className="text-slate-600 mb-6">
+              Tem certeza que deseja excluir o colaborador <strong>{userToDelete.name}</strong> do sistema? 
+              Esta ação adicionará o BP e E-mail à lista de bloqueio e não poderá ser desfeita.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setUserToDelete(null)}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmDeleteUser}
+                className="px-4 py-2 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors"
+              >
+                Confirmar
+              </button>
+              <button 
+                onClick={() => setUserToDelete(null)}
+                className="px-4 py-2 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-900 transition-colors"
+              >
+                Sair
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
       {showDebug && debugInfo && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
           <motion.div 
