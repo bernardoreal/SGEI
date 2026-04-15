@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Calendar, User, Briefcase, Save } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -21,13 +21,7 @@ export default function InterimRoleModal({ isOpen, onClose, roleType, baseId, cu
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchEmployees();
-    }
-  }, [isOpen, baseId, roleType]);
-
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     setLoading(true);
     let query = supabase.from('users').select('id, name, base_id');
     
@@ -42,7 +36,13 @@ export default function InterimRoleModal({ isOpen, onClose, roleType, baseId, cu
       setEmployees(data || []);
     }
     setLoading(false);
-  };
+  }, [baseId, roleType]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchEmployees();
+    }
+  }, [isOpen, fetchEmployees]);
 
   const handleSubmit = async () => {
     if (!assigneeId || !startDate || !endDate) return;
