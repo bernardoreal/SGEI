@@ -43,14 +43,15 @@ export default function CoordinatorDashboard() {
     setLoading(true);
     try {
       // 0. Fetch Current User
-      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const authUser = session?.user;
       if (authUser) {
         const { data: userData } = await supabase
           .from('users')
           .select('*')
           .eq('id', authUser.id)
           .maybeSingle();
-        setUser(userData);
+        setUser(userData || authUser);
       }
 
       // 1. Fetch Bases
@@ -61,35 +62,36 @@ export default function CoordinatorDashboard() {
       
       if (basesError) {
         console.error('Error fetching bases:', basesError);
-        // If bases fail, we can't do much for the list, but let's not crash
       }
 
       const currentBases = basesData || [];
 
-      // 2. Fetch Stats for each base - Use a more optimized approach if possible, 
-      // but keeping the per-base logic for detailed status
+      // 2. Fetch Stats for each base
+      // We'll count from 'users' table as primary source for "Colaboradores" 
+      // as it's more likely to be populated initially
       const basesWithStats = await Promise.all(currentBases.map(async (base: any) => {
         try {
-          // Count employees
-          const { count: empCount, error: empError } = await supabase
+          // Count users (system accounts)
+          const { count: userCount, error: userErr } = await supabase
+            .from('users')
+            .select('*', { count: 'exact', head: true })
+            .eq('base_id', base.id);
+
+          // Count operational employees (base_employees table)
+          const { count: opCount, error: opErr } = await supabase
             .from('base_employees')
             .select('*', { count: 'exact', head: true })
-            .eq('base_id', base.id)
-            .eq('is_active', true);
-
-          if (empError) console.warn(`Error fetching employees for base ${base.code_iata}:`, empError);
+            .eq('base_id', base.id);
 
           // Count pending requests
-          const { count: reqCount, error: reqError } = await supabase
+          const { count: reqCount } = await supabase
             .from('shift_requests')
             .select('*', { count: 'exact', head: true })
             .eq('base_id', base.id)
             .eq('status', 'pendente');
 
-          if (reqError) console.warn(`Error fetching requests for base ${base.code_iata}:`, reqError);
-
           // Check latest schedule status
-          const { data: latestSchedule, error: schedError } = await supabase
+          const { data: latestSchedule } = await supabase
             .from('schedules')
             .select('*')
             .eq('base_id', base.id)
@@ -97,11 +99,11 @@ export default function CoordinatorDashboard() {
             .limit(1)
             .maybeSingle();
 
-          if (schedError) console.warn(`Error fetching schedule for base ${base.code_iata}:`, schedError);
-
           return {
             ...base,
-            employeeCount: empCount || 0,
+            employeeCount: userCount || opCount || 0, // Fallback to opCount if userCount is 0
+            opCount: opCount || 0,
+            userCount: userCount || 0,
             pendingRequests: reqCount || 0,
             latestSchedule: latestSchedule || null,
             status: latestSchedule ? (latestSchedule.published_at ? 'published' : 'draft') : 'none'
@@ -115,12 +117,16 @@ export default function CoordinatorDashboard() {
       setBases(basesWithStats);
 
       // 3. Aggregate Global Stats
-      const totalEmp = basesWithStats.reduce((acc: number, b: any) => acc + b.employeeCount, 0);
+      // Count all users in the system to ensure the KPI matches the Admin view
+      const { count: allUsersCount } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true });
+
       const totalPending = basesWithStats.reduce((acc: number, b: any) => acc + b.pendingRequests, 0);
       const totalPublished = basesWithStats.filter(b => b.status === 'published').length;
 
       setStats({
-        totalEmployees: totalEmp,
+        totalEmployees: allUsersCount || 0,
         totalBases: basesWithStats.length,
         pendingRequests: totalPending,
         publishedSchedules: totalPublished
@@ -227,6 +233,20 @@ export default function CoordinatorDashboard() {
           </button>
         </div>
       </div>
+
+      {/* Debug Info for Bernardo */}
+      {user?.email === 'bernardo.real@latam.com' && (
+        <div className="mb-6 p-4 bg-slate-800 rounded-xl text-slate-300 font-mono text-xs overflow-auto max-h-40">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-indigo-400 font-bold">DEBUG INFO (Bernardo Only)</span>
+            <button onClick={() => fetchGlobalData()} className="px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-500">Force Refresh</button>
+          </div>
+          <p>Auth ID: {user.id}</p>
+          <p>Bases: {bases.length} | Total Emp: {stats.totalEmployees}</p>
+          <p>Loading: {loading ? 'YES' : 'NO'}</p>
+          <p>Last Fetch: {new Date().toLocaleTimeString()}</p>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
