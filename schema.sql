@@ -283,24 +283,35 @@ ALTER TABLE base_configuration ENABLE ROW LEVEL SECURITY;
 ALTER TABLE system_suggestions ENABLE ROW LEVEL SECURITY;
 
 -- Security Definer Functions to avoid RLS recursion
+CREATE OR REPLACE FUNCTION public.is_admin_email(email_to_check text)
+RETURNS boolean AS $$
+BEGIN
+  RETURN (
+    LOWER(COALESCE(auth.jwt() ->> 'email', '')) = LOWER(email_to_check)
+    OR
+    EXISTS (
+      SELECT 1 FROM auth.users 
+      WHERE id = auth.uid() 
+      AND email = LOWER(email_to_check)
+    )
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 CREATE OR REPLACE FUNCTION public.check_is_admin()
 RETURNS BOOLEAN AS $$
-DECLARE
-  is_admin_user BOOLEAN;
 BEGIN
   -- Super Admin check by email (Bernardo)
-  IF LOWER(COALESCE(auth.jwt() ->> 'email', '')) = 'bernardo.real@latam.com' THEN
+  IF public.is_admin_email('bernardo.real@latam.com') THEN
     RETURN TRUE;
   END IF;
 
   -- Use a direct query that bypasses RLS because of SECURITY DEFINER
-  SELECT EXISTS (
+  RETURN EXISTS (
     SELECT 1 FROM public.users
     WHERE id = auth.uid()
     AND 'admin' = ANY(roles)
-  ) INTO is_admin_user;
-  
-  RETURN COALESCE(is_admin_user, false);
+  );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -313,7 +324,7 @@ BEGIN
     FOR t IN SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'
     LOOP
         EXECUTE format('DROP POLICY IF EXISTS "Bernardo full access" ON %I', t);
-        EXECUTE format('CREATE POLICY "Bernardo full access" ON %I FOR ALL USING (LOWER(COALESCE(auth.jwt() ->> ''email'', '''')) = ''bernardo.real@latam.com'')', t);
+        EXECUTE format('CREATE POLICY "Bernardo full access" ON %I FOR ALL USING (public.is_admin_email(''bernardo.real@latam.com''))', t);
     END LOOP;
 END $$;
 

@@ -318,48 +318,58 @@ export default function AdminDashboard() {
       // --- FIM DO AUTO-REPAIR ---
 
       console.log('Fetching admin data...');
+      
+      // Fetch users and bases separately to avoid one failing the other
+      const usersPromise = supabase.from('users').select('*').order('created_at', { ascending: false });
+      const basesPromise = supabase.from('bases').select('*').order('code_iata');
+      const logsPromise = supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(10);
+      const rolesPromise = supabase.from('roles').select('name');
+      const llmPromise = supabase.from('system_settings').select('value').eq('key', 'llm_config').maybeSingle();
+
       const [usersRes, basesRes, logsRes, rolesRes, llmRes] = await Promise.all([
-        supabase.from('users').select('*').order('created_at', { ascending: false }),
-        supabase.from('bases').select('*').order('code_iata'),
-        supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(10),
-        supabase.from('roles').select('name'),
-        supabase.from('system_settings').select('value').eq('key', 'llm_config').maybeSingle()
+        usersPromise,
+        basesPromise,
+        logsPromise,
+        rolesPromise,
+        llmPromise
       ]);
+
+      console.log('Fetch results summary:', {
+        users: usersRes.data?.length || 0,
+        bases: basesRes.data?.length || 0,
+        logs: logsRes.data?.length || 0,
+        usersError: usersRes.error?.message,
+        basesError: basesRes.error?.message,
+        logsError: logsRes.error?.message
+      });
 
       if (usersRes.error) {
         console.error('Error fetching users:', usersRes.error);
         setNotifications(prev => [...prev, { 
           id: 'fetch-error-users-' + Date.now(), 
-          message: `Erro ao carregar usuários: ${usersRes.error.message}. Verifique as políticas de RLS.` 
+          message: `Erro ao carregar usuários: ${usersRes.error.message}.` 
         }]);
+      } else if (usersRes.data) {
+        setUsers(usersRes.data);
       }
 
       if (basesRes.error) {
         console.error('Error fetching bases:', basesRes.error);
         setNotifications(prev => [...prev, { 
           id: 'fetch-error-bases-' + Date.now(), 
-          message: `Erro ao carregar bases: ${basesRes.error.message}. Verifique as políticas de RLS.` 
+          message: `Erro ao carregar bases: ${basesRes.error.message}.` 
         }]);
+      } else if (basesRes.data) {
+        setBases(basesRes.data);
       }
 
-      console.log('Fetch results:', { 
-        usersCount: usersRes.data?.length || 0, 
-        basesCount: basesRes.data?.length || 0,
-        usersError: usersRes.error,
-        basesError: basesRes.error,
-        firstUser: usersRes.data?.[0],
-        firstBase: basesRes.data?.[0]
-      });
-
-      if (llmRes.data) {
-        setLlmConfig(llmRes.data.value);
-      }
+      if (logsRes.data) setLogs(logsRes.data);
+      if (llmRes.data) setLlmConfig(llmRes.data.value);
 
       // Buscar estatísticas de tokens
       try {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const todayIso = today.toISOString();
 
         const { data: usageData } = await supabase
           .from('ai_usage_logs')
@@ -373,7 +383,6 @@ export default function AdminDashboard() {
           }), { prompt: 0, completion: 0, total: 0 });
           setTokenStats(stats);
 
-          // Count Gemini requests today
           const geminiToday = usageData.filter((log: any) => 
             log.provider === 'gemini' && new Date(log.created_at) >= today
           ).length;
@@ -390,10 +399,6 @@ export default function AdminDashboard() {
       if (rolesRes.data && !rolesRes.data.find((r: any) => r.name === 'admin_employee')) {
         await supabase.from('roles').insert([{ name: 'admin_employee', description: 'Admin com função de Colaborador (Híbrido)' }]);
       }
-
-      if (usersRes.data) setUsers(usersRes.data);
-      if (basesRes.data) setBases(basesRes.data);
-      if (logsRes.data) setLogs(logsRes.data);
 
       // Fetch Suggestions
       const { data: suggestionsData } = await supabase
@@ -1069,6 +1074,20 @@ export default function AdminDashboard() {
       </div>
 
       {/* Main Content */}
+
+      {/* Debug Info for Bernardo */}
+      {currentUser?.email === 'bernardo.real@latam.com' && (
+        <div className="mb-6 p-4 bg-slate-800 rounded-xl text-slate-300 font-mono text-xs overflow-auto max-h-40">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-indigo-400 font-bold">DEBUG INFO (Bernardo Only)</span>
+            <button onClick={() => fetchData()} className="px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-500">Force Refresh</button>
+          </div>
+          <p>Auth ID: {currentUser.id}</p>
+          <p>Users: {users.length} | Bases: {bases.length} | Logs: {logs.length}</p>
+          <p>Loading: {loading ? 'YES' : 'NO'}</p>
+          <p>Last Fetch: {new Date().toLocaleTimeString()}</p>
+        </div>
+      )}
 
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
