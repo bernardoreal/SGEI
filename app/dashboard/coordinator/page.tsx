@@ -49,7 +49,7 @@ export default function CoordinatorDashboard() {
           .from('users')
           .select('*')
           .eq('id', authUser.id)
-          .single();
+          .maybeSingle();
         setUser(userData);
       }
 
@@ -59,40 +59,57 @@ export default function CoordinatorDashboard() {
         .select('*')
         .order('name', { ascending: true });
       
-      if (basesError) throw basesError;
+      if (basesError) {
+        console.error('Error fetching bases:', basesError);
+        // If bases fail, we can't do much for the list, but let's not crash
+      }
 
-      // 2. Fetch Stats for each base
-      const basesWithStats = await Promise.all((basesData || []).map(async (base: any) => {
-        // Count employees
-        const { count: empCount } = await supabase
-          .from('base_employees')
-          .select('*', { count: 'exact', head: true })
-          .eq('base_id', base.id)
-          .eq('is_active', true);
+      const currentBases = basesData || [];
 
-        // Count pending requests
-        const { count: reqCount } = await supabase
-          .from('shift_requests')
-          .select('*', { count: 'exact', head: true })
-          .eq('base_id', base.id)
-          .eq('status', 'pendente');
+      // 2. Fetch Stats for each base - Use a more optimized approach if possible, 
+      // but keeping the per-base logic for detailed status
+      const basesWithStats = await Promise.all(currentBases.map(async (base: any) => {
+        try {
+          // Count employees
+          const { count: empCount, error: empError } = await supabase
+            .from('base_employees')
+            .select('*', { count: 'exact', head: true })
+            .eq('base_id', base.id)
+            .eq('is_active', true);
 
-        // Check latest schedule status
-        const { data: latestSchedule } = await supabase
-          .from('schedules')
-          .select('*')
-          .eq('base_id', base.id)
-          .order('start_date', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          if (empError) console.warn(`Error fetching employees for base ${base.code_iata}:`, empError);
 
-        return {
-          ...base,
-          employeeCount: empCount || 0,
-          pendingRequests: reqCount || 0,
-          latestSchedule: latestSchedule || null,
-          status: latestSchedule ? (latestSchedule.published_at ? 'published' : 'draft') : 'none'
-        };
+          // Count pending requests
+          const { count: reqCount, error: reqError } = await supabase
+            .from('shift_requests')
+            .select('*', { count: 'exact', head: true })
+            .eq('base_id', base.id)
+            .eq('status', 'pendente');
+
+          if (reqError) console.warn(`Error fetching requests for base ${base.code_iata}:`, reqError);
+
+          // Check latest schedule status
+          const { data: latestSchedule, error: schedError } = await supabase
+            .from('schedules')
+            .select('*')
+            .eq('base_id', base.id)
+            .order('start_date', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (schedError) console.warn(`Error fetching schedule for base ${base.code_iata}:`, schedError);
+
+          return {
+            ...base,
+            employeeCount: empCount || 0,
+            pendingRequests: reqCount || 0,
+            latestSchedule: latestSchedule || null,
+            status: latestSchedule ? (latestSchedule.published_at ? 'published' : 'draft') : 'none'
+          };
+        } catch (e) {
+          console.error(`Failed to fetch stats for base ${base.id}:`, e);
+          return { ...base, employeeCount: 0, pendingRequests: 0, status: 'none' };
+        }
       }));
 
       setBases(basesWithStats);
