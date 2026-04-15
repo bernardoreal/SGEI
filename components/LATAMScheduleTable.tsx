@@ -160,22 +160,22 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
         </div>
       </div>
 
-      <div className="overflow-x-auto border-x border-b border-slate-200 rounded-b-xl shadow-xl">
-        <table className="w-full text-[10px] border-collapse">
-          <thead>
+      <div className="overflow-x-auto border-x border-b border-slate-200 rounded-b-xl shadow-xl max-h-[70vh] relative">
+        <table className="w-full text-[10px] border-collapse relative">
+          <thead className="sticky top-0 z-30 shadow-sm">
             <tr className="bg-slate-100 text-slate-600 font-bold uppercase">
-              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-0 bg-slate-100 z-10">ÁREA</th>
-              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-[50px] bg-slate-100 z-10">TURNO</th>
-              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-[100px] bg-slate-100 z-10">BP</th>
-              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-[160px] bg-slate-100 z-10">FUNÇÃO</th>
-              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-[240px] bg-slate-100 z-10 min-w-[150px]">NOME</th>
+              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-0 bg-slate-100 z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">ÁREA</th>
+              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-[50px] bg-slate-100 z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">TURNO</th>
+              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-[100px] bg-slate-100 z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">BP</th>
+              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-[160px] bg-slate-100 z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">FUNÇÃO</th>
+              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-[240px] bg-slate-100 z-40 min-w-[150px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">NOME</th>
               {data[0]?.days.map((day, idx) => {
                 const dow = getDayOfWeek(day.date, year);
                 const isWeekend = dow === 'SÁB' || dow === 'DOM';
                 return (
                   <th 
                     key={`dow-${idx}`} 
-                    className={`border border-slate-200 p-1 min-w-[45px] text-center text-[9px] font-black ${isWeekend ? 'bg-latam-crimson text-white' : 'text-latam-indigo'}`}
+                    className={`border border-slate-200 p-1 min-w-[45px] text-center text-[9px] font-black ${isWeekend ? 'bg-latam-crimson text-white' : 'text-latam-indigo bg-slate-100'}`}
                   >
                     {dow}
                   </th>
@@ -184,7 +184,7 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
             </tr>
             <tr className="bg-slate-100 text-slate-600 font-bold uppercase">
               {data[0]?.days.map((day, idx) => (
-                <th key={`date-${idx}`} className="border border-slate-200 p-1 min-w-[45px] text-center text-[10px] font-medium opacity-70">
+                <th key={`date-${idx}`} className="border border-slate-200 p-1 min-w-[45px] text-center text-[10px] font-medium opacity-70 bg-slate-100">
                   {day.date}
                 </th>
               ))}
@@ -195,10 +195,10 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
               const hasError = validationErrors?.some(e => e.bp === row.bp);
               return (
                 <tr key={rowIdx} className={`hover:bg-slate-50 transition-colors ${hasError ? 'bg-red-50/30' : ''}`}>
-                  <td className={`border border-slate-200 p-2 font-bold sticky left-0 z-10 ${hasError ? 'bg-red-50' : 'bg-white'}`}>{row.area}</td>
-                  <td className={`border border-slate-200 p-2 sticky left-[50px] z-10 ${hasError ? 'bg-red-50' : 'bg-white'}`}>{row.turno}</td>
-                  <td className={`border border-slate-200 p-2 sticky left-[100px] z-10 ${hasError ? 'bg-red-50' : 'bg-white'}`}>{row.bp}</td>
-                  <td className={`border border-slate-200 p-2 sticky left-[160px] z-10 ${hasError ? 'bg-red-50' : 'bg-white'}`}>
+                  <td className={`border border-slate-200 p-2 font-bold sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${hasError ? 'bg-red-50' : 'bg-white'}`}>{row.area}</td>
+                  <td className={`border border-slate-200 p-2 sticky left-[50px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${hasError ? 'bg-red-50' : 'bg-white'}`}>{row.turno}</td>
+                  <td className={`border border-slate-200 p-2 sticky left-[100px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${hasError ? 'bg-red-50' : 'bg-white'}`}>{row.bp}</td>
+                  <td className={`border border-slate-200 p-2 sticky left-[160px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${hasError ? 'bg-red-50' : 'bg-white'}`}>
                     <input 
                       type="text"
                       value={row.funcao}
@@ -207,9 +207,9 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
                     />
                     <span className="hidden print:inline">{row.funcao}</span>
                   </td>
-                  <td className={`border border-slate-200 p-2 font-bold sticky left-[240px] z-10 ${hasError ? 'bg-red-50 text-red-700' : 'bg-white'}`}>
+                  <td className={`border border-slate-200 p-2 font-bold sticky left-[240px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${hasError ? 'bg-red-50 text-red-700' : 'bg-white'}`}>
                     <div className="flex items-center justify-between gap-2">
-                      <span>{row.nome}</span>
+                      <span className="truncate max-w-[130px] block" title={row.nome}>{row.nome}</span>
                       {hasError && (
                         <div className="flex gap-1 no-print">
                           {validationErrors?.filter(e => e.bp === row.bp && !e.date).map((err, i) => (
@@ -262,6 +262,27 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
               );
             })}
           </tbody>
+          <tfoot className="sticky bottom-0 z-30 shadow-[0_-2px_5px_rgba(0,0,0,0.05)]">
+            <tr className="bg-slate-800 text-white font-bold text-[10px]">
+              <td colSpan={5} className="border border-slate-700 p-2 text-right sticky left-0 z-40 bg-slate-800">
+                COBERTURA TOTAL (ATIVOS)
+              </td>
+              {data[0]?.days.map((day, idx) => {
+                const activeCount = data.filter(row => row.days[idx].code.startsWith('T') || row.days[idx].code === 'C').length;
+                // Assuming min_coverage_per_shift is 3 per shift = 6 per day as a safe baseline, adjust as needed
+                const minDailyCoverage = 6; 
+                let bgColor = 'bg-emerald-600';
+                if (activeCount < minDailyCoverage) bgColor = 'bg-red-600';
+                else if (activeCount === minDailyCoverage) bgColor = 'bg-amber-500';
+                
+                return (
+                  <td key={`coverage-${idx}`} className={`border border-slate-700 p-2 text-center ${bgColor}`}>
+                    {activeCount}
+                  </td>
+                );
+              })}
+            </tr>
+          </tfoot>
         </table>
       </div>
     </div>

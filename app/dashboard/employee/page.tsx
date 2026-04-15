@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { Calendar, Clock, User, Briefcase, Info, Download, Send, History, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import LATAMScheduleTable from '@/components/LATAMScheduleTable';
+import MobileScheduleView from '@/components/MobileScheduleView';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -281,11 +282,20 @@ export default function EmployeeDashboard() {
                     </div>
                   </div>
 
-                  <LATAMScheduleTable 
-                    month={schedule.month}
-                    year={schedule.year}
-                    data={schedule.data}
-                  />
+                  <div className="hidden lg:block">
+                    <LATAMScheduleTable 
+                      month={schedule.month}
+                      year={schedule.year}
+                      data={schedule.data}
+                    />
+                  </div>
+                  <div className="block lg:hidden">
+                    <MobileScheduleView 
+                      month={schedule.month}
+                      year={schedule.year}
+                      data={schedule.data}
+                    />
+                  </div>
                 </div>
                 <div className="bg-slate-50 px-8 py-4 border-t border-slate-100 flex items-center gap-2 text-slate-500 text-sm">
                   <Info size={16} />

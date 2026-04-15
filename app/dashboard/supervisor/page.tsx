@@ -1278,7 +1278,7 @@ export default function SupervisorDashboard() {
               className="flex items-center gap-2 bg-white text-indigo-600 border border-indigo-200 px-4 py-3 rounded-xl font-medium hover:bg-indigo-50 transition shadow-sm"
             >
               <ArrowRightLeft size={18} />
-              Role Interino
+              Aviso de Férias
             </button>
             <button 
               onClick={() => setShowConfig(true)}
