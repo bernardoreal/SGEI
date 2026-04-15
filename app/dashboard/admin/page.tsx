@@ -50,6 +50,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { sanitizePrompt } from '@/lib/security';
 import { generateWithGemini } from '@/app/actions/ai';
 
 // Import other dashboards for preview
@@ -161,7 +162,7 @@ export default function AdminDashboard() {
 
     setIsAnalyzing(true);
     try {
-      const prompt = `
+      const rawPrompt = `
         Analise as seguintes solicitações de melhoria pendentes para o sistema SGEI (Sistema de Gestão de Escalas Inteligente) da LATAM Cargo:
         
         ${pendingSuggestions.map((s, i) => `${i+1}. [Prioridade: ${s.priority}] ${s.suggestion}`).join('\n')}
@@ -173,6 +174,8 @@ export default function AdminDashboard() {
         
         Responda em Markdown, de forma profissional e executiva. Use tabelas se necessário.
       `;
+
+      const prompt = sanitizePrompt(rawPrompt);
 
       const result = await generateWithGemini(prompt, llmConfig.model);
       setAnalysis(result);
@@ -788,43 +791,21 @@ export default function AdminDashboard() {
   const confirmDeleteUser = async () => {
     if (!userToDelete) return;
 
-    const { id: userId, name: userName, email, bp } = userToDelete;
+    const { id: userId } = userToDelete;
 
     setUpdatingUserId(userId);
     try {
-      // 1. Add to blacklist
-      const { error: blacklistError } = await supabase
-        .from('blacklist')
-        .insert([{
-          bp: bp,
-          email: email,
-          name: userName,
-          reason: 'Desligamento emergencial'
-        }]);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
 
-      if (blacklistError) throw blacklistError;
-
-      // 2. First, unassign from any bases to avoid FK constraints
-      await supabase.from('bases').update({ supervisor_id: null }).eq('supervisor_id', userId);
-      await supabase.from('bases').update({ coordinator_id: null }).eq('coordinator_id', userId);
-      await supabase.from('bases').update({ manager_id: null }).eq('manager_id', userId);
-
-      // 3. Delete user
-      const { error } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', userId);
+      const { error } = await supabase.rpc('delete_user_secure', {
+        target_user_id: userId,
+        admin_id: user.id
+      });
 
       if (error) throw error;
 
       setUsers(prev => prev.filter(u => u.id !== userId));
-      
-      await supabase.from('audit_log').insert({
-        action: `REMOÇÃO EMERGENCIAL E BLACKLIST: Usuário ${userName} deletado e adicionado à blacklist`,
-        table_name: 'users',
-        record_id: userId as any
-      });
-
       alert('Usuário removido e adicionado à blacklist com sucesso!');
       setUserToDelete(null);
     } catch (error: any) {
@@ -893,9 +874,41 @@ export default function AdminDashboard() {
     setShowRoleModal(true);
   };
 
-  const openBaseModal = (baseId: string) => {
-    setSelectedBaseIdForModal(baseId);
-    setShowBaseModal(true);
+  const logAccess = async (baseId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      // 1. Log access
+      await supabase.from('access_logs').insert({
+        user_id: user.id,
+        base_id: baseId
+      });
+
+      // 2. Scraping Detection: Count accesses in the last minute
+      const { count } = await supabase
+        .from('access_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', new Date(Date.now() - 60000).toISOString());
+
+      if (count && count > 10) {
+        await supabase.from('audit_log').insert({ 
+          action: 'ALERTA: Possível Scraping detectado', 
+          table_name: 'access_logs',
+          record_id: user.id as any
+        });
+        throw new Error('Limite de acessos excedido. Operação bloqueada por segurança.');
+      }
+    }
+  };
+
+  const openBaseModal = async (baseId: string) => {
+    try {
+      await logAccess(baseId);
+      setSelectedBaseIdForModal(baseId);
+      setShowBaseModal(true);
+    } catch (error: any) {
+      alert(error.message);
+    }
   };
 
   if (loading) {
