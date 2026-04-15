@@ -275,12 +275,22 @@ export default function AdminDashboard() {
             is_active: true
           }]);
           if (!insError) repaired = true;
-        } else if (!userData.roles || !userData.roles.includes('admin')) {
-          console.log('Bernardo encontrado mas sem role admin. Atualizando...');
-          const { error: updError } = await supabase.from('users').update({
-            roles: ['admin', 'employee']
-          }).eq('id', session.user.id);
-          if (!updError) repaired = true;
+        } else {
+          // Bernardo existe, mas vamos garantir que o ID do Auth bate com o ID da tabela
+          if (userData.id !== session.user.id) {
+            console.log('Sincronizando ID do Auth com a tabela users para Bernardo...');
+            const { error: syncError } = await supabase.from('users').update({
+              id: session.user.id,
+              roles: ['admin', 'employee'] // Aproveita para garantir role
+            }).eq('email', 'bernardo.real@latam.com');
+            if (!syncError) repaired = true;
+          } else if (!userData.roles || !userData.roles.includes('admin')) {
+            console.log('Bernardo encontrado mas sem role admin. Atualizando...');
+            const { error: updError } = await supabase.from('users').update({
+              roles: ['admin', 'employee']
+            }).eq('id', session.user.id);
+            if (!updError) repaired = true;
+          }
         }
 
         // 2. Garantir que existem bases cadastradas
@@ -381,9 +391,9 @@ export default function AdminDashboard() {
         await supabase.from('roles').insert([{ name: 'admin_employee', description: 'Admin com função de Colaborador (Híbrido)' }]);
       }
 
-      setUsers(usersRes.data || []);
-      setBases(basesRes.data || []);
-      setLogs(logsRes.data || []);
+      if (usersRes.data) setUsers(usersRes.data);
+      if (basesRes.data) setBases(basesRes.data);
+      if (logsRes.data) setLogs(logsRes.data);
 
       // Fetch Suggestions
       const { data: suggestionsData } = await supabase
@@ -399,10 +409,19 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    const init = async () => {
-      await fetchData();
+    // Listen for auth changes to re-fetch data
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth event in AdminDashboard:', event);
+      if (session) {
+        fetchData();
+      }
+    });
+
+    fetchData();
+
+    return () => {
+      subscription.unsubscribe();
     };
-    init();
   }, []);
 
   const filteredUsers = useMemo(() => {
@@ -1052,15 +1071,6 @@ export default function AdminDashboard() {
       {/* Main Content */}
 
       {/* KPI Stats Grid */}
-      {users.length === 0 && !loading && (
-        <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-amber-800 mb-6 flex items-center gap-3">
-          <AlertTriangle className="text-amber-500" />
-          <div>
-            <p className="font-bold text-sm">Nenhum usuário carregado.</p>
-            <p className="text-xs">Isso pode ser causado por políticas de RLS no Supabase bloqueando o acesso. Certifique-se de que as políticas para o e-mail <strong>bernardo.real@latam.com</strong> estão configuradas corretamente.</p>
-          </div>
-        </div>
-      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Total de Usuários" 

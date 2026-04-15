@@ -288,6 +288,11 @@ RETURNS BOOLEAN AS $$
 DECLARE
   is_admin_user BOOLEAN;
 BEGIN
+  -- Super Admin check by email (Bernardo)
+  IF LOWER(COALESCE(auth.jwt() ->> 'email', '')) = 'bernardo.real@latam.com' THEN
+    RETURN TRUE;
+  END IF;
+
   -- Use a direct query that bypasses RLS because of SECURITY DEFINER
   SELECT EXISTS (
     SELECT 1 FROM public.users
@@ -295,9 +300,22 @@ BEGIN
     AND 'admin' = ANY(roles)
   ) INTO is_admin_user;
   
-  RETURN COALESCE(is_admin_user, false) OR (LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com');
+  RETURN COALESCE(is_admin_user, false);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Global Bernardo Policy Generator (Helper)
+-- We will apply this to all critical tables
+DO $$
+DECLARE
+    t text;
+BEGIN
+    FOR t IN SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'
+    LOOP
+        EXECUTE format('DROP POLICY IF EXISTS "Bernardo full access" ON %I', t);
+        EXECUTE format('CREATE POLICY "Bernardo full access" ON %I FOR ALL USING (LOWER(COALESCE(auth.jwt() ->> ''email'', '''')) = ''bernardo.real@latam.com'')', t);
+    END LOOP;
+END $$;
 
 CREATE OR REPLACE FUNCTION public.check_is_supervisor()
 RETURNS BOOLEAN AS $$
@@ -310,7 +328,7 @@ BEGIN
     AND 'supervisor' = ANY(roles)
   ) INTO is_supervisor_user;
   
-  RETURN COALESCE(is_supervisor_user, false);
+  RETURN COALESCE(is_supervisor_user, false) OR (LOWER(COALESCE(auth.jwt() ->> 'email', '')) = 'bernardo.real@latam.com');
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -325,7 +343,7 @@ BEGIN
     AND ('coordinator' = ANY(roles) OR 'manager' = ANY(roles) OR 'admin' = ANY(roles))
   ) INTO is_coord;
   
-  RETURN COALESCE(is_coord, false);
+  RETURN COALESCE(is_coord, false) OR (LOWER(COALESCE(auth.jwt() ->> 'email', '')) = 'bernardo.real@latam.com');
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
