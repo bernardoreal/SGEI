@@ -51,7 +51,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { sanitizePrompt } from '../../lib/security';
-import { generateWithGemini } from '../actions/ai';
+import { generateWithGemini } from '../../actions/ai';
 
 // Import other dashboards for preview
 import ManagerDashboard from '../manager/page';
