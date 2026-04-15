@@ -175,13 +175,13 @@ export default function ScheduleGenerator() {
             </div>
           </div>
 
-          <div className="flex justify-center items-center gap-4">
-            <div className="flex flex-col gap-1">
+          <div className="flex flex-col md:flex-row justify-center items-center gap-4 w-full">
+            <div className="flex flex-col gap-1 w-full md:w-auto">
               <label className="text-sm font-bold text-gray-700">Mês da Escala</label>
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none w-full"
               >
                 {months.map((month) => (
                   <option 
@@ -197,7 +197,7 @@ export default function ScheduleGenerator() {
             <button
               onClick={generateSchedule}
               disabled={loading || configLoading}
-              className="group relative px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-lg hover:shadow-indigo-200 disabled:bg-gray-300 flex items-center gap-3 overflow-hidden"
+              className="group relative px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-lg hover:shadow-indigo-200 disabled:bg-gray-300 flex items-center justify-center gap-3 overflow-hidden w-full md:w-auto"
             >
               {loading && (
                 <div className="absolute inset-0 bg-indigo-600 flex items-center justify-center">
