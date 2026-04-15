@@ -14,7 +14,8 @@ import {
   Filter,
   ArrowUpRight,
   Clock,
-  LayoutDashboard
+  LayoutDashboard,
+  ArrowRightLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import SuggestionSection from '@/components/SuggestionSection';
