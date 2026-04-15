@@ -95,6 +95,36 @@ export default function AdminDashboard() {
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [showBaseModal, setShowBaseModal] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+
+  const runDiagnostics = async () => {
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const [u, b, l, r] = await Promise.all([
+        supabase.from('users').select('id, email, roles').limit(5),
+        supabase.from('bases').select('id, code_iata').limit(5),
+        supabase.from('audit_log').select('id').limit(5),
+        supabase.from('roles').select('name').limit(5)
+      ]);
+      
+      setDebugInfo({
+        session: session ? { user: session.user.email, id: session.user.id } : 'No session',
+        users: { count: u.data?.length, error: u.error },
+        bases: { count: b.data?.length, error: b.error },
+        audit: { count: l.data?.length, error: l.error },
+        roles: { count: r.data?.length, error: r.error },
+        timestamp: new Date().toISOString()
+      });
+      setShowDebug(true);
+    } catch (err) {
+      console.error('Diag error:', err);
+      alert('Erro ao rodar diagnóstico: ' + (err as any).message);
+    } finally {
+      setLoading(false);
+    }
+  };
   const [emergencyMode, setEmergencyMode] = useState<'create' | 'delete'>('create');
   const [deleteSearchQuery, setDeleteSearchQuery] = useState('');
   const [selectedRoleForModal, setSelectedRoleForModal] = useState<string | null>(null);
@@ -212,10 +242,70 @@ export default function AdminDashboard() {
         }
       }
 
-      if (session?.user) {
-        setCurrentUser(session.user);
-        console.log('User email from session:', session.user.email);
+      if (!session || !session.user) {
+        console.log('No session found in AdminDashboard. Redirecting to login...');
+        window.location.href = '/';
+        return;
       }
+
+      setCurrentUser(session.user);
+      console.log('User email from session:', session.user.email);
+
+      // --- AUTO-REPAIR LOGIC FOR BERNARDO ---
+      let repaired = false;
+      if (session.user.email === 'bernardo.real@latam.com') {
+        console.log('Bernardo detected. Running auto-repair...');
+        
+        // 1. Garantir que Bernardo existe na tabela users como admin
+        const { data: userData, error: userCheckError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', 'bernardo.real@latam.com')
+          .maybeSingle();
+
+        if (userCheckError) {
+          console.error('Erro ao verificar usuário Bernardo:', userCheckError);
+        } else if (!userData) {
+          console.log('Bernardo não encontrado na tabela users. Criando...');
+          const { error: insError } = await supabase.from('users').insert([{
+            id: session.user.id,
+            email: 'bernardo.real@latam.com',
+            name: 'Bernardo de Mendonça Corte Real',
+            roles: ['admin', 'employee'],
+            is_active: true
+          }]);
+          if (!insError) repaired = true;
+        } else if (!userData.roles || !userData.roles.includes('admin')) {
+          console.log('Bernardo encontrado mas sem role admin. Atualizando...');
+          const { error: updError } = await supabase.from('users').update({
+            roles: ['admin', 'employee']
+          }).eq('id', session.user.id);
+          if (!updError) repaired = true;
+        }
+
+        // 2. Garantir que existem bases cadastradas
+        const { data: basesCheck, error: basesCheckError } = await supabase.from('bases').select('id').limit(1);
+        if (!basesCheckError && (!basesCheck || basesCheck.length === 0)) {
+          console.log('Nenhuma base encontrada. Semeando bases iniciais...');
+          const fallbackBases = [
+            { code_iata: 'JPA', name: 'João Pessoa' },
+            { code_iata: 'GRU', name: 'Guarulhos' },
+            { code_iata: 'BSB', name: 'Brasília' },
+            { code_iata: 'GIG', name: 'Rio de Janeiro (Galeão)' },
+            { code_iata: 'VCP', name: 'Campinas (Viracopos)' }
+          ];
+          const { error: upsError } = await supabase.from('bases').upsert(fallbackBases, { onConflict: 'code_iata' });
+          if (!upsError) repaired = true;
+        }
+      }
+      
+      // Se algo foi reparado, esperamos um pouco para o banco processar e re-buscamos
+      if (repaired) {
+        console.log('Reparo concluído. Re-buscando dados...');
+        await new Promise(resolve => setTimeout(resolve, 800));
+        return fetchData(); 
+      }
+      // --- FIM DO AUTO-REPAIR ---
 
       console.log('Fetching admin data...');
       const [usersRes, basesRes, logsRes, rolesRes, llmRes] = await Promise.all([
@@ -229,15 +319,26 @@ export default function AdminDashboard() {
       if (usersRes.error) {
         console.error('Error fetching users:', usersRes.error);
         setNotifications(prev => [...prev, { 
-          id: 'fetch-error-' + Date.now(), 
+          id: 'fetch-error-users-' + Date.now(), 
           message: `Erro ao carregar usuários: ${usersRes.error.message}. Verifique as políticas de RLS.` 
         }]);
       }
 
-      console.log('Users fetch result:', { 
-        count: usersRes.data?.length || 0, 
-        error: usersRes.error,
-        status: usersRes.status
+      if (basesRes.error) {
+        console.error('Error fetching bases:', basesRes.error);
+        setNotifications(prev => [...prev, { 
+          id: 'fetch-error-bases-' + Date.now(), 
+          message: `Erro ao carregar bases: ${basesRes.error.message}. Verifique as políticas de RLS.` 
+        }]);
+      }
+
+      console.log('Fetch results:', { 
+        usersCount: usersRes.data?.length || 0, 
+        basesCount: basesRes.data?.length || 0,
+        usersError: usersRes.error,
+        basesError: basesRes.error,
+        firstUser: usersRes.data?.[0],
+        firstBase: basesRes.data?.[0]
       });
 
       if (llmRes.data) {
@@ -280,79 +381,9 @@ export default function AdminDashboard() {
         await supabase.from('roles').insert([{ name: 'admin_employee', description: 'Admin com função de Colaborador (Híbrido)' }]);
       }
 
-      let currentUsers = usersRes.data || [];
-      let currentBases = basesRes.data || [];
-
-      // Seed bases if empty
-      if (currentBases.length === 0) {
-        console.log('Bases table is empty. Seeding fallback bases...');
-        const fallbackBases = [
-          { code_iata: 'JPA', name: 'João Pessoa' },
-          { code_iata: 'REC', name: 'Recife' },
-          { code_iata: 'GIG', name: 'Rio de Janeiro (Galeão)' },
-          { code_iata: 'NAT', name: 'Natal' },
-          { code_iata: 'MCZ', name: 'Maceió' },
-          { code_iata: 'AJU', name: 'Aracaju' },
-          { code_iata: 'FOR', name: 'Fortaleza' },
-          { code_iata: 'THE', name: 'Teresina' },
-          { code_iata: 'SLZ', name: 'São Luís' },
-          { code_iata: 'IMP', name: 'Imperatriz' },
-          { code_iata: 'SSA', name: 'Salvador' },
-          { code_iata: 'IOS', name: 'Ilhéus' },
-          { code_iata: 'BPS', name: 'Porto Seguro' },
-          { code_iata: 'VDC', name: 'Vitória da Conquista' },
-          { code_iata: 'CNF', name: 'Belo Horizonte (Confins)' },
-          { code_iata: 'PLU', name: 'Belo Horizonte (Pampulha)' },
-          { code_iata: 'UDI', name: 'Uberlândia' },
-          { code_iata: 'VIX', name: 'Vitória' },
-          { code_iata: 'SDU', name: 'Rio de Janeiro (Santos Dumont)' }
-        ];
-        
-        const { data: insertedBases, error: seedError } = await supabase
-          .from('bases')
-          .insert(fallbackBases)
-          .select();
-          
-        if (seedError) {
-          console.error('Error seeding bases:', seedError);
-        } else if (insertedBases) {
-          currentBases = insertedBases;
-        }
-      }
-
-      // Ensure admin user exists in public.users if logged in as bernardo.real@latam.com
-      if (session?.user?.email === 'bernardo.real@latam.com') {
-        const adminExists = currentUsers.some((u: User) => u.email === 'bernardo.real@latam.com');
-        if (!adminExists) {
-          console.log('Admin user not found in public.users. Creating...');
-          const { data: newAdmin, error: adminError } = await supabase
-            .from('users')
-            .insert({
-              id: session.user.id,
-              bp: '000000',
-              email: 'bernardo.real@latam.com',
-              name: 'Bernardo Real (Admin)',
-              roles: ['admin', 'employee'],
-              is_active: true
-            })
-            .select()
-            .single();
-            
-          if (adminError) {
-            console.error('Error creating admin user:', adminError);
-          } else if (newAdmin) {
-            currentUsers = [newAdmin, ...currentUsers];
-          }
-        }
-      }
-
-      console.log('Setting users state:', currentUsers);
-      setUsers([...currentUsers]);
-      
-      console.log('Setting bases state:', currentBases);
-      setBases([...currentBases]);
-
-      if (logsRes.data) setLogs(logsRes.data);
+      setUsers(usersRes.data || []);
+      setBases(basesRes.data || []);
+      setLogs(logsRes.data || []);
 
       // Fetch Suggestions
       const { data: suggestionsData } = await supabase
@@ -906,8 +937,9 @@ export default function AdminDashboard() {
         </div>
         
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full md:w-auto">
-          {/* View Mode Dropdown */}
-          <div className="relative w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {/* View Mode Dropdown */}
+            <div className="relative flex-1 sm:flex-none">
             <button 
               onClick={() => setShowViewDropdown(!showViewDropdown)}
               className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 bg-white border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
@@ -981,6 +1013,7 @@ export default function AdminDashboard() {
               )}
             </AnimatePresence>
           </div>
+        </div>
 
           <button 
             onClick={() => {
@@ -1016,198 +1049,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Maintenance Alert for missing bases */}
-      {bases.length === 0 && !loading && (
-        <div className="mb-8 p-6 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-4">
-          <AlertTriangle className="text-amber-600 shrink-0" size={24} />
-          <div className="space-y-2">
-            <h3 className="font-bold text-amber-900">Nenhuma base encontrada</h3>
-            <p className="text-sm text-amber-800">
-              Isso pode ocorrer por dois motivos:
-            </p>
-            <ul className="text-sm text-amber-800 list-disc ml-5 space-y-1">
-              <li><strong>RLS (Segurança):</strong> As políticas de segurança do Supabase podem estar bloqueando a leitura da tabela <code className="bg-amber-100 px-1 rounded">bases</code>.</li>
-              <li><strong>Dados Ausentes:</strong> A base JPA ainda não foi inserida no banco de dados.</li>
-            </ul>
-            <div className="pt-2 flex gap-3">
-              <button 
-                onClick={async () => {
-                  setLoading(true);
-                  try {
-                    const { error } = await supabase.from('bases').insert([
-                      { code_iata: 'JPA', name: 'João Pessoa' }
-                    ]);
-                    if (error) throw error;
-                    alert('Base JPA inserida com sucesso!');
-                    fetchData();
-                  } catch (err: any) {
-                    alert('Erro ao inserir base: ' + err.message);
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                className="px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 transition"
-              >
-                Inserir Base JPA Manualmente
-              </button>
-              <button 
-                onClick={() => {
-                  const sql = `-- ==========================================
--- SCRIPT DE ENDURECIMENTO DE SEGURANÇA (HARDENING)
--- ==========================================
-
--- 1. INJEÇÃO DE CUSTOM CLAIMS NO JWT
--- Cria uma função segura que copia a função (role) do usuário para o app_metadata do Auth
-CREATE OR REPLACE FUNCTION public.sync_roles_to_app_metadata()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER SET search_path = public
-AS $$
-BEGIN
-  UPDATE auth.users
-  SET raw_app_meta_data = jsonb_set(
-    COALESCE(raw_app_meta_data, '{}'::jsonb),
-    '{roles}',
-    to_jsonb(NEW.roles)
-  )
-  WHERE id = NEW.id;
-  RETURN NEW;
-END;
-$$;
-
--- Cria o gatilho para manter o JWT sempre atualizado
-DROP TRIGGER IF EXISTS on_user_role_change ON public.users;
-CREATE TRIGGER on_user_role_change
-  AFTER INSERT OR UPDATE OF roles ON public.users
-  FOR EACH ROW EXECUTE FUNCTION public.sync_roles_to_app_metadata();
-
--- Força a sincronização imediata para todos os usuários existentes
-UPDATE auth.users au
-SET raw_app_meta_data = jsonb_set(
-  COALESCE(au.raw_app_meta_data, '{}'::jsonb),
-  '{roles}',
-  to_jsonb(pu.roles)
-)
-FROM public.users pu
-WHERE au.id = pu.id;
-
--- 2. FUNÇÃO AUXILIAR PARA LER O JWT (COM FALLBACK)
-CREATE OR REPLACE FUNCTION public.has_role(role_name text)
-RETURNS boolean
-LANGUAGE sql
-STABLE
-AS $$
-  SELECT 
-    -- 1. Tenta ler do JWT (Rápido e seguro, para o futuro e middleware)
-    COALESCE((auth.jwt() -> 'app_metadata' -> 'roles') ? role_name, false)
-    OR 
-    -- 2. Fallback de segurança: Verifica direto na tabela (Garante que não quebre a sessão atual)
-    EXISTS (
-      SELECT 1 FROM public.users 
-      WHERE id = auth.uid() AND role_name = ANY(roles)
-    )
-    OR
-    -- 3. Super Admin Fallback (Garante que você nunca perca acesso)
-    (auth.jwt() ->> 'email' = 'bernardo.real@latam.com');
-$$;
-
--- 3. PROTEÇÃO CONTRA ESCALONAMENTO DE PRIVILÉGIOS (COLUMN-LEVEL SECURITY)
--- Impede que usuários comuns alterem suas próprias permissões, matrícula ou status
-CREATE OR REPLACE FUNCTION public.protect_secure_columns()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  IF NOT public.has_role('admin') THEN
-    IF NEW.roles IS DISTINCT FROM OLD.roles OR
-       NEW.bp IS DISTINCT FROM OLD.bp OR
-       NEW.is_active IS DISTINCT FROM OLD.is_active THEN
-      RAISE EXCEPTION 'Security Violation: Privilege Escalation Attempt Blocked.';
-    END IF;
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS ensure_secure_columns ON public.users;
-CREATE TRIGGER ensure_secure_columns
-  BEFORE UPDATE ON public.users
-  FOR EACH ROW EXECUTE FUNCTION public.protect_secure_columns();
-
--- 4. REESCREVENDO O RLS (FECHANDO AS BRECHAS DO "USING TRUE")
-
--- USERS
-ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Enable read access for all" ON public.users;
-DROP POLICY IF EXISTS "Users can update own data" ON public.users;
-DROP POLICY IF EXISTS "Enable all access for admin email" ON public.users;
-DROP POLICY IF EXISTS "Admins can view all users" ON public.users;
-DROP POLICY IF EXISTS "Users can view themselves" ON public.users;
-DROP POLICY IF EXISTS "Admins can manage all users" ON public.users;
-DROP POLICY IF EXISTS "Users can update themselves" ON public.users;
-
--- Admins veem todos. Usuários veem a si mesmos.
-CREATE POLICY "Admins can view all users" ON public.users FOR SELECT USING (public.has_role('admin'));
-CREATE POLICY "Users can view themselves" ON public.users FOR SELECT USING (id = auth.uid());
-
--- Admins gerenciam todos. Usuários atualizam a si mesmos (protegidos pelo trigger acima).
-CREATE POLICY "Admins can manage all users" ON public.users FOR ALL USING (public.has_role('admin'));
-CREATE POLICY "Users can update themselves" ON public.users FOR UPDATE USING (id = auth.uid());
-
--- AUDIT_LOG & AI_USAGE_LOGS (Dados Sensíveis)
-ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Enable read access for all" ON public.audit_log;
-DROP POLICY IF EXISTS "Enable insert for authenticated" ON public.audit_log;
-DROP POLICY IF EXISTS "Admins can view audit log" ON public.audit_log;
-CREATE POLICY "Admins can view audit log" ON public.audit_log FOR SELECT USING (public.has_role('admin'));
-CREATE POLICY "Enable insert for authenticated" ON public.audit_log FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
-ALTER TABLE public.ai_usage_logs ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Enable read access for all" ON public.ai_usage_logs;
-DROP POLICY IF EXISTS "Enable insert for anon" ON public.ai_usage_logs;
-DROP POLICY IF EXISTS "Admins can view ai logs" ON public.ai_usage_logs;
-CREATE POLICY "Admins can view ai logs" ON public.ai_usage_logs FOR SELECT USING (public.has_role('admin'));
-CREATE POLICY "Enable insert for anon" ON public.ai_usage_logs FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
--- BASES, ROLES, KNOWLEDGE_BASE (Dados Públicos de Leitura)
--- Mantemos a leitura para todos os autenticados, pois o app precisa listar as bases e roles nos formulários
-ALTER TABLE public.bases ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Enable read access for all" ON public.bases;
-DROP POLICY IF EXISTS "Authenticated can view bases" ON public.bases;
-DROP POLICY IF EXISTS "Admins can manage bases" ON public.bases;
-CREATE POLICY "Authenticated can view bases" ON public.bases FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Admins can manage bases" ON public.bases FOR ALL USING (public.has_role('admin'));
-
-ALTER TABLE public.roles ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Everyone can view roles" ON public.roles;
-DROP POLICY IF EXISTS "Authenticated can view roles" ON public.roles;
-CREATE POLICY "Authenticated can view roles" ON public.roles FOR SELECT USING (auth.role() = 'authenticated');
-
-ALTER TABLE public.knowledge_base ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Enable read access for all" ON public.knowledge_base;
-DROP POLICY IF EXISTS "Authenticated can view KB" ON public.knowledge_base;
-DROP POLICY IF EXISTS "Admins can manage KB" ON public.knowledge_base;
-CREATE POLICY "Authenticated can view KB" ON public.knowledge_base FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Admins can manage KB" ON public.knowledge_base FOR ALL USING (public.has_role('admin'));
-
-ALTER TABLE public.base_employees ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Enable read access for all" ON public.base_employees;
-DROP POLICY IF EXISTS "Authenticated can view base_employees" ON public.base_employees;
-DROP POLICY IF EXISTS "Admins can manage base_employees" ON public.base_employees;
-CREATE POLICY "Authenticated can view base_employees" ON public.base_employees FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR ALL USING (public.has_role('admin'));
-`;
-                  navigator.clipboard.writeText(sql);
-                  alert('SQL de reparo copiado para a área de transferência! Execute-o no SQL Editor do Supabase.');
-                }}
-                className="px-4 py-2 bg-white border border-amber-300 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-100 transition"
-              >
-                Copiar SQL de Reparo (RLS)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Main Content */}
 
       {/* KPI Stats Grid */}
       {users.length === 0 && !loading && (
@@ -1823,20 +1665,13 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
                 >
                   {llmConfig.provider === 'gemini' ? (
                     <>
-                      <optgroup label="Modelos Gemini">
-                        <option value="gemini-3-flash-preview">Gemini 3 Flash (Mais Recente - Recomendado)</option>
-                        <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (Complexo/Raciocínio)</option>
-                        <option value="gemini-3.1-flash-lite-preview">Gemini 3.1 Flash Lite (Econômico)</option>
-                        <option value="gemini-flash-latest">Gemini Flash Latest (Sempre Atualizado)</option>
-                        <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Experimental)</option>
-                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Legado)</option>
-                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Legado)</option>
-                      </optgroup>
-                      <optgroup label="Modelos Gemma (100% Free - Open Weights)">
-                        <option value="gemma-2-27b-it">Gemma 2 27B (Alta Capacidade)</option>
-                        <option value="gemma-2-9b-it">Gemma 2 9B (Equilibrado)</option>
-                        <option value="gemma-2-2b-it">Gemma 2 2B (Rápido/Leve)</option>
-                      </optgroup>
+                      <option value="gemini-3-flash-preview">Gemini 3 Flash (Mais Recente - Recomendado)</option>
+                      <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (Complexo/Raciocínio)</option>
+                      <option value="gemini-3.1-flash-lite-preview">Gemini 3.1 Flash Lite (Econômico)</option>
+                      <option value="gemini-flash-latest">Gemini Flash Latest (Sempre Atualizado)</option>
+                      <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Experimental)</option>
+                      <option value="gemini-1.5-pro">Gemini 1.5 Pro (Legado)</option>
+                      <option value="gemini-1.5-flash">Gemini 1.5 Flash (Legado)</option>
                     </>
                   ) : (
                     <>
@@ -2423,6 +2258,100 @@ CREATE POLICY "Admins can manage base_employees" ON public.base_employees FOR AL
           )}
         </div>
       </div>
+      {/* Modal de Diagnóstico */}
+      {showDebug && debugInfo && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 overflow-hidden flex flex-col max-h-[90vh]"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <Activity className="w-5 h-5 text-indigo-600" />
+                Diagnóstico de Sistema
+              </h3>
+              <button onClick={() => setShowDebug(false)} className="p-2 hover:bg-gray-100 rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <h4 className="font-bold mb-2 text-[10px] text-gray-400 uppercase tracking-wider">Sessão Atual</h4>
+                <pre className="text-xs overflow-x-auto bg-white p-3 rounded-lg border border-gray-100 font-mono">{JSON.stringify(debugInfo.session, null, 2)}</pre>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                  <h4 className="font-bold mb-2 text-[10px] text-gray-400 uppercase tracking-wider">Usuários (RLS)</h4>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium">Encontrados:</span>
+                    <span className="font-mono font-bold text-lg">{debugInfo.users.count}</span>
+                  </div>
+                  {debugInfo.users.error && (
+                    <div className="text-[10px] text-red-600 bg-red-50 p-2 rounded-lg mt-1 border border-red-100">
+                      {debugInfo.users.error.message}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                  <h4 className="font-bold mb-2 text-[10px] text-gray-400 uppercase tracking-wider">Bases (RLS)</h4>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium">Encontradas:</span>
+                    <span className="font-mono font-bold text-lg">{debugInfo.bases.count}</span>
+                  </div>
+                  {debugInfo.bases.error && (
+                    <div className="text-[10px] text-red-600 bg-red-50 p-2 rounded-lg mt-1 border border-red-100">
+                      {debugInfo.bases.error.message}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                <h4 className="font-bold mb-2 text-xs text-indigo-700 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4" />
+                  Análise de Segurança
+                </h4>
+                <div className="space-y-2">
+                  <p className="text-xs text-indigo-800 leading-relaxed">
+                    {debugInfo.users.count === 0 && !debugInfo.users.error 
+                      ? "⚠️ RLS está filtrando todos os usuários. Bernardo pode não estar marcado como Admin ou a função has_role está falhando." 
+                      : debugInfo.users.count === 1 
+                      ? "ℹ️ Você só vê a si mesmo. O acesso de Admin global não está ativo."
+                      : "✅ RLS de usuários parece OK (você vê múltiplos registros)."}
+                  </p>
+                  <p className="text-xs text-indigo-800 leading-relaxed">
+                    {debugInfo.bases.count === 0 && !debugInfo.bases.error
+                      ? "⚠️ RLS está filtrando todas as bases. Verifique a política 'Authenticated can view bases'."
+                      : "✅ RLS de bases parece OK."}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex flex-col sm:flex-row justify-end gap-3">
+              <button 
+                onClick={() => setShowDebug(false)}
+                className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition-colors"
+              >
+                Fechar
+              </button>
+              <button 
+                onClick={() => {
+                  setShowDebug(false);
+                  fetchData();
+                }}
+                className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
+              >
+                Forçar Recarregamento
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
