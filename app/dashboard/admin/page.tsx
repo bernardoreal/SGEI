@@ -227,7 +227,7 @@ export default function AdminDashboard() {
   const [storageUsed, setStorageUsed] = useState(185); // MB
   const storageLimit = 500;
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -406,11 +406,11 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     // Listen for auth changes to re-fetch data
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
       console.log('Auth event in AdminDashboard:', event);
       if (session) {
         fetchData();
@@ -422,7 +422,7 @@ export default function AdminDashboard() {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchData]);
 
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
