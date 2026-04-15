@@ -143,12 +143,38 @@ export default function CoordinatorDashboard() {
     setSelectedBase(base);
     setLoadingDetails(true);
     try {
-      // Fetch employees for this base
-      const { data: employees } = await supabase
+      // Fetch operational employees
+      const { data: opEmployees } = await supabase
         .from('base_employees')
         .select('*')
         .eq('base_id', base.id)
         .eq('is_active', true);
+
+      // Fetch system users for this base
+      const { data: systemUsers } = await supabase
+        .from('users')
+        .select('*')
+        .eq('base_id', base.id);
+
+      // Merge them to ensure all "efetivos" are shown
+      const mergedEmployees = [...(opEmployees || [])];
+      
+      if (systemUsers) {
+        systemUsers.forEach(user => {
+          if (!mergedEmployees.find(e => e.bp === user.bp)) {
+            mergedEmployees.push({
+              bp: user.bp,
+              name: user.name,
+              cargo: user.cargo || (user.roles?.includes('admin') ? 'Administrador' : 'Usuário do Sistema'),
+              email: user.email,
+              is_active: true,
+              base_id: user.base_id
+            });
+          }
+        });
+      }
+
+      const employees = mergedEmployees;
 
       // Fetch latest schedule details if published
       let scheduleData = null;
