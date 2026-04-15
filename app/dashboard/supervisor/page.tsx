@@ -37,6 +37,8 @@ import { logAudit } from '@/lib/audit';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+const monthNames = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
+
 export default function SupervisorDashboard() {
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
@@ -85,6 +87,16 @@ export default function SupervisorDashboard() {
   const [showConfig, setShowConfig] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const next = new Date();
+    next.setMonth(next.getMonth() + 1);
+    return next.getMonth();
+  });
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const next = new Date();
+    next.setMonth(next.getMonth() + 1);
+    return next.getFullYear();
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -155,7 +167,6 @@ export default function SupervisorDashboard() {
             .order('date', { ascending: true });
           
           if (details && details.length > 0) {
-            const monthNames = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
             const startDate = new Date(schedule.start_date + 'T12:00:00Z');
             const month = monthNames[startDate.getUTCMonth()];
             const year = startDate.getUTCFullYear().toString();
@@ -403,12 +414,10 @@ export default function SupervisorDashboard() {
     setLoading(true);
     setError(null);
     try {
-      // Determinar mês alvo (próximo mês)
-      const now = new Date();
-      const targetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      const monthNames = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
-      const targetMonth = monthNames[targetDate.getMonth()];
-      const targetYear = targetDate.getFullYear().toString();
+      // Determinar mês alvo baseado na seleção do usuário
+      const targetMonth = monthNames[selectedMonth];
+      const targetYear = selectedYear.toString();
+      const targetDate = new Date(selectedYear, selectedMonth, 1);
 
       // 1. Buscar histórico do mês anterior (últimos 7 dias)
       const { data: lastSchedules } = await supabase
@@ -1269,6 +1278,33 @@ export default function SupervisorDashboard() {
               <Info size={18} />
               Configurar Base
             </button>
+            <div className="flex items-center gap-2 bg-white border border-slate-200 px-4 py-3 rounded-xl shadow-sm">
+              <Calendar size={18} className="text-slate-400" />
+              <select 
+                value={selectedMonth}
+                onChange={(e) => {
+                  const month = parseInt(e.target.value);
+                  setSelectedMonth(month);
+                  // Se o mês selecionado for menor que o atual, assume-se que é para o próximo ano
+                  const now = new Date();
+                  if (month < now.getMonth()) {
+                    setSelectedYear(now.getFullYear() + 1);
+                  } else {
+                    setSelectedYear(now.getFullYear());
+                  }
+                }}
+                className="bg-transparent border-none focus:ring-0 font-medium text-slate-700 outline-none cursor-pointer"
+              >
+                {monthNames.map((name, index) => {
+                  const isPast = index < new Date().getMonth();
+                  return (
+                    <option key={index} value={index} disabled={isPast}>
+                      {name}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
             <button 
               onClick={generateScheduleAI}
               disabled={loading || configLoading}
