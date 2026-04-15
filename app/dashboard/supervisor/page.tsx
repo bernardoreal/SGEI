@@ -1308,7 +1308,7 @@ export default function SupervisorDashboard() {
             <button 
               onClick={generateScheduleAI}
               disabled={loading || configLoading}
-              className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 disabled:bg-gray-400"
+              className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 disabled:bg-gray-400 w-full md:w-auto"
             >
               {loading ? <Clock className="animate-spin" /> : <Sparkles />}
               {loading ? 'Gerando...' : (configLoading ? 'Carregando Config...' : 'Gerar Escala com IA')}
