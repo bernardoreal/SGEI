@@ -1267,8 +1267,8 @@ export default function SupervisorDashboard() {
     <div className="space-y-8 pb-12">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Painel do Supervisor - JPA</h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-slate-400">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100">Painel do Supervisor - JPA</h1>
+          <p className="text-sm sm:text-base text-gray-500 dark:text-slate-300">
             Gestão operacional e geração de escalas. 
             <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full text-[10px] font-bold uppercase border border-indigo-100 dark:border-indigo-800/30">
               <Cpu size={10} /> IA: {configLoading ? '...' : `${llmConfig.provider} (${llmConfig.model})`}
@@ -1279,7 +1279,7 @@ export default function SupervisorDashboard() {
           <div className="flex flex-wrap gap-2">
             <button 
               onClick={toggleTheme}
-              className="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition shadow-sm"
+              className="flex items-center justify-center gap-2 bg-white dark:bg-slate-800/60 dark:backdrop-blur-xl text-slate-600 dark:text-slate-200 border border-slate-200 dark:border-slate-700/50 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/80 transition shadow-sm"
               title="Alternar Tema"
             >
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -1299,7 +1299,7 @@ export default function SupervisorDashboard() {
               Configurar Base
             </button>
             <div className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-3 rounded-xl shadow-sm">
-              <Calendar size={18} className="text-slate-400 dark:text-slate-500" />
+              <Calendar size={18} className="text-slate-400 dark:text-slate-400" />
               <select 
                 value={selectedMonth}
                 onChange={(e) => {
@@ -1376,7 +1376,7 @@ export default function SupervisorDashboard() {
                   Inteligência Artificial em Ação
                 </h3>
                 <div className="space-y-2">
-                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-800/60 rounded-full overflow-hidden">
                     <motion.div 
                       className="h-full bg-latam-indigo dark:bg-indigo-500"
                       initial={{ width: "0%" }}
@@ -1472,7 +1472,7 @@ export default function SupervisorDashboard() {
               </div>
               <div className="flex items-center gap-4">
                 {!feedbackGiven && (
-                  <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-2 bg-slate-50 dark:bg-[#0B1120]/60 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
                     <span className="text-xs font-bold text-slate-400 dark:text-slate-500 px-2 uppercase">Avaliar:</span>
                     <button onClick={() => handleFeedback('boa')} className="p-2 bg-white dark:bg-slate-800 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 shadow-sm transition-all"><ThumbsUp size={18} /></button>
                     <button onClick={() => handleFeedback('ruim')} className="p-2 bg-white dark:bg-slate-800 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 shadow-sm transition-all"><ThumbsDown size={18} /></button>
@@ -1637,7 +1637,7 @@ export default function SupervisorDashboard() {
                           <button
                             key={star}
                             onClick={() => setFeedbackData({ ...feedbackData, rating: star })}
-                            className={`p-1 transition-all transform hover:scale-110 ${feedbackData.rating >= star ? 'text-amber-400' : 'text-slate-300 dark:text-slate-600'}`}
+                            className={`p-1 transition-all transform hover:scale-110 ${feedbackData.rating >= star ? 'text-amber-400' : 'text-slate-300 dark:text-slate-500'}`}
                           >
                             <Sparkles size={32} fill={feedbackData.rating >= star ? 'currentColor' : 'none'} />
                           </button>
@@ -2292,7 +2292,7 @@ export default function SupervisorDashboard() {
                       type="checkbox" 
                       checked={editingEmployee.cat_6}
                       onChange={e => setEditingEmployee({...editingEmployee, cat_6: e.target.checked})}
-                      className="w-5 h-5 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-latam-indigo focus:ring-latam-indigo"
+                      className="w-5 h-5 rounded border-slate-300 dark:border-slate-700/50 bg-white dark:bg-slate-900 text-latam-indigo focus:ring-latam-indigo"
                     />
                     <span className="text-sm font-medium dark:text-slate-300">Habilitado</span>
                   </div>

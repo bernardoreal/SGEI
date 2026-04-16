@@ -1,5 +1,5 @@
 import type {Metadata} from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import './globals.css';
 import AuthProvider from '@/components/AuthProvider';
 import CommandPalette from '@/components/CommandPalette';
@@ -15,6 +15,11 @@ const jetbrainsMono = JetBrains_Mono({
   variable: '--font-mono',
 });
 
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-display',
+});
+
 export const metadata: Metadata = {
   title: 'LATAM Cargo - Gestão de Escalas',
   description: 'Sistema automatizado de gestão de escalas e colaboradores para LATAM Cargo Brasil.',
@@ -22,7 +27,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang="pt-BR" className={`${inter.variable} ${jetbrainsMono.variable} ${spaceGrotesk.variable}`}>
       <body className="font-sans antialiased">
         <ThemeProvider>
           <AuthProvider>

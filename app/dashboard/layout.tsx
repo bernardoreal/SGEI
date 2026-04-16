@@ -14,7 +14,7 @@ function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 text-gray-500 dark:text-slate-400 hover:text-latam-indigo dark:hover:text-white transition-colors border border-gray-100 dark:border-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center justify-center"
+      className="p-2 text-gray-500 dark:text-slate-300 hover:text-latam-indigo dark:hover:text-white transition-colors border border-gray-100 dark:border-slate-700/50 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800/80 flex items-center justify-center"
       aria-label="Toggle Theme"
     >
       {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -48,21 +48,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isSupervisor = pathname.startsWith('/dashboard/supervisor');
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
-      <nav className="bg-white dark:bg-slate-800 shadow-sm border-b border-gray-100 dark:border-slate-700 sticky top-0 z-40 transition-colors duration-300">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0B1120] transition-colors duration-300">
+      <nav className="bg-white dark:bg-slate-800/60 dark:backdrop-blur-xl shadow-sm border-b border-gray-100 dark:border-slate-700 sticky top-0 z-40 transition-colors duration-300">
         <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center gap-2">
                 <div className="w-8 h-8 bg-latam-indigo dark:bg-indigo-900 rounded-lg flex items-center justify-center text-white font-bold">L</div>
-                <span className="font-bold text-xl text-latam-indigo dark:text-white tracking-tight">LATAM <span className="text-latam-crimson dark:text-red-400">SGEI</span></span>
+                <span className="font-bold text-xl text-latam-indigo dark:text-slate-100 tracking-tight">LATAM <span className="text-latam-crimson dark:text-red-400">SGEI</span></span>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <ThemeToggle />
               <div className="hidden md:block text-right">
                 <div className="text-xs font-bold text-gray-900 dark:text-slate-200 truncate max-w-[150px]">{user.email}</div>
-                <div className="text-[10px] text-gray-400 dark:text-slate-500 uppercase font-bold">Sessão Ativa</div>
+                <div className="text-[10px] text-gray-400 dark:text-slate-400 uppercase font-bold">Sessão Ativa</div>
               </div>
               <button
                 onClick={() => setShowLogoutModal(true)}
@@ -111,7 +111,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowLogoutModal(false)}
-                    className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm"
+                    className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-700/50 text-gray-600 dark:text-slate-200 font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm"
                   >
                     Cancelar
                   </button>

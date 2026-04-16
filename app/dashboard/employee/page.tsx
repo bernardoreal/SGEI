@@ -225,7 +225,7 @@ export default function EmployeeDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0B1120]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-latam-indigo dark:border-indigo-400"></div>
       </div>
     );
@@ -234,7 +234,7 @@ export default function EmployeeDashboard() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-12 transition-colors duration-300">
       {/* Header do Colaborador */}
-      <div className="bg-latam-indigo dark:bg-slate-800 text-white pb-24 pt-12 px-6 transition-colors duration-300">
+      <div className="bg-latam-indigo dark:bg-slate-800/60 dark:backdrop-blur-xl text-white pb-24 pt-12 px-6 transition-colors duration-300">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="flex items-center gap-5">
             <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20">
@@ -251,7 +251,7 @@ export default function EmployeeDashboard() {
           </div>
           <button 
             onClick={handleExportPDF}
-            className="bg-white dark:bg-slate-700 text-latam-indigo dark:text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-600 transition shadow-lg"
+            className="bg-white dark:bg-slate-800/60 text-latam-indigo dark:text-slate-100 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-600 transition shadow-lg"
           >
             <Download size={20} /> Exportar Minha Escala
           </button>
@@ -267,7 +267,7 @@ export default function EmployeeDashboard() {
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-700 overflow-hidden"
+                className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-700/50 overflow-hidden"
               >
                 <div className="p-8">
                   <div className="flex items-center justify-between mb-8">
@@ -297,14 +297,14 @@ export default function EmployeeDashboard() {
                     />
                   </div>
                 </div>
-                <div className="bg-slate-50 dark:bg-slate-900/50 px-8 py-4 border-t border-slate-100 dark:border-slate-700 flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
+                <div className="bg-slate-50 dark:bg-slate-900/50 px-8 py-4 border-t border-slate-100 dark:border-slate-700 flex items-center gap-2 text-slate-500 dark:text-slate-300 text-sm">
                   <Info size={16} />
                   <span>Esta escala foi validada pelo seu supervisor e está em conformidade com o regime 5x1.</span>
                 </div>
               </motion.div>
             ) : (
               <div className="bg-white dark:bg-slate-800 rounded-3xl p-12 text-center border-2 border-dashed border-slate-200 dark:border-slate-700">
-                <div className="w-20 h-20 bg-slate-50 dark:bg-slate-900/50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300 dark:text-slate-600">
+                <div className="w-20 h-20 bg-slate-50 dark:bg-slate-900/50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300 dark:text-slate-500">
                   <Clock size={40} />
                 </div>
                 <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Nenhuma escala publicada</h3>
@@ -397,7 +397,7 @@ export default function EmployeeDashboard() {
                     requests.map((req) => (
                       <div key={req.id} className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700">
                         <div className="flex justify-between items-start mb-2">
-                          <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                          <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
                             {new Date(req.requested_date).toLocaleDateString('pt-BR')}
                           </span>
                           <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
@@ -409,7 +409,7 @@ export default function EmployeeDashboard() {
                           </span>
                         </div>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 line-clamp-2">{req.reason}</p>
-                        <div className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                        <div className="text-[10px] text-slate-400 dark:text-slate-400 flex items-center gap-1">
                           <Clock size={10} /> {req.requested_shift}
                         </div>
                       </div>
