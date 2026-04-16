@@ -1278,13 +1278,6 @@ export default function SupervisorDashboard() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex flex-wrap gap-2">
             <button 
-              onClick={toggleTheme}
-              className="flex items-center justify-center gap-2 bg-white dark:bg-slate-800/60 dark:backdrop-blur-xl text-slate-600 dark:text-slate-200 border border-slate-200 dark:border-slate-700/50 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/80 transition shadow-sm"
-              title="Alternar Tema"
-            >
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-            <button 
               onClick={() => setShowInterimModal(true)}
               className="flex items-center gap-2 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/50 px-4 py-3 rounded-xl font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition shadow-sm"
             >
