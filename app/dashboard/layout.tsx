@@ -5,7 +5,22 @@ import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { LogOut, X, AlertTriangle } from 'lucide-react';
+import { LogOut, X, AlertTriangle, Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/components/ThemeProvider';
+
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+  
+  return (
+    <button
+      onClick={toggleTheme}
+      className="p-2 text-gray-500 dark:text-slate-400 hover:text-latam-indigo dark:hover:text-white transition-colors border border-gray-100 dark:border-slate-700 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center justify-center"
+      aria-label="Toggle Theme"
+    >
+      {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+    </button>
+  );
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -44,6 +59,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             </div>
             <div className="flex items-center gap-4">
+              <ThemeToggle />
               <div className="hidden md:block text-right">
                 <div className="text-xs font-bold text-gray-900 dark:text-slate-200 truncate max-w-[150px]">{user.email}</div>
                 <div className="text-[10px] text-gray-400 dark:text-slate-500 uppercase font-bold">Sessão Ativa</div>

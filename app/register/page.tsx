@@ -25,6 +25,20 @@ interface Base {
   name: string;
 }
 
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+  
+  return (
+    <button
+      onClick={toggleTheme}
+      className="absolute top-6 right-6 p-3 bg-white/10 dark:bg-slate-800/50 backdrop-blur-md border border-white/20 dark:border-slate-700 rounded-xl text-white dark:text-slate-300 hover:bg-white/20 dark:hover:bg-slate-700/50 transition-all z-50"
+      aria-label="Toggle Theme"
+    >
+      {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+    </button>
+  );
+}
+
 export default function RegisterPage() {
   const [bp, setBp] = useState('');
   const [email, setEmail] = useState('');
@@ -202,7 +216,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden bg-latam-indigo">
+    <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden bg-latam-indigo dark:bg-slate-900 transition-colors duration-300">
+      <ThemeToggle />
       {/* Background Decorative Elements */}
       <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-latam-crimson/20 rounded-full blur-[120px] animate-pulse" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-400/10 rounded-full blur-[120px]" />
@@ -210,7 +225,7 @@ export default function RegisterPage() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md glass rounded-[32px] overflow-hidden relative z-10"
+        className="w-full max-w-md glass dark:bg-slate-800/80 rounded-[32px] overflow-hidden relative z-10 border border-white/20 dark:border-slate-700"
       >
         <div className="p-8 md:p-10">
           <div className="flex items-center gap-4 mb-10">
