@@ -26,7 +26,7 @@ async function trackUsage(usageData: {
         ...usageData,
         user_id: userId
       }])
-      .then(({ error }) => {
+      .then(({ error }: { error: any }) => {
         if (error) {
           console.error(`[AI-TRACKER] Erro ao registrar uso (${usageData.provider}):`, error);
         }
@@ -36,7 +36,7 @@ async function trackUsage(usageData: {
     supabase
       .from('ai_usage_logs')
       .insert([usageData])
-      .then(({ error }) => {
+      .then(({ error }: { error: any }) => {
         if (error) console.error(`[AI-TRACKER] Erro ao registrar uso anônimo:`, error);
       });
   }
