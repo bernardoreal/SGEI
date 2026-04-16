@@ -913,10 +913,10 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900/50">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-latam-indigo/20 border-t-latam-indigo rounded-full animate-spin" />
-          <p className="text-slate-500 font-medium animate-pulse">Carregando SGEI Admin...</p>
+          <p className="text-slate-500 dark:text-slate-400 font-medium animate-pulse">Carregando SGEI Admin...</p>
         </div>
       </div>
     );
@@ -938,7 +938,7 @@ export default function AdminDashboard() {
           </div>
           <button 
             onClick={() => setViewMode('admin')}
-            className="bg-white border border-amber-200 text-amber-800 px-4 py-2 rounded-xl text-xs font-bold hover:bg-amber-100 transition-colors shadow-sm"
+            className="bg-white dark:bg-slate-800 border border-amber-200 text-amber-800 px-4 py-2 rounded-xl text-xs font-bold hover:bg-amber-100 transition-colors shadow-sm"
           >
             Voltar ao Admin
           </button>
@@ -1015,7 +1015,7 @@ export default function AdminDashboard() {
             <div className="relative flex-1 sm:flex-none">
             <button 
               onClick={() => setShowViewDropdown(!showViewDropdown)}
-              className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 bg-white border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
+              className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 bg-white dark:bg-slate-800 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-900/50 transition-all shadow-sm"
             >
               <div className="flex items-center gap-2">
                 <Eye size={18} className="text-latam-indigo" />
@@ -1030,24 +1030,24 @@ export default function AdminDashboard() {
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 left-0 sm:left-auto mt-2 w-full sm:w-56 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden"
+                  className="absolute right-0 left-0 sm:left-auto mt-2 w-full sm:w-56 bg-white dark:bg-slate-800 border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden"
                 >
                   <div className="p-2 space-y-1">
                     <button 
                       onClick={() => { setViewMode('manager'); setShowViewDropdown(false); }}
-                      className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors text-left"
+                      className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 dark:bg-slate-900/50 rounded-xl transition-colors text-left"
                     >
                       <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
                         <Briefcase size={16} />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-slate-800">Gerente</p>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Gerente</p>
                         <p className="text-[10px] text-slate-500">Visão consolidada</p>
                       </div>
                     </button>
                     <button 
                       onClick={() => { setViewMode('coordinator'); setShowViewDropdown(false); }}
-                      className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors text-left"
+                      className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 dark:bg-slate-900/50 rounded-xl transition-colors text-left"
                     >
                       <div className="w-8 h-8 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center">
                         <MapIcon size={16} />
@@ -1059,7 +1059,7 @@ export default function AdminDashboard() {
                     </button>
                     <button 
                       onClick={() => { setViewMode('supervisor'); setShowViewDropdown(false); }}
-                      className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors text-left"
+                      className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 dark:bg-slate-900/50 rounded-xl transition-colors text-left"
                     >
                       <div className="w-8 h-8 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center">
                         <ClipboardList size={16} />
@@ -1071,7 +1071,7 @@ export default function AdminDashboard() {
                     </button>
                     <button 
                       onClick={() => { setViewMode('employee'); setShowViewDropdown(false); }}
-                      className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors text-left"
+                      className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 dark:bg-slate-900/50 rounded-xl transition-colors text-left"
                     >
                       <div className="w-8 h-8 bg-green-50 text-green-600 rounded-lg flex items-center justify-center">
                         <UserIcon size={16} />
@@ -1175,7 +1175,7 @@ export default function AdminDashboard() {
 
       {/* Role Distribution Grid */}
       <div className="space-y-4">
-        <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
           <ShieldCheck size={20} className="text-latam-indigo" />
           Distribuição de Roles
         </h2>
@@ -1206,7 +1206,7 @@ export default function AdminDashboard() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden"
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden"
             >
               <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                 <div className="flex items-center gap-3">
@@ -1279,7 +1279,7 @@ export default function AdminDashboard() {
                             disabled={updatingUserId === user.id}
                             value={user.base_id || ''}
                             onChange={(e) => handleAssignBase(user.id, e.target.value || null)}
-                            className="text-[10px] py-1 px-2 border border-gray-200 rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none bg-white"
+                            className="text-[10px] py-1 px-2 border border-gray-200 rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-800"
                           >
                             <option value="">Nenhuma / Global</option>
                             {bases.map(base => (
@@ -1296,7 +1296,7 @@ export default function AdminDashboard() {
               <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
                 <button 
                   onClick={() => setShowRoleModal(false)}
-                  className="w-full sm:w-auto px-6 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-100 transition"
+                  className="w-full sm:w-auto px-6 py-2 bg-white dark:bg-slate-800 border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-100 transition"
                 >
                   Fechar
                 </button>
@@ -1314,7 +1314,7 @@ export default function AdminDashboard() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden"
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden"
             >
               <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                 <div className="flex items-center gap-3">
@@ -1403,7 +1403,7 @@ export default function AdminDashboard() {
               <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
                 <button 
                   onClick={() => setShowBaseModal(false)}
-                  className="w-full sm:w-auto px-6 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-100 transition"
+                  className="w-full sm:w-auto px-6 py-2 bg-white dark:bg-slate-800 border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-100 transition"
                 >
                   Fechar
                 </button>
@@ -1421,7 +1421,7 @@ export default function AdminDashboard() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
             >
               <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                 <div className="flex items-center gap-3">
@@ -1501,7 +1501,7 @@ export default function AdminDashboard() {
                       <div>
                         <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Role</label>
                         <select 
-                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-800"
                           value={newUserForm.role}
                           onChange={e => setNewUserForm({...newUserForm, role: e.target.value})}
                         >
@@ -1516,7 +1516,7 @@ export default function AdminDashboard() {
                       <div>
                         <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Base</label>
                         <select 
-                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-800"
                           value={newUserForm.base_id}
                           onChange={e => setNewUserForm({...newUserForm, base_id: e.target.value})}
                         >
@@ -1533,7 +1533,7 @@ export default function AdminDashboard() {
                     <button 
                       type="button"
                       onClick={() => setShowAddUserModal(false)}
-                      className="w-full sm:w-auto px-6 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-100 transition"
+                      className="w-full sm:w-auto px-6 py-2 bg-white dark:bg-slate-800 border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-100 transition"
                     >
                       Cancelar
                     </button>
@@ -1594,7 +1594,7 @@ export default function AdminDashboard() {
           <Database size={20} className="text-indigo-600" />
           Gestão de Bases e Lideranças
         </h2>
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
@@ -1644,7 +1644,7 @@ export default function AdminDashboard() {
                         disabled={updatingBaseId === base.id}
                         value={base.supervisor_id || ''}
                         onChange={(e) => handleUpdateBaseAssignment(base.id, 'supervisor_id', e.target.value || null)}
-                        className="text-xs py-1.5 px-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white w-full min-w-[130px] max-w-[150px]"
+                        className="text-xs py-1.5 px-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-800 w-full min-w-[130px] max-w-[150px]"
                       >
                         <option value="">Não atribuído</option>
                         {users.filter(u => (u.roles || []).some(r => ['supervisor', 'admin'].includes(r))).map(u => (
@@ -1657,7 +1657,7 @@ export default function AdminDashboard() {
                         disabled={updatingBaseId === base.id}
                         value={base.coordinator_id || ''}
                         onChange={(e) => handleUpdateBaseAssignment(base.id, 'coordinator_id', e.target.value || null)}
-                        className="text-xs py-1.5 px-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white w-full min-w-[130px] max-w-[150px]"
+                        className="text-xs py-1.5 px-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-800 w-full min-w-[130px] max-w-[150px]"
                       >
                         <option value="">Não atribuído</option>
                         {users.filter(u => (u.roles || []).some(r => ['coordinator', 'admin'].includes(r))).map(u => (
@@ -1670,7 +1670,7 @@ export default function AdminDashboard() {
                         disabled={updatingBaseId === base.id}
                         value={base.manager_id || ''}
                         onChange={(e) => handleUpdateBaseAssignment(base.id, 'manager_id', e.target.value || null)}
-                        className="text-xs py-1.5 px-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white w-full min-w-[130px] max-w-[150px]"
+                        className="text-xs py-1.5 px-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-800 w-full min-w-[130px] max-w-[150px]"
                       >
                         <option value="">Não atribuído</option>
                         {users.filter(u => (u.roles || []).some(r => ['manager', 'admin'].includes(r))).map(u => (
@@ -1695,7 +1695,7 @@ export default function AdminDashboard() {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Card 1: Configuração do Motor */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
             <div className="space-y-4">
               <h3 className="font-bold text-gray-900 flex items-center gap-2">
                 <Settings size={18} className="text-indigo-600" />
@@ -1733,7 +1733,7 @@ export default function AdminDashboard() {
               <div>
                 <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Modelo</label>
                 <select 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-800"
                   value={llmConfig.model}
                   onChange={(e) => {
                     const newModel = e.target.value;
@@ -1786,7 +1786,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Card 2: Controle de Custos (OpenRouter) */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 p-6">
             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Activity size={18} className="text-indigo-600" />
               Controle Financeiro
@@ -1860,7 +1860,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Card 3: Controle de Tokens */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 p-6">
             <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Sparkles size={18} className="text-indigo-600" />
               Estatísticas de Tokens
@@ -1905,7 +1905,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content: User Management */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-6 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                 <Users size={20} className="text-indigo-600" />
@@ -2012,7 +2012,7 @@ export default function AdminDashboard() {
         {/* Sidebar: Storage & Logs */}
         <div className="space-y-8">
           {/* Storage KPI Card */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
               <HardDrive size={18} className="text-emerald-600" />
               Armazenamento Supabase
@@ -2068,7 +2068,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Audit Logs Card */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <Activity size={18} className="text-indigo-600" />
@@ -2105,7 +2105,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Seção de Sugestões de Melhoria (Admin View - Kanban) */}
-      <div className="mt-12 bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
+      <div className="mt-12 bg-white dark:bg-slate-800 p-8 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-700/50">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
@@ -2116,7 +2116,7 @@ export default function AdminDashboard() {
               <p className="text-slate-500 font-medium">Gerencie as solicitações de melhoria via Kanban drag-and-drop.</p>
             </div>
           </div>
-          <div className="bg-slate-50 px-4 py-2 rounded-xl text-xs font-bold text-slate-500 uppercase tracking-widest">
+          <div className="bg-slate-50 dark:bg-slate-900/50 px-4 py-2 rounded-xl text-xs font-bold text-slate-500 uppercase tracking-widest">
             {suggestions.length} Sugestões
           </div>
         </div>
@@ -2124,9 +2124,9 @@ export default function AdminDashboard() {
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {Object.entries(kanbanColumns).map(([columnId, column]) => (
-              <div key={columnId} className="flex flex-col h-full min-h-[500px] bg-slate-50/50 rounded-[24px] p-4 border border-slate-100">
+              <div key={columnId} className="flex flex-col h-full min-h-[500px] bg-slate-50 dark:bg-slate-900/50/50 rounded-[24px] p-4 border border-slate-100 dark:border-slate-700/50">
                 <div className="flex items-center justify-between mb-4 px-2">
-                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <h4 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full ${
                       columnId === 'pendente' ? 'bg-slate-400' :
                       columnId === 'em_analise' ? 'bg-blue-400' :
@@ -2135,7 +2135,7 @@ export default function AdminDashboard() {
                     }`} />
                     {column.title}
                   </h4>
-                  <span className="bg-white px-2 py-0.5 rounded-lg text-[10px] font-bold text-slate-400 border border-slate-100">
+                  <span className="bg-white dark:bg-slate-800 px-2 py-0.5 rounded-lg text-[10px] font-bold text-slate-400 dark:text-slate-500 border border-slate-100 dark:border-slate-700/50">
                     {column.items.length}
                   </span>
                 </div>
@@ -2153,11 +2153,11 @@ export default function AdminDashboard() {
                             <div
                               ref={provided.innerRef}
                               {...provided.draggableProps}
-                              className={`bg-white p-4 rounded-2xl shadow-sm border border-slate-100 group transition-all ${snapshot.isDragging ? 'shadow-xl ring-2 ring-indigo-500/20 rotate-2' : 'hover:border-indigo-200'}`}
+                              className={`bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/50 group transition-all ${snapshot.isDragging ? 'shadow-xl ring-2 ring-indigo-500/20 rotate-2' : 'hover:border-indigo-200'}`}
                             >
                               <div className="flex items-start justify-between gap-2 mb-3">
                                 <div className="flex items-center gap-2">
-                                  <div {...provided.dragHandleProps} className="text-slate-300 hover:text-slate-400 cursor-grab active:cursor-grabbing">
+                                  <div {...provided.dragHandleProps} className="text-slate-300 hover:text-slate-400 dark:text-slate-500 cursor-grab active:cursor-grabbing">
                                     <GripVertical size={14} />
                                   </div>
                                   <div className="flex flex-col">
@@ -2169,7 +2169,7 @@ export default function AdminDashboard() {
                                   item.priority === 'crítica' ? 'bg-red-100 text-red-700' :
                                   item.priority === 'alta' ? 'bg-orange-100 text-orange-700' :
                                   item.priority === 'média' ? 'bg-blue-100 text-blue-700' :
-                                  'bg-slate-100 text-slate-600'
+                                  'bg-slate-100 text-slate-600 dark:text-slate-400'
                                 }`}>
                                   {item.priority}
                                 </span>
@@ -2180,7 +2180,7 @@ export default function AdminDashboard() {
                               </p>
 
                               <div className="flex items-center justify-between pt-3 border-t border-slate-50">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase">
+                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">
                                   {new Date(item.created_at).toLocaleDateString('pt-BR')}
                                 </span>
                                 {columnId === 'finalizado' && (
@@ -2213,7 +2213,7 @@ export default function AdminDashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="mt-12 bg-white rounded-[32px] shadow-xl border border-slate-100 overflow-hidden"
+              className="mt-12 bg-white dark:bg-slate-800 rounded-[32px] shadow-xl border border-slate-100 dark:border-slate-700/50 overflow-hidden"
             >
               <div className="p-8 bg-slate-900 text-white flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -2222,11 +2222,11 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <h3 className="text-xl font-black uppercase tracking-tighter">Análise Estratégica de Solicitações</h3>
-                    <p className="text-slate-400 text-xs font-medium">Insights gerados por IA sobre viabilidade e priorização técnica.</p>
+                    <p className="text-slate-400 dark:text-slate-500 text-xs font-medium">Insights gerados por IA sobre viabilidade e priorização técnica.</p>
                   </div>
                 </div>
                 {isAnalyzing && (
-                  <div className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-xl border border-white/10">
+                  <div className="flex items-center gap-3 bg-white dark:bg-slate-800/10 px-4 py-2 rounded-xl border border-white/10">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     <span className="text-[10px] font-black uppercase tracking-widest animate-pulse">Analisando...</span>
                   </div>
@@ -2236,20 +2236,20 @@ export default function AdminDashboard() {
               <div className="p-8">
                 {isAnalyzing && !analysis ? (
                   <div className="flex flex-col items-center justify-center py-20 space-y-4">
-                    <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center animate-bounce">
+                    <div className="w-16 h-16 bg-slate-50 dark:bg-slate-900/50 rounded-3xl flex items-center justify-center animate-bounce">
                       <Cpu className="text-indigo-500" size={32} />
                     </div>
-                    <p className="text-slate-400 font-bold text-sm animate-pulse">Processando requisitos técnicos...</p>
+                    <p className="text-slate-400 dark:text-slate-500 font-bold text-sm animate-pulse">Processando requisitos técnicos...</p>
                   </div>
                 ) : (
-                  <div className="prose prose-slate max-w-none prose-headings:text-slate-900 prose-headings:font-black prose-p:text-slate-600 prose-strong:text-slate-900 prose-table:border prose-table:border-slate-100 prose-th:bg-slate-50 prose-th:p-3 prose-td:p-3">
+                  <div className="prose prose-slate max-w-none prose-headings:text-slate-900 prose-headings:font-black prose-p:text-slate-600 prose-strong:text-slate-900 prose-table:border prose-table:border-slate-100 dark:border-slate-700/50 prose-th:bg-slate-50 dark:bg-slate-900/50 prose-th:p-3 prose-td:p-3">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {analysis || ''}
                     </ReactMarkdown>
                   </div>
                 )}
                 
-                <div className="mt-8 pt-8 border-t border-slate-100 flex justify-end">
+                <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-700/50 flex justify-end">
                   <button 
                     onClick={analyzeSuggestions}
                     disabled={isAnalyzing}
@@ -2277,11 +2277,11 @@ export default function AdminDashboard() {
           </div>
 
           {finalizedHistory.length === 0 ? (
-            <div className="bg-slate-50 rounded-[32px] p-12 border border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center mb-4 text-slate-300">
+            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-[32px] p-12 border border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
+              <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/50 flex items-center justify-center mb-4 text-slate-300">
                 <CheckCircle size={32} />
               </div>
-              <p className="text-slate-400 font-bold text-sm">Nenhuma melhoria finalizada até o momento.</p>
+              <p className="text-slate-400 dark:text-slate-500 font-bold text-sm">Nenhuma melhoria finalizada até o momento.</p>
               <p className="text-slate-300 text-xs mt-1">Mova cards para a coluna &quot;Finalizado&quot; para popular este histórico.</p>
             </div>
           ) : (
@@ -2298,17 +2298,17 @@ export default function AdminDashboard() {
                   className="relative pl-16"
                 >
                   {/* Timeline Dot */}
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-2xl border-2 border-emerald-500 shadow-sm flex items-center justify-center z-10">
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-white dark:bg-slate-800 rounded-2xl border-2 border-emerald-500 shadow-sm flex items-center justify-center z-10">
                     <CheckCircle2 className="text-emerald-500" size={20} />
                   </div>
 
-                  <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
+                  <div className="bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-slate-100 dark:border-slate-700/50 shadow-sm hover:shadow-md transition-all group">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="space-y-1">
                         <div className="flex items-center gap-3">
                           <span className="text-xs font-black text-slate-900 uppercase tracking-tight">{item.user_name}</span>
                           <span className="w-1 h-1 bg-slate-300 rounded-full" />
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.user_role}</span>
+                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{item.user_role}</span>
                         </div>
                         <p className="text-sm text-slate-600 leading-relaxed font-medium">
                           {item.suggestion}
@@ -2318,7 +2318,7 @@ export default function AdminDashboard() {
                         <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-1 rounded-lg mb-1">
                           Concluído
                         </span>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">
+                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
                           {new Date(item.updated_at || item.created_at).toLocaleDateString('pt-BR', {
                             day: '2-digit',
                             month: 'long',
@@ -2342,7 +2342,7 @@ export default function AdminDashboard() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+            className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
           >
             <div className="flex items-center gap-4 mb-4">
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600">
@@ -2382,7 +2382,7 @@ export default function AdminDashboard() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 overflow-hidden flex flex-col max-h-[90vh]"
+            className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full p-6 overflow-hidden flex flex-col max-h-[90vh]"
           >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold flex items-center gap-2">
@@ -2397,7 +2397,7 @@ export default function AdminDashboard() {
             <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
               <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                 <h4 className="font-bold mb-2 text-[10px] text-gray-400 uppercase tracking-wider">Sessão Atual</h4>
-                <pre className="text-xs overflow-x-auto bg-white p-3 rounded-lg border border-gray-100 font-mono">{JSON.stringify(debugInfo.session, null, 2)}</pre>
+                <pre className="text-xs overflow-x-auto bg-white dark:bg-slate-800 p-3 rounded-lg border border-gray-100 font-mono">{JSON.stringify(debugInfo.session, null, 2)}</pre>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2476,17 +2476,17 @@ export default function AdminDashboard() {
 
 function RoleCard({ label, count, color }: { label: string, count: number, color: string }) {
   const colorClasses: any = {
-    red: 'border-latam-crimson/20 bg-latam-crimson/5 text-latam-crimson',
-    purple: 'border-purple-100 bg-purple-50/30 text-purple-700',
-    blue: 'border-blue-100 bg-blue-50/30 text-blue-700',
-    indigo: 'border-latam-indigo/20 bg-latam-indigo/5 text-latam-indigo',
-    green: 'border-green-100 bg-green-50/30 text-green-700',
+    red: 'border-latam-crimson/20 dark:border-red-800/50 bg-latam-crimson/5 dark:bg-red-900/20 text-latam-crimson dark:text-red-400',
+    purple: 'border-purple-100 dark:border-purple-800/50 bg-purple-50/30 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400',
+    blue: 'border-blue-100 dark:border-blue-800/50 bg-blue-50/30 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400',
+    indigo: 'border-latam-indigo/20 dark:border-indigo-800/50 bg-latam-indigo/5 dark:bg-indigo-900/20 text-latam-indigo dark:text-indigo-400',
+    green: 'border-green-100 dark:border-green-800/50 bg-green-50/30 dark:bg-green-900/20 text-green-700 dark:text-green-400',
   };
 
   return (
     <motion.div 
       whileHover={{ y: -2 }}
-      className={`p-4 rounded-2xl border shadow-sm transition-all ${colorClasses[color] || 'border-slate-100 bg-slate-50/30 text-slate-700'}`}
+      className={`p-4 rounded-2xl border shadow-sm transition-all ${colorClasses[color] || 'border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50/30 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300'}`}
     >
       <div className="text-2xl font-black">{count}</div>
       <div className="text-[10px] font-bold uppercase tracking-widest opacity-80">{label}</div>
@@ -2496,29 +2496,29 @@ function RoleCard({ label, count, color }: { label: string, count: number, color
 
 function StatCard({ title, value, icon, trend, color, highlight = false }: any) {
   const colorClasses: any = {
-    blue: 'border-blue-100 bg-blue-50/30',
-    amber: 'border-amber-100 bg-amber-50/30',
-    indigo: 'border-latam-indigo/10 bg-latam-indigo/5',
-    emerald: 'border-emerald-100 bg-emerald-50/30',
+    blue: 'border-blue-100 dark:border-blue-800/50 bg-blue-50/30 dark:bg-blue-900/20',
+    amber: 'border-amber-100 dark:border-amber-800/50 bg-amber-50/30 dark:bg-amber-900/20',
+    indigo: 'border-latam-indigo/10 dark:border-indigo-800/50 bg-latam-indigo/5 dark:bg-indigo-900/20',
+    emerald: 'border-emerald-100 dark:border-emerald-800/50 bg-emerald-50/30 dark:bg-emerald-900/20',
   };
 
   return (
     <motion.div 
       whileHover={{ y: -4 }}
-      className={`p-6 rounded-3xl border shadow-sm transition-all ${colorClasses[color] || 'border-slate-100 bg-slate-50/30'} ${highlight ? 'ring-2 ring-latam-crimson ring-offset-2' : ''}`}
+      className={`p-6 rounded-3xl border shadow-sm transition-all ${colorClasses[color] || 'border-slate-100 dark:border-slate-700/50 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50/30 dark:bg-slate-800/60'} ${highlight ? 'ring-2 ring-latam-crimson ring-offset-2 dark:ring-offset-[#0B1120]' : ''}`}
     >
       <div className="flex justify-between items-start mb-4">
-        <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-100 text-latam-indigo">
+        <div className="p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/50 dark:border-slate-700/50 text-latam-indigo dark:text-indigo-400">
           {icon}
         </div>
-        <div className="text-[10px] font-bold text-slate-400 flex items-center gap-1 uppercase tracking-widest">
+        <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1 uppercase tracking-widest">
           {trend}
-          <ArrowUpRight size={12} className="text-latam-crimson" />
+          <ArrowUpRight size={12} className="text-latam-crimson dark:text-red-400" />
         </div>
       </div>
       <div>
-        <div className="text-3xl font-black text-slate-900 tracking-tight">{value}</div>
-        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{title}</div>
+        <div className="text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{value}</div>
+        <div className="text-xs font-bold text-slate-400 dark:text-slate-500 dark:text-slate-500 uppercase tracking-widest mt-1">{title}</div>
       </div>
     </motion.div>
   );

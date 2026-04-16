@@ -163,7 +163,7 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
       <div className="overflow-x-auto border-x border-b border-slate-200 dark:border-slate-700 rounded-b-xl shadow-xl max-h-[70vh] relative">
         <table className="w-full text-[10px] border-collapse relative">
           <thead className="sticky top-0 z-30 shadow-sm">
-            <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold uppercase">
+            <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold uppercase">
               <th rowSpan={2} className="border border-slate-200 dark:border-slate-700 p-2 sticky left-0 bg-slate-100 dark:bg-slate-800 z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">ÁREA</th>
               <th rowSpan={2} className="border border-slate-200 dark:border-slate-700 p-2 sticky left-[50px] bg-slate-100 dark:bg-slate-800 z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">TURNO</th>
               <th rowSpan={2} className="border border-slate-200 dark:border-slate-700 p-2 sticky left-[100px] bg-slate-100 dark:bg-slate-800 z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">BP</th>
@@ -175,14 +175,14 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
                 return (
                   <th 
                     key={`dow-${idx}`} 
-                    className={`border border-slate-200 dark:border-slate-700 p-1 min-w-[45px] text-center text-[9px] font-black ${isWeekend ? 'bg-latam-crimson text-white' : 'text-latam-indigo dark:text-indigo-300 bg-slate-100 dark:bg-slate-800'}`}
+                    className={`border border-slate-200 dark:border-slate-700 p-1 min-w-[45px] text-center text-[9px] font-black ${isWeekend ? 'bg-latam-crimson text-white dark:bg-red-900/60' : 'text-latam-indigo dark:text-indigo-300 bg-slate-100 dark:bg-slate-800'}`}
                   >
                     {dow}
                   </th>
                 );
               })}
             </tr>
-            <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold uppercase">
+            <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold uppercase">
               {data[0]?.days.map((day, idx) => (
                 <th key={`date-${idx}`} className="border border-slate-200 dark:border-slate-700 p-1 min-w-[45px] text-center text-[10px] font-medium opacity-70 bg-slate-100 dark:bg-slate-800">
                   {day.date}
@@ -195,9 +195,9 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
               const hasError = validationErrors?.some(e => e.bp === row.bp);
               return (
                 <tr key={rowIdx} className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${hasError ? 'bg-red-50/30 dark:bg-red-900/10' : ''}`}>
-                  <td className={`border border-slate-200 dark:border-slate-700 p-2 font-bold sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] ${hasError ? 'bg-red-50 dark:bg-red-900/20' : 'bg-white dark:bg-slate-800 dark:text-slate-200'}`}>{row.area}</td>
-                  <td className={`border border-slate-200 dark:border-slate-700 p-2 sticky left-[50px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] ${hasError ? 'bg-red-50 dark:bg-red-900/20' : 'bg-white dark:bg-slate-800 dark:text-slate-200'}`}>{row.turno}</td>
-                  <td className={`border border-slate-200 dark:border-slate-700 p-2 sticky left-[100px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] ${hasError ? 'bg-red-50 dark:bg-red-900/20' : 'bg-white dark:bg-slate-800 dark:text-slate-200'}`}>{row.bp}</td>
+                  <td className={`border border-slate-200 dark:border-slate-700 p-2 font-bold sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] ${hasError ? 'bg-red-50 dark:bg-red-900/20' : 'bg-white dark:bg-slate-800'} dark:text-slate-200`}>{row.area}</td>
+                  <td className={`border border-slate-200 dark:border-slate-700 p-2 sticky left-[50px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] ${hasError ? 'bg-red-50 dark:bg-red-900/20' : 'bg-white dark:bg-slate-800'} dark:text-slate-200`}>{row.turno}</td>
+                  <td className={`border border-slate-200 dark:border-slate-700 p-2 sticky left-[100px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] ${hasError ? 'bg-red-50 dark:bg-red-900/20' : 'bg-white dark:bg-slate-800'} dark:text-slate-200`}>{row.bp}</td>
                   <td className={`border border-slate-200 dark:border-slate-700 p-2 sticky left-[160px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] ${hasError ? 'bg-red-50 dark:bg-red-900/20' : 'bg-white dark:bg-slate-800'}`}>
                     <input 
                       type="text"
@@ -205,7 +205,7 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
                       onChange={(e) => handleFuncaoChange(rowIdx, e.target.value)}
                       className="w-full bg-transparent border-none focus:ring-1 focus:ring-indigo-500 outline-none p-1 rounded no-print dark:text-slate-200"
                     />
-                    <span className="hidden print:inline">{row.funcao}</span>
+                    <span className="hidden print:inline dark:text-slate-200">{row.funcao}</span>
                   </td>
                   <td className={`border border-slate-200 dark:border-slate-700 p-2 font-bold sticky left-[240px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] ${hasError ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400' : 'bg-white dark:bg-slate-800 dark:text-slate-200'}`}>
                     <div className="flex items-center justify-between gap-2">

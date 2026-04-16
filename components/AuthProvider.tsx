@@ -72,22 +72,22 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
   if (!configured) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 border border-red-100">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#0B1120] p-4">
+        <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-xl shadow-lg p-8 border border-red-100 dark:border-slate-700">
           <div className="flex flex-col items-center text-center">
-            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6">
-              <AlertTriangle className="w-8 h-8 text-red-600" />
+            <div className="w-16 h-16 bg-red-50 dark:bg-red-900/50 rounded-full flex items-center justify-center mb-6">
+              <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Configuração Necessária</h1>
-            <p className="text-gray-600 mb-8">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-2">Configuração Necessária</h1>
+            <p className="text-gray-600 dark:text-slate-400 mb-8">
               As variáveis de ambiente do Supabase não foram encontradas. 
-              Por favor, configure <code className="bg-gray-100 px-1 rounded text-red-600">NEXT_PUBLIC_SUPABASE_URL</code> e 
-              <code className="bg-gray-100 px-1 rounded text-red-600">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> no painel de segredos do AI Studio.
+              Por favor, configure <code className="bg-gray-100 dark:bg-slate-900 px-1 rounded text-red-600 dark:text-red-400">NEXT_PUBLIC_SUPABASE_URL</code> e 
+              <code className="bg-gray-100 dark:bg-slate-900 px-1 rounded text-red-600 dark:text-red-400">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> no painel de segredos do AI Studio.
             </p>
             <div className="w-full space-y-3">
-              <div className="text-sm text-left bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <p className="font-semibold text-gray-700 mb-1">Passos para resolver:</p>
-                <ol className="list-decimal list-inside text-gray-600 space-y-1">
+              <div className="text-sm text-left bg-gray-50 dark:bg-slate-900 p-4 rounded-lg border border-gray-200 dark:border-slate-700">
+                <p className="font-semibold text-gray-700 dark:text-slate-200 mb-1">Passos para resolver:</p>
+                <ol className="list-decimal list-inside text-gray-600 dark:text-slate-400 space-y-1">
                   <li>Acesse as Configurações (ícone de engrenagem)</li>
                   <li>Vá para a aba &quot;Secrets&quot;</li>
                   <li>Adicione as chaves mencionadas acima</li>
