@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-latam-indigo: #002169;
   --color-latam-crimson: #E60000;
@@ -8,7 +10,7 @@
 
 @layer base {
   body {
-    @apply font-latam text-slate-900;
+    @apply font-latam text-slate-900 bg-slate-50 dark:bg-slate-900 dark:text-slate-100 transition-colors duration-300;
   }
 }
 

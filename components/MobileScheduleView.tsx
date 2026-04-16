@@ -41,10 +41,10 @@ export default function MobileScheduleView({ month, year, data }: MobileSchedule
   };
 
   const getStatusColor = (code: string) => {
-    if (code === 'FOLG' || code === 'FAGR' || code === 'FS' || code === 'FDFE' || code === 'FC') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-    if (code === 'FE') return 'bg-slate-100 text-slate-500 border-slate-200';
-    if (code.startsWith('T')) return 'bg-indigo-50 text-indigo-700 border-indigo-100';
-    return 'bg-white border-slate-200 text-slate-700';
+    if (code === 'FOLG' || code === 'FAGR' || code === 'FS' || code === 'FDFE' || code === 'FC') return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50';
+    if (code === 'FE') return 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700';
+    if (code.startsWith('T')) return 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800/50';
+    return 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300';
   };
 
   const getStatusLabel = (code: string) => {
@@ -56,14 +56,14 @@ export default function MobileScheduleView({ month, year, data }: MobileSchedule
 
   return (
     <div className="w-full space-y-4">
-      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex justify-between items-center">
+      <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 flex justify-between items-center">
         <div>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Mês Vigente</p>
-          <p className="text-lg font-black text-slate-800">{month} {year}</p>
+          <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Mês Vigente</p>
+          <p className="text-lg font-black text-slate-800 dark:text-white">{month} {year}</p>
         </div>
         <div className="text-right">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Turno Base</p>
-          <p className="text-lg font-black text-indigo-600">{employee.turno}</p>
+          <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Turno Base</p>
+          <p className="text-lg font-black text-indigo-600 dark:text-indigo-400">{employee.turno}</p>
         </div>
       </div>
 
@@ -79,7 +79,7 @@ export default function MobileScheduleView({ month, year, data }: MobileSchedule
               className={`flex items-center justify-between p-4 rounded-2xl border ${getStatusColor(day.code)} transition-all hover:shadow-md`}
             >
               <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center ${isWeekend ? 'bg-latam-crimson text-white' : 'bg-white/60 text-slate-700'}`}>
+                <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center ${isWeekend ? 'bg-latam-crimson text-white' : 'bg-white/60 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300'}`}>
                   <span className="text-[10px] font-bold uppercase">{dow}</span>
                   <span className="text-lg font-black leading-none">{day.date.split('/')[0]}</span>
                 </div>
@@ -104,7 +104,7 @@ export default function MobileScheduleView({ month, year, data }: MobileSchedule
               {isWorkDay && (
                 <div className="text-right">
                   <span className="text-[10px] font-bold uppercase tracking-widest opacity-60 block mb-1">Área</span>
-                  <span className="text-xs font-bold bg-white/50 px-2 py-1 rounded-lg">{employee.area}</span>
+                  <span className="text-xs font-bold bg-white/50 dark:bg-slate-800/50 px-2 py-1 rounded-lg">{employee.area}</span>
                 </div>
               )}
             </div>

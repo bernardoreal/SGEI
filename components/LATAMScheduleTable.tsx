@@ -46,16 +46,16 @@ export const SHIFT_LEGEND = [
 ];
 
 export const SIGLA_LEGEND = [
-  { code: 'FE', desc: 'Férias', color: 'bg-gray-200' },
-  { code: 'LM', desc: 'Licença Maternidade', color: 'bg-pink-100' },
-  { code: 'LG', desc: 'Licença Casamento', color: 'bg-blue-50' },
-  { code: 'FDFE', desc: 'Folga Descanso Feriado', color: 'bg-green-100 text-green-800' },
-  { code: 'LP', desc: 'Licença Paternidade', color: 'bg-blue-100' },
-  { code: 'FOLG', desc: 'Folga Regulamentar', color: 'bg-green-100 text-green-800' },
-  { code: 'FS', desc: 'Folga Solicitada', color: 'bg-green-100 text-green-800' },
-  { code: 'FAGR', desc: 'Folga Agrupada', color: 'bg-green-100 text-green-800' },
-  { code: 'FC', desc: 'Folga Compensa', color: 'bg-green-100 text-green-800' },
-  { code: 'C', desc: 'Curso / Treinamento', color: 'bg-indigo-100' },
+  { code: 'FE', desc: 'Férias', color: 'bg-gray-200 dark:bg-slate-700 dark:text-slate-300' },
+  { code: 'LM', desc: 'Licença Maternidade', color: 'bg-pink-100 dark:bg-pink-900/30 dark:text-pink-400' },
+  { code: 'LG', desc: 'Licença Casamento', color: 'bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400' },
+  { code: 'FDFE', desc: 'Folga Descanso Feriado', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
+  { code: 'LP', desc: 'Licença Paternidade', color: 'bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400' },
+  { code: 'FOLG', desc: 'Folga Regulamentar', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
+  { code: 'FS', desc: 'Folga Solicitada', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
+  { code: 'FAGR', desc: 'Folga Agrupada', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
+  { code: 'FC', desc: 'Folga Compensa', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
+  { code: 'C', desc: 'Curso / Treinamento', color: 'bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400' },
 ];
 
 export default function LATAMScheduleTable({ month, year, data, onDataChange, validationErrors }: LATAMScheduleTableProps) {
@@ -63,10 +63,10 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
   const daysInMonth = data[0]?.days.length || 30;
   
   const getCellColor = (code: string) => {
-    if (code === 'FOLG' || code === 'FAGR' || code === 'FS' || code === 'FDFE' || code === 'FC') return 'bg-green-100 text-green-800';
-    if (code === 'FE') return 'bg-gray-100 text-gray-500';
-    if (code.startsWith('T')) return 'bg-white text-slate-700';
-    return 'bg-white';
+    if (code === 'FOLG' || code === 'FAGR' || code === 'FS' || code === 'FDFE' || code === 'FC') return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400';
+    if (code === 'FE') return 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400';
+    if (code.startsWith('T')) return 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200';
+    return 'bg-white dark:bg-slate-800';
   };
 
   const handleCellChange = (rowIdx: number, dayIdx: number, newCode: string) => {
@@ -115,24 +115,24 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
             onClick={() => setActiveError(null)}
           >
             <div 
-              className={`max-w-sm w-full p-6 rounded-3xl shadow-2xl border-2 ${activeError.type === 'error' ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'} relative`}
+              className={`max-w-sm w-full p-6 rounded-3xl shadow-2xl border-2 ${activeError.type === 'error' ? 'bg-red-50 dark:bg-red-900/40 border-red-200 dark:border-red-800/50' : 'bg-amber-50 dark:bg-amber-900/40 border-amber-200 dark:border-amber-800/50'} relative`}
               onClick={(e) => e.stopPropagation()}
             >
               <button 
                 onClick={() => setActiveError(null)}
-                className="absolute top-4 right-4 p-1 hover:bg-black/5 rounded-full transition-colors"
+                className="absolute top-4 right-4 p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors dark:text-slate-300"
               >
                 <X size={18} />
               </button>
               <div className="flex items-start gap-4">
-                <div className={`p-3 rounded-2xl ${activeError.type === 'error' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
+                <div className={`p-3 rounded-2xl ${activeError.type === 'error' ? 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400' : 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400'}`}>
                   <AlertTriangle size={24} />
                 </div>
                 <div className="space-y-2">
-                  <h4 className={`font-black uppercase tracking-tighter ${activeError.type === 'error' ? 'text-red-900' : 'text-amber-900'}`}>
+                  <h4 className={`font-black uppercase tracking-tighter ${activeError.type === 'error' ? 'text-red-900 dark:text-red-300' : 'text-amber-900 dark:text-amber-300'}`}>
                     Inconsistência Detectada
                   </h4>
-                  <p className="text-sm font-medium leading-relaxed text-slate-700">
+                  <p className="text-sm font-medium leading-relaxed text-slate-700 dark:text-slate-300">
                     {activeError.message}
                   </p>
                 </div>
@@ -140,7 +140,7 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
               <div className="mt-6 flex justify-end">
                 <button 
                   onClick={() => setActiveError(null)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest ${activeError.type === 'error' ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'}`}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest ${activeError.type === 'error' ? 'bg-red-600 dark:bg-red-700 text-white hover:bg-red-700 dark:hover:bg-red-600' : 'bg-amber-600 dark:bg-amber-700 text-white hover:bg-amber-700 dark:hover:bg-amber-600'} transition-colors`}
                 >
                   Entendido
                 </button>
@@ -150,7 +150,7 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
         )}
       </AnimatePresence>
 
-      <div className="bg-[#002169] text-white p-4 text-center rounded-t-xl flex justify-between items-center border-b-2 border-white">
+      <div className="bg-[#002169] text-white p-4 text-center rounded-t-xl flex justify-between items-center border-b-2 border-white dark:border-slate-800">
         <div className="w-10" />
         <h2 className="text-2xl font-black tracking-[0.2em] uppercase">
           ESCALA JPA {month} _ {year}
@@ -160,31 +160,31 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
         </div>
       </div>
 
-      <div className="overflow-x-auto border-x border-b border-slate-200 rounded-b-xl shadow-xl max-h-[70vh] relative">
+      <div className="overflow-x-auto border-x border-b border-slate-200 dark:border-slate-700 rounded-b-xl shadow-xl max-h-[70vh] relative">
         <table className="w-full text-[10px] border-collapse relative">
           <thead className="sticky top-0 z-30 shadow-sm">
-            <tr className="bg-slate-100 text-slate-600 font-bold uppercase">
-              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-0 bg-slate-100 z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">ÁREA</th>
-              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-[50px] bg-slate-100 z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">TURNO</th>
-              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-[100px] bg-slate-100 z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">BP</th>
-              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-[160px] bg-slate-100 z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">FUNÇÃO</th>
-              <th rowSpan={2} className="border border-slate-200 p-2 sticky left-[240px] bg-slate-100 z-40 min-w-[150px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">NOME</th>
+            <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold uppercase">
+              <th rowSpan={2} className="border border-slate-200 dark:border-slate-700 p-2 sticky left-0 bg-slate-100 dark:bg-slate-800 z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">ÁREA</th>
+              <th rowSpan={2} className="border border-slate-200 dark:border-slate-700 p-2 sticky left-[50px] bg-slate-100 dark:bg-slate-800 z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">TURNO</th>
+              <th rowSpan={2} className="border border-slate-200 dark:border-slate-700 p-2 sticky left-[100px] bg-slate-100 dark:bg-slate-800 z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">BP</th>
+              <th rowSpan={2} className="border border-slate-200 dark:border-slate-700 p-2 sticky left-[160px] bg-slate-100 dark:bg-slate-800 z-40 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">FUNÇÃO</th>
+              <th rowSpan={2} className="border border-slate-200 dark:border-slate-700 p-2 sticky left-[240px] bg-slate-100 dark:bg-slate-800 z-40 min-w-[150px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)]">NOME</th>
               {data[0]?.days.map((day, idx) => {
                 const dow = getDayOfWeek(day.date, year);
                 const isWeekend = dow === 'SÁB' || dow === 'DOM';
                 return (
                   <th 
                     key={`dow-${idx}`} 
-                    className={`border border-slate-200 p-1 min-w-[45px] text-center text-[9px] font-black ${isWeekend ? 'bg-latam-crimson text-white' : 'text-latam-indigo bg-slate-100'}`}
+                    className={`border border-slate-200 dark:border-slate-700 p-1 min-w-[45px] text-center text-[9px] font-black ${isWeekend ? 'bg-latam-crimson text-white' : 'text-latam-indigo dark:text-indigo-300 bg-slate-100 dark:bg-slate-800'}`}
                   >
                     {dow}
                   </th>
                 );
               })}
             </tr>
-            <tr className="bg-slate-100 text-slate-600 font-bold uppercase">
+            <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold uppercase">
               {data[0]?.days.map((day, idx) => (
-                <th key={`date-${idx}`} className="border border-slate-200 p-1 min-w-[45px] text-center text-[10px] font-medium opacity-70 bg-slate-100">
+                <th key={`date-${idx}`} className="border border-slate-200 dark:border-slate-700 p-1 min-w-[45px] text-center text-[10px] font-medium opacity-70 bg-slate-100 dark:bg-slate-800">
                   {day.date}
                 </th>
               ))}
@@ -194,20 +194,20 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
             {data.map((row, rowIdx) => {
               const hasError = validationErrors?.some(e => e.bp === row.bp);
               return (
-                <tr key={rowIdx} className={`hover:bg-slate-50 transition-colors ${hasError ? 'bg-red-50/30' : ''}`}>
-                  <td className={`border border-slate-200 p-2 font-bold sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${hasError ? 'bg-red-50' : 'bg-white'}`}>{row.area}</td>
-                  <td className={`border border-slate-200 p-2 sticky left-[50px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${hasError ? 'bg-red-50' : 'bg-white'}`}>{row.turno}</td>
-                  <td className={`border border-slate-200 p-2 sticky left-[100px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${hasError ? 'bg-red-50' : 'bg-white'}`}>{row.bp}</td>
-                  <td className={`border border-slate-200 p-2 sticky left-[160px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${hasError ? 'bg-red-50' : 'bg-white'}`}>
+                <tr key={rowIdx} className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${hasError ? 'bg-red-50/30 dark:bg-red-900/10' : ''}`}>
+                  <td className={`border border-slate-200 dark:border-slate-700 p-2 font-bold sticky left-0 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] ${hasError ? 'bg-red-50 dark:bg-red-900/20' : 'bg-white dark:bg-slate-800 dark:text-slate-200'}`}>{row.area}</td>
+                  <td className={`border border-slate-200 dark:border-slate-700 p-2 sticky left-[50px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] ${hasError ? 'bg-red-50 dark:bg-red-900/20' : 'bg-white dark:bg-slate-800 dark:text-slate-200'}`}>{row.turno}</td>
+                  <td className={`border border-slate-200 dark:border-slate-700 p-2 sticky left-[100px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] ${hasError ? 'bg-red-50 dark:bg-red-900/20' : 'bg-white dark:bg-slate-800 dark:text-slate-200'}`}>{row.bp}</td>
+                  <td className={`border border-slate-200 dark:border-slate-700 p-2 sticky left-[160px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] ${hasError ? 'bg-red-50 dark:bg-red-900/20' : 'bg-white dark:bg-slate-800'}`}>
                     <input 
                       type="text"
                       value={row.funcao}
                       onChange={(e) => handleFuncaoChange(rowIdx, e.target.value)}
-                      className="w-full bg-transparent border-none focus:ring-1 focus:ring-indigo-500 outline-none p-1 rounded no-print"
+                      className="w-full bg-transparent border-none focus:ring-1 focus:ring-indigo-500 outline-none p-1 rounded no-print dark:text-slate-200"
                     />
                     <span className="hidden print:inline">{row.funcao}</span>
                   </td>
-                  <td className={`border border-slate-200 p-2 font-bold sticky left-[240px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${hasError ? 'bg-red-50 text-red-700' : 'bg-white'}`}>
+                  <td className={`border border-slate-200 dark:border-slate-700 p-2 font-bold sticky left-[240px] z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:shadow-[2px_0_5px_-2px_rgba(0,0,0,0.5)] ${hasError ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400' : 'bg-white dark:bg-slate-800 dark:text-slate-200'}`}>
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate max-w-[130px] block" title={row.nome}>{row.nome}</span>
                       {hasError && (
@@ -216,7 +216,7 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
                             <button 
                               key={i}
                               onClick={() => setActiveError(err)}
-                              className={`p-1 rounded-md transition-transform hover:scale-110 ${err.type === 'error' ? 'text-red-500 bg-red-100' : 'text-amber-500 bg-amber-100'}`}
+                              className={`p-1 rounded-md transition-transform hover:scale-110 ${err.type === 'error' ? 'text-red-500 bg-red-100 dark:bg-red-900/30' : 'text-amber-500 bg-amber-100 dark:bg-amber-900/30'}`}
                             >
                               <AlertTriangle size={10} />
                             </button>
@@ -230,16 +230,16 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
                     return (
                       <td 
                         key={dayIdx} 
-                        className={`border border-slate-200 p-0 text-center font-bold relative group/cell ${getCellColor(day.code)} ${dayError ? (dayError.type === 'error' ? 'ring-1 ring-inset ring-red-400 bg-red-50/50' : 'ring-1 ring-inset ring-amber-400 bg-amber-50/50') : ''}`}
+                        className={`border border-slate-200 dark:border-slate-700 p-0 text-center font-bold relative group/cell ${getCellColor(day.code)} ${dayError ? (dayError.type === 'error' ? 'ring-1 ring-inset ring-red-400 bg-red-50/50 dark:bg-red-900/20' : 'ring-1 ring-inset ring-amber-400 bg-amber-50/50 dark:bg-amber-900/20') : ''}`}
                       >
                         <div className="relative w-full h-full flex items-center justify-center">
                           <select 
                             value={day.code}
                             onChange={(e) => handleCellChange(rowIdx, dayIdx, e.target.value)}
-                            className="w-full h-full bg-transparent text-center border-none focus:ring-2 focus:ring-indigo-500 outline-none p-1 uppercase appearance-none cursor-pointer no-print"
+                            className="w-full h-full bg-transparent text-center border-none focus:ring-2 focus:ring-indigo-500 outline-none p-1 uppercase appearance-none cursor-pointer no-print dark:text-slate-200"
                           >
                             {ALL_CODES.map(code => (
-                              <option key={code} value={code} className="text-slate-900 bg-white">
+                              <option key={code} value={code} className="text-slate-900 dark:text-slate-200 bg-white dark:bg-slate-800">
                                 {code}
                               </option>
                             ))}

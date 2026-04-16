@@ -105,24 +105,24 @@ export default function SuggestionSection({ userId, userName, userRole }: Sugges
 
   const getStatusColor = (status: string) => {
     switch(status) {
-      case 'pendente': return 'bg-amber-50 text-amber-700 border-amber-200';
-      case 'em_analise': return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'implementado': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      case 'arquivado': return 'bg-slate-50 text-slate-700 border-slate-200';
-      default: return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'pendente': return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50';
+      case 'em_analise': return 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/50';
+      case 'implementado': return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50';
+      case 'arquivado': return 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-700';
+      default: return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50';
     }
   };
 
   return (
     <div className="mt-12 space-y-6">
-      <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
+      <div className="bg-white dark:bg-slate-800 p-8 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-700">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+          <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
             <MessageSquarePlus size={20} />
           </div>
           <div>
-            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Sugestões de Melhoria</h3>
-            <p className="text-slate-500 text-sm font-medium">Sua opinião é fundamental para evoluirmos o sistema.</p>
+            <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Sugestões de Melhoria</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Sua opinião é fundamental para evoluirmos o sistema.</p>
           </div>
         </div>
 
@@ -132,13 +132,13 @@ export default function SuggestionSection({ userId, userName, userRole }: Sugges
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-emerald-50 border border-emerald-100 p-8 rounded-2xl text-center"
+              className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30 p-8 rounded-2xl text-center"
             >
-              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 size={32} />
               </div>
-              <h4 className="text-lg font-bold text-emerald-900 mb-2">Sugestão Enviada!</h4>
-              <p className="text-emerald-700 font-medium">Obrigado pela sua contribuição. Nossa equipe irá analisar sua sugestão.</p>
+              <h4 className="text-lg font-bold text-emerald-900 dark:text-emerald-400 mb-2">Sugestão Enviada!</h4>
+              <p className="text-emerald-700 dark:text-emerald-500 font-medium">Obrigado pela sua contribuição. Nossa equipe irá analisar sua sugestão.</p>
             </motion.div>
           ) : (
             <motion.form 
@@ -153,17 +153,17 @@ export default function SuggestionSection({ userId, userName, userRole }: Sugges
                     value={suggestion}
                     onChange={(e) => setSuggestion(e.target.value)}
                     placeholder="Descreva sua sugestão de melhoria ou nova funcionalidade..."
-                    className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none min-h-[120px] resize-none"
+                    className="w-full p-4 bg-slate-50 dark:bg-slate-900/50 border border-transparent dark:border-slate-700 rounded-2xl text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none min-h-[120px] resize-none"
                     required
                   />
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">Prioridade</label>
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block ml-1">Prioridade</label>
                     <select
                       value={priority}
                       onChange={(e) => setPriority(e.target.value)}
-                      className="w-full p-3 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-700"
+                      className="w-full p-3 bg-slate-50 dark:bg-slate-900/50 border border-transparent dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-700 dark:text-slate-300"
                     >
                       <option value="baixa">Baixa</option>
                       <option value="média">Média</option>
@@ -174,7 +174,7 @@ export default function SuggestionSection({ userId, userName, userRole }: Sugges
                   <button
                     type="submit"
                     disabled={loading || !suggestion.trim()}
-                    className="w-full bg-latam-indigo text-white py-4 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-100 disabled:bg-slate-300 flex items-center justify-center gap-2"
+                    className="w-full bg-latam-indigo text-white py-4 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-100 dark:shadow-none disabled:bg-slate-300 dark:disabled:bg-slate-700 flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -192,22 +192,22 @@ export default function SuggestionSection({ userId, userName, userRole }: Sugges
       </div>
 
       {mySuggestions.length > 0 && (
-        <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
-          <h4 className="font-bold text-slate-900 mb-6">Minhas Solicitações</h4>
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-700">
+          <h4 className="font-bold text-slate-900 dark:text-white mb-6">Minhas Solicitações</h4>
           <div className="space-y-4">
             {mySuggestions.map(s => (
-              <div key={s.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div key={s.id} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex-1">
-                  <p className="text-sm text-slate-700 mb-2">{s.suggestion}</p>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 mb-2">{s.suggestion}</p>
                   <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-medium text-slate-400">
+                    <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
                       {new Date(s.created_at).toLocaleDateString('pt-BR')}
                     </span>
                     <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${
-                      s.priority === 'crítica' ? 'bg-red-100 text-red-700' :
-                      s.priority === 'alta' ? 'bg-orange-100 text-orange-700' :
-                      s.priority === 'média' ? 'bg-blue-100 text-blue-700' :
-                      'bg-slate-200 text-slate-600'
+                      s.priority === 'crítica' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                      s.priority === 'alta' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' :
+                      s.priority === 'média' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
+                      'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
                     }`}>
                       {s.priority}
                     </span>

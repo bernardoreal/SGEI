@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase, handleSupabaseSessionError } from '@/lib/supabase';
+import { useTheme } from '@/components/ThemeProvider';
 import { 
   Calendar, 
   Users, 
@@ -27,7 +28,9 @@ import {
   Trash2,
   Upload,
   Database,
-  ShieldCheck
+  ShieldCheck,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import SuggestionSection from '@/components/SuggestionSection';
@@ -41,6 +44,7 @@ import autoTable from 'jspdf-autotable';
 const monthNames = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
 
 export default function SupervisorDashboard() {
+  const { theme, toggleTheme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const loadingSteps = [
@@ -1263,10 +1267,10 @@ export default function SupervisorDashboard() {
     <div className="space-y-8 pb-12">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Painel do Supervisor - JPA</h1>
-          <p className="text-sm sm:text-base text-gray-500">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Painel do Supervisor - JPA</h1>
+          <p className="text-sm sm:text-base text-gray-500 dark:text-slate-400">
             Gestão operacional e geração de escalas. 
-            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full text-[10px] font-bold uppercase border border-indigo-100">
+            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full text-[10px] font-bold uppercase border border-indigo-100 dark:border-indigo-800/30">
               <Cpu size={10} /> IA: {configLoading ? '...' : `${llmConfig.provider} (${llmConfig.model})`}
             </span>
           </p>
@@ -1274,21 +1278,28 @@ export default function SupervisorDashboard() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex flex-wrap gap-2">
             <button 
+              onClick={toggleTheme}
+              className="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition shadow-sm"
+              title="Alternar Tema"
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button 
               onClick={() => setShowInterimModal(true)}
-              className="flex items-center gap-2 bg-white text-indigo-600 border border-indigo-200 px-4 py-3 rounded-xl font-medium hover:bg-indigo-50 transition shadow-sm"
+              className="flex items-center gap-2 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/50 px-4 py-3 rounded-xl font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition shadow-sm"
             >
               <ArrowRightLeft size={18} />
               Aviso de Férias
             </button>
             <button 
               onClick={() => setShowConfig(true)}
-              className="flex items-center gap-2 bg-white text-slate-600 border border-slate-200 px-4 py-3 rounded-xl font-medium hover:bg-slate-50 transition shadow-sm"
+              className="flex items-center gap-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-4 py-3 rounded-xl font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition shadow-sm"
             >
               <Info size={18} />
               Configurar Base
             </button>
-            <div className="flex items-center gap-2 bg-white border border-slate-200 px-4 py-3 rounded-xl shadow-sm">
-              <Calendar size={18} className="text-slate-400" />
+            <div className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-3 rounded-xl shadow-sm">
+              <Calendar size={18} className="text-slate-400 dark:text-slate-500" />
               <select 
                 value={selectedMonth}
                 onChange={(e) => {
@@ -1302,12 +1313,12 @@ export default function SupervisorDashboard() {
                     setSelectedYear(now.getFullYear());
                   }
                 }}
-                className="bg-transparent border-none focus:ring-0 font-medium text-slate-700 outline-none cursor-pointer"
+                className="bg-transparent border-none focus:ring-0 font-medium text-slate-700 dark:text-slate-200 outline-none cursor-pointer"
               >
                 {monthNames.map((name, index) => {
                   const isPast = index < new Date().getMonth();
                   return (
-                    <option key={index} value={index} disabled={isPast}>
+                    <option key={index} value={index} disabled={isPast} className="dark:bg-slate-800">
                       {name}
                     </option>
                   );
@@ -1317,7 +1328,7 @@ export default function SupervisorDashboard() {
             <button 
               onClick={generateScheduleAI}
               disabled={loading || configLoading}
-              className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 disabled:bg-gray-400 w-full md:w-auto"
+              className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 dark:shadow-none disabled:bg-gray-400 w-full md:w-auto"
             >
               {loading ? <Clock className="animate-spin" /> : <Sparkles />}
               {loading ? 'Gerando...' : (configLoading ? 'Carregando Config...' : 'Gerar Escala com IA')}
@@ -1327,7 +1338,7 @@ export default function SupervisorDashboard() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 p-4 rounded-xl text-red-700 flex items-center gap-3">
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800/50 p-4 rounded-xl text-red-700 dark:text-red-400 flex items-center gap-3">
           <AlertTriangle />
           {error}
         </div>
@@ -1352,38 +1363,38 @@ export default function SupervisorDashboard() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/80 backdrop-blur-md no-print"
           >
-            <div className="max-w-md w-full p-10 bg-white rounded-[40px] shadow-2xl text-center space-y-8">
+            <div className="max-w-md w-full p-10 bg-white dark:bg-slate-800 rounded-[40px] shadow-2xl text-center space-y-8 border border-slate-200 dark:border-slate-700">
               <div className="relative flex justify-center">
-                <div className="w-24 h-24 border-4 border-slate-100 border-t-latam-indigo rounded-full animate-spin" />
+                <div className="w-24 h-24 border-4 border-slate-100 dark:border-slate-700 border-t-latam-indigo dark:border-t-indigo-500 rounded-full animate-spin" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Sparkles className="text-latam-indigo animate-pulse" size={32} />
+                  <Sparkles className="text-latam-indigo dark:text-indigo-400 animate-pulse" size={32} />
                 </div>
               </div>
               
               <div className="space-y-4">
-                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">
                   Inteligência Artificial em Ação
                 </h3>
                 <div className="space-y-2">
-                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                     <motion.div 
-                      className="h-full bg-latam-indigo"
+                      className="h-full bg-latam-indigo dark:bg-indigo-500"
                       initial={{ width: "0%" }}
                       animate={{ width: `${((loadingStep + 1) / loadingSteps.length) * 100}%` }}
                       transition={{ duration: 0.5 }}
                     />
                   </div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">
+                  <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest animate-pulse">
                     Passo {loadingStep + 1} de {loadingSteps.length}
                   </p>
                 </div>
-                <p className="text-slate-600 font-medium italic">
+                <p className="text-slate-600 dark:text-slate-300 font-medium italic">
                   &quot;{loadingSteps[loadingStep]}&quot;
                 </p>
               </div>
 
-              <div className="pt-4 border-t border-slate-50">
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
+              <div className="pt-4 border-t border-slate-50 dark:border-slate-700">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
                   O motor SGEI está processando milhares de combinações para garantir a melhor escala para o terminal JPA.
                 </p>
               </div>
@@ -1395,21 +1406,21 @@ export default function SupervisorDashboard() {
       {aiSchedules.length > 0 && (
         <div className="space-y-6">
           {/* Carousel Header / Navigation */}
-          <div className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-indigo-50">
+          <div className="flex items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-indigo-50 dark:border-slate-700">
             <div className="flex items-center gap-4">
-              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+              <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl">
                 <Calendar size={20} />
               </div>
               <div>
-                <h3 className="font-bold text-slate-900">Escalas Ativas / Rascunhos ({aiSchedules.length})</h3>
-                <p className="text-xs text-slate-500">Alterne entre as escalas geradas para revisão ou consulta</p>
+                <h3 className="font-bold text-slate-900 dark:text-white">Escalas Ativas / Rascunhos ({aiSchedules.length})</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Alterne entre as escalas geradas para revisão ou consulta</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => setCurrentScheduleIndex(prev => Math.max(0, prev - 1))}
                 disabled={currentScheduleIndex === 0}
-                className="p-2 hover:bg-slate-100 rounded-lg disabled:opacity-30 transition-all"
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg disabled:opacity-30 transition-all"
               >
                 <ArrowRightLeft size={20} className="rotate-180" />
               </button>
@@ -1418,7 +1429,7 @@ export default function SupervisorDashboard() {
                   <button
                     key={`${s.month}-${s.year}-${s.status || 'draft'}`}
                     onClick={() => setCurrentScheduleIndex(i)}
-                    className={`h-2 rounded-full transition-all flex items-center justify-center relative ${currentScheduleIndex === i ? 'w-12 bg-latam-indigo' : 'w-3 bg-slate-200'}`}
+                    className={`h-2 rounded-full transition-all flex items-center justify-center relative ${currentScheduleIndex === i ? 'w-12 bg-latam-indigo dark:bg-indigo-500' : 'w-3 bg-slate-200 dark:bg-slate-600'}`}
                     title={`${s.month} ${s.year} (${s.status === 'published' ? 'Publicada' : 'Rascunho'})`}
                   >
                     {currentScheduleIndex === i && (
@@ -1432,7 +1443,7 @@ export default function SupervisorDashboard() {
               <button 
                 onClick={() => setCurrentScheduleIndex(prev => Math.min(aiSchedules.length - 1, prev + 1))}
                 disabled={currentScheduleIndex === aiSchedules.length - 1}
-                className="p-2 hover:bg-slate-100 rounded-lg disabled:opacity-30 transition-all"
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg disabled:opacity-30 transition-all"
               >
                 <ArrowRightLeft size={20} />
               </button>
@@ -1443,33 +1454,33 @@ export default function SupervisorDashboard() {
             key={`${aiSchedules[currentScheduleIndex].month}-${aiSchedules[currentScheduleIndex].year}`}
             initial={{ opacity: 0, x: 20 }} 
             animate={{ opacity: 1, x: 0 }} 
-            className="bg-white p-8 rounded-2xl shadow-xl border border-indigo-100 -mx-4 sm:-mx-6 lg:-mx-8 mb-8"
+            className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl border border-indigo-100 dark:border-slate-700 -mx-4 sm:-mx-6 lg:-mx-8 mb-8"
           >
             <div className="flex justify-between items-center mb-8">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600">
+                <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                   <FileText size={24} />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-indigo-900">
+                  <h2 className="text-2xl font-bold text-indigo-900 dark:text-indigo-300">
                     {editingScheduleId ? (aiSchedules[currentScheduleIndex].status === 'published' ? `Escala Publicada - ${aiSchedules[currentScheduleIndex].month} ${aiSchedules[currentScheduleIndex].year}` : 'Editando Escala Publicada') : `Proposta de Escala - ${aiSchedules[currentScheduleIndex].month} ${aiSchedules[currentScheduleIndex].year}`}
                   </h2>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Modelo LATAM - Status: {aiSchedules[currentScheduleIndex].status === 'published' ? 'Publicado' : 'Rascunho'}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
                 {!feedbackGiven && (
-                  <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
-                    <span className="text-xs font-bold text-slate-400 px-2 uppercase">Avaliar:</span>
-                    <button onClick={() => handleFeedback('boa')} className="p-2 bg-white text-green-600 rounded-lg hover:bg-green-50 shadow-sm transition-all"><ThumbsUp size={18} /></button>
-                    <button onClick={() => handleFeedback('ruim')} className="p-2 bg-white text-red-600 rounded-lg hover:bg-red-50 shadow-sm transition-all"><ThumbsDown size={18} /></button>
+                  <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <span className="text-xs font-bold text-slate-400 dark:text-slate-500 px-2 uppercase">Avaliar:</span>
+                    <button onClick={() => handleFeedback('boa')} className="p-2 bg-white dark:bg-slate-800 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 shadow-sm transition-all"><ThumbsUp size={18} /></button>
+                    <button onClick={() => handleFeedback('ruim')} className="p-2 bg-white dark:bg-slate-800 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 shadow-sm transition-all"><ThumbsDown size={18} /></button>
                   </div>
                 )}
                 <button 
                   onClick={handleExportPDF}
-                  className="flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-200 transition no-print"
+                  className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition no-print"
                 >
                   <Download size={18} /> Exportar PDF
                 </button>
@@ -1482,8 +1493,8 @@ export default function SupervisorDashboard() {
               </div>
             </div>
 
-            <div className="mb-6 bg-indigo-50 border border-indigo-100 text-indigo-700 px-4 py-3 rounded-xl flex items-center gap-3 text-sm">
-              <Sparkles size={18} className="text-indigo-500" />
+            <div className="mb-6 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/30 text-indigo-700 dark:text-indigo-300 px-4 py-3 rounded-xl flex items-center gap-3 text-sm">
+              <Sparkles size={18} className="text-indigo-500 dark:text-indigo-400" />
               <p>Esta escala é uma <strong>sugestão gerada por IA</strong>. Por favor, revise todos os horários e atribuições antes de validar e publicar.</p>
             </div>
 
@@ -1503,14 +1514,14 @@ export default function SupervisorDashboard() {
               </div>
 
               {validationErrors.length > 0 && (
-                <div className="mb-8 p-5 bg-white border-2 border-amber-200 rounded-[24px] shadow-sm overflow-hidden relative no-print">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-amber-400" />
+                <div className="mb-8 p-5 bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-900/50 rounded-[24px] shadow-sm overflow-hidden relative no-print">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-amber-400 dark:bg-amber-600" />
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-black text-amber-900 flex items-center gap-2 uppercase tracking-wider">
-                      <AlertTriangle size={18} className="text-amber-500" />
+                    <h3 className="text-sm font-black text-amber-900 dark:text-amber-400 flex items-center gap-2 uppercase tracking-wider">
+                      <AlertTriangle size={18} className="text-amber-500 dark:text-amber-400" />
                       Análise de Conformidade (HITL)
                     </h3>
-                    <span className="px-2 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-lg uppercase">
+                    <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold rounded-lg uppercase">
                       {validationErrors.filter(e => e.type === 'error').length} Erros Críticos
                     </span>
                   </div>
@@ -1549,7 +1560,7 @@ export default function SupervisorDashboard() {
                       <div className="space-y-6 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                         {sortedGroupKeys.map(groupKey => (
                           <div key={groupKey} className="space-y-3">
-                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">{groupKey}</h4>
+                            <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700 pb-2">{groupKey}</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               {groupedErrors[groupKey].map((err: any, idx: number) => {
                                 let dateLabel = '';
@@ -1570,7 +1581,7 @@ export default function SupervisorDashboard() {
                                 const title = err.nome ? `${err.nome}${dateLabel ? ` - ${dateLabel}` : ''}` : (dateLabel || 'Aviso');
 
                                 return (
-                                  <div key={idx} className={`text-[11px] p-3 rounded-xl flex items-start gap-3 transition-all border ${err.type === 'error' ? 'bg-red-50 text-red-800 border-red-100' : 'bg-amber-50 text-amber-800 border-amber-100'}`}>
+                                  <div key={idx} className={`text-[11px] p-3 rounded-xl flex items-start gap-3 transition-all border ${err.type === 'error' ? 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 border-red-100 dark:border-red-800/30' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 border-amber-100 dark:border-amber-800/30'}`}>
                                     <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${err.type === 'error' ? 'bg-red-500' : 'bg-amber-500'}`} />
                                     <div className="space-y-1">
                                       <div className="font-black uppercase tracking-tight">{title}</div>
@@ -1585,7 +1596,7 @@ export default function SupervisorDashboard() {
                       </div>
                     );
                   })()}
-                  <p className="mt-4 text-[10px] text-slate-400 italic">
+                  <p className="mt-4 text-[10px] text-slate-400 dark:text-slate-500 italic">
                     * Toda escala gerada por IA deve ser revisada manualmente antes da publicação.
                   </p>
                 </div>
@@ -1609,16 +1620,16 @@ export default function SupervisorDashboard() {
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-12 p-8 bg-slate-50 rounded-[32px] border border-slate-200 shadow-inner no-print"
+                  className="mt-12 p-8 bg-slate-50 dark:bg-slate-900/50 rounded-[32px] border border-slate-200 dark:border-slate-700 shadow-inner no-print"
                 >
                   <div className="flex flex-col md:flex-row gap-8">
                     <div className="w-full space-y-6">
                       <div>
-                        <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
-                          <ThumbsUp size={24} className="text-latam-indigo" />
+                        <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2 uppercase tracking-tight">
+                          <ThumbsUp size={24} className="text-latam-indigo dark:text-indigo-400" />
                           Avaliação da Inteligência Artificial
                         </h3>
-                        <p className="text-sm text-slate-500 mt-1">Seu feedback é essencial para treinarmos o motor de escalas JPA.</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Seu feedback é essencial para treinarmos o motor de escalas JPA.</p>
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -1626,19 +1637,19 @@ export default function SupervisorDashboard() {
                           <button
                             key={star}
                             onClick={() => setFeedbackData({ ...feedbackData, rating: star })}
-                            className={`p-1 transition-all transform hover:scale-110 ${feedbackData.rating >= star ? 'text-amber-400' : 'text-slate-300'}`}
+                            className={`p-1 transition-all transform hover:scale-110 ${feedbackData.rating >= star ? 'text-amber-400' : 'text-slate-300 dark:text-slate-600'}`}
                           >
                             <Sparkles size={32} fill={feedbackData.rating >= star ? 'currentColor' : 'none'} />
                           </button>
                         ))}
-                        <span className="ml-4 text-sm font-bold text-slate-400 uppercase tracking-widest">
+                        <span className="ml-4 text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                           {feedbackData.rating > 0 ? `${feedbackData.rating} Estrelas` : 'Avalie a precisão'}
                         </span>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-3">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pontos Fortes</label>
+                          <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Pontos Fortes</label>
                           <div className="flex flex-wrap gap-2">
                             {['Cobertura Ideal', 'Regra 5x1 OK', 'Folgas FAGR OK', 'Turnos Equilibrados'].map(tag => (
                               <button
@@ -1649,7 +1660,7 @@ export default function SupervisorDashboard() {
                                     : [...feedbackData.strengths, tag];
                                   setFeedbackData({ ...feedbackData, strengths });
                                 }}
-                                className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${feedbackData.strengths.includes(tag) ? 'bg-emerald-100 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200 text-slate-500 hover:border-emerald-200'}`}
+                                className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${feedbackData.strengths.includes(tag) ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-emerald-200 dark:hover:border-emerald-800/50'}`}
                               >
                                 {tag}
                               </button>
@@ -1657,7 +1668,7 @@ export default function SupervisorDashboard() {
                           </div>
                         </div>
                         <div className="space-y-3">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pontos Fracos</label>
+                          <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Pontos Fracos</label>
                           <div className="flex flex-wrap gap-2">
                             {['Muitas Férias', 'Furo de Cobertura', 'Turno Incorreto', 'Violação 5x1'].map(tag => (
                               <button
@@ -1668,7 +1679,7 @@ export default function SupervisorDashboard() {
                                     : [...feedbackData.weaknesses, tag];
                                   setFeedbackData({ ...feedbackData, weaknesses });
                                 }}
-                                className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${feedbackData.weaknesses.includes(tag) ? 'bg-red-100 border-red-200 text-red-700' : 'bg-white border-slate-200 text-slate-500 hover:border-red-200'}`}
+                                className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${feedbackData.weaknesses.includes(tag) ? 'bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-400' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-red-200 dark:hover:border-red-800/50'}`}
                               >
                                 {tag}
                               </button>
@@ -1680,18 +1691,18 @@ export default function SupervisorDashboard() {
 
                     <div className="w-full space-y-4">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Comentários Adicionais</label>
+                        <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Comentários Adicionais</label>
                         <textarea
                           value={feedbackData.comment}
                           onChange={(e) => setFeedbackData({ ...feedbackData, comment: e.target.value })}
                           placeholder="Ex: O colaborador Bernardo ficou com turno de madrugada indevidamente..."
-                          className="w-full h-32 p-4 bg-white border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-latam-indigo outline-none transition-all resize-none"
+                          className="w-full h-32 p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-latam-indigo dark:focus:ring-indigo-500 outline-none transition-all resize-none"
                         />
                       </div>
                       <button
                         onClick={handleSaveFeedback}
                         disabled={savingFeedback || feedbackData.rating === 0}
-                        className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-black transition shadow-lg disabled:bg-slate-300 flex items-center justify-center gap-2"
+                        className="w-full py-4 bg-slate-900 dark:bg-slate-800 text-white rounded-2xl font-bold text-sm hover:bg-black dark:hover:bg-slate-700 transition shadow-lg disabled:bg-slate-300 dark:disabled:bg-slate-700 flex items-center justify-center gap-2"
                       >
                         {savingFeedback ? 'Enviando...' : 'Enviar Feedback para Treinamento'}
                         <ArrowRightLeft size={16} />
@@ -1712,7 +1723,7 @@ export default function SupervisorDashboard() {
                   }
                   setEditingScheduleId(null);
                 }}
-                className="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition"
+                className="px-6 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
               >
                 {aiSchedules[currentScheduleIndex].status === 'published' ? 'Remover do Carrossel' : (editingScheduleId ? 'Cancelar Edição' : 'Descartar')}
               </button>
@@ -1720,7 +1731,7 @@ export default function SupervisorDashboard() {
                 <button 
                   onClick={handleSaveDraft}
                   disabled={saving}
-                  className="flex items-center gap-2 bg-white text-indigo-600 border border-indigo-200 px-6 py-3 rounded-xl font-bold hover:bg-indigo-50 transition shadow-sm disabled:bg-slate-50"
+                  className="flex items-center gap-2 bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/50 px-6 py-3 rounded-xl font-bold hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition shadow-sm disabled:bg-slate-50 dark:disabled:bg-slate-800"
                 >
                   <Database size={20} />
                   {saving ? 'Salvando...' : 'Salvar Rascunho'}
@@ -1729,7 +1740,7 @@ export default function SupervisorDashboard() {
               <button 
                 onClick={handleValidateAndPublish}
                 disabled={saving}
-                className="flex items-center gap-2 bg-latam-indigo text-white px-8 py-3 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-200 disabled:bg-slate-300"
+                className="flex items-center gap-2 bg-latam-indigo text-white px-8 py-3 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-200 dark:shadow-none disabled:bg-slate-300 dark:disabled:bg-slate-700"
               >
                 <ShieldCheck size={20} />
                 {saving ? 'Publicando...' : (aiSchedules[currentScheduleIndex].status === 'published' || editingScheduleId ? 'Validar e Republicar' : 'Validar e Publicar Escala')}
@@ -1739,17 +1750,17 @@ export default function SupervisorDashboard() {
         </div>
       )}
 
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <Users className="text-indigo-600" /> Gestão Detalhada de Equipe
+            <h2 className="text-xl font-semibold flex items-center gap-2 dark:text-white">
+              <Users className="text-indigo-600 dark:text-indigo-400" /> Gestão Detalhada de Equipe
             </h2>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <div className="relative w-full sm:w-64">
                 <input 
                   type="text"
                   placeholder="Buscar por nome ou BP..."
-                  className="pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-full"
+                  className="pl-9 pr-4 py-2 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none w-full"
                   onChange={(e) => {
                     const term = e.target.value.toLowerCase();
                     const filtered = employees.filter(emp => 
@@ -1759,9 +1770,9 @@ export default function SupervisorDashboard() {
                     setFilteredEmployees(filtered);
                   }}
                 />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" size={16} />
               </div>
-              <span className="flex items-center justify-center gap-1 text-xs font-medium text-gray-500 bg-gray-50 px-3 py-2 rounded-xl border border-gray-100">
+              <span className="flex items-center justify-center gap-1 text-xs font-medium text-gray-500 dark:text-slate-400 bg-gray-50 dark:bg-slate-900 px-3 py-2 rounded-xl border border-gray-100 dark:border-slate-700">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 {filteredEmployees.length} Colaboradores
               </span>
@@ -1770,7 +1781,7 @@ export default function SupervisorDashboard() {
           
           <div className="overflow-x-auto">
             <table className="w-full text-left border-separate border-spacing-y-2">
-              <thead className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              <thead className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">
                 <tr>
                   <th className="px-4 pb-2">Colaborador</th>
                   <th className="px-4 pb-2">Regime</th>
@@ -1784,31 +1795,31 @@ export default function SupervisorDashboard() {
               </thead>
               <tbody className="text-sm">
                 {filteredEmployees.map(emp => (
-                  <tr key={emp.bp} className="group hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-4 bg-white border-y border-l border-gray-100 first:rounded-l-xl">
+                  <tr key={emp.bp} className="group hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                    <td className="px-4 py-4 bg-white dark:bg-slate-800 border-y border-l border-gray-100 dark:border-slate-700 first:rounded-l-xl">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-latam-indigo/5 flex items-center justify-center text-latam-indigo font-bold text-xs">
+                        <div className="w-10 h-10 rounded-full bg-latam-indigo/5 dark:bg-indigo-900/30 flex items-center justify-center text-latam-indigo dark:text-indigo-400 font-bold text-xs">
                           {emp.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                         </div>
                         <div>
-                          <div className="font-bold text-gray-900 flex items-center gap-2">
+                          <div className="font-bold text-gray-900 dark:text-slate-200 flex items-center gap-2">
                             {emp.name}
                             {emp.position === 'Supervisor' && (
-                              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[8px] uppercase font-black rounded border border-amber-200">
+                              <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[8px] uppercase font-black rounded border border-amber-200 dark:border-amber-800/50">
                                 Supervisor
                               </span>
                             )}
                           </div>
-                          <div className="text-[10px] text-gray-400 font-mono">{emp.bp}</div>
+                          <div className="text-[10px] text-gray-400 dark:text-slate-500 font-mono">{emp.bp}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-4 bg-white border-y border-gray-100">
-                      <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold">
+                    <td className="px-4 py-4 bg-white dark:bg-slate-800 border-y border-gray-100 dark:border-slate-700">
+                      <span className="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg text-xs font-bold">
                         5x1
                       </span>
                     </td>
-                    <td className="px-4 py-4 bg-white border-y border-gray-100">
+                    <td className="px-4 py-4 bg-white dark:bg-slate-800 border-y border-gray-100 dark:border-slate-700">
                       <input
                         type="text"
                         value={emp.work_hours || ''}
@@ -1830,42 +1841,42 @@ export default function SupervisorDashboard() {
                             alert('Erro ao salvar horário.');
                           }
                         }}
-                        className="text-xs font-bold text-indigo-600 w-full bg-transparent border-b border-transparent hover:border-indigo-300 focus:border-indigo-600 outline-none"
+                        className="text-xs font-bold text-indigo-600 dark:text-indigo-400 w-full bg-transparent border-b border-transparent hover:border-indigo-300 dark:hover:border-indigo-700 focus:border-indigo-600 dark:focus:border-indigo-400 outline-none"
                         placeholder="Escala IA"
                       />
                     </td>
-                    <td className="px-4 py-4 bg-white border-y border-gray-100">
-                      <div className="text-xs text-gray-600 font-medium">
+                    <td className="px-4 py-4 bg-white dark:bg-slate-800 border-y border-gray-100 dark:border-slate-700">
+                      <div className="text-xs text-gray-600 dark:text-slate-300 font-medium">
                         {emp.fixed_days_off || 'Sáb/Dom'}
                       </div>
                     </td>
-                    <td className="px-4 py-4 bg-white border-y border-gray-100">
-                      <div className="flex items-center gap-1 text-amber-600 font-bold">
+                    <td className="px-4 py-4 bg-white dark:bg-slate-800 border-y border-gray-100 dark:border-slate-700">
+                      <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
                         <Clock size={14} />
                         {emp.hour_compensation || '0h'}
                       </div>
                     </td>
-                    <td className="px-4 py-4 bg-white border-y border-gray-100">
-                      <div className="flex items-center gap-1 text-gray-600">
+                    <td className="px-4 py-4 bg-white dark:bg-slate-800 border-y border-gray-100 dark:border-slate-700">
+                      <div className="flex items-center gap-1 text-gray-600 dark:text-slate-400">
                         <Calendar size={14} />
                         <span className="text-xs">
                           {emp.vacation_period || 'Nenhum'}
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-4 bg-white border-y border-gray-100">
+                    <td className="px-4 py-4 bg-white dark:bg-slate-800 border-y border-gray-100 dark:border-slate-700">
                       {emp.cat_6 ? (
-                        <span className="flex items-center gap-1 text-emerald-600 font-bold text-xs">
+                        <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
                           <CheckCircle size={14} /> Sim
                         </span>
                       ) : (
-                        <span className="text-gray-300 text-xs">Não</span>
+                        <span className="text-gray-300 dark:text-slate-600 text-xs">Não</span>
                       )}
                     </td>
-                    <td className="px-4 py-4 bg-white border-y border-r border-gray-100 last:rounded-r-xl text-right">
+                    <td className="px-4 py-4 bg-white dark:bg-slate-800 border-y border-r border-gray-100 dark:border-slate-700 last:rounded-r-xl text-right">
                       <button 
                         onClick={() => setEditingEmployee({ ...emp })}
-                        className="p-2 text-slate-400 hover:text-latam-indigo hover:bg-indigo-50 rounded-lg transition-all"
+                        className="p-2 text-slate-400 dark:text-slate-500 hover:text-latam-indigo dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-all"
                       >
                         <Edit2 size={16} />
                       </button>
@@ -1878,28 +1889,28 @@ export default function SupervisorDashboard() {
         </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            <Clock className="text-indigo-600" /> Legenda de Horários
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700">
+          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 dark:text-white">
+            <Clock className="text-indigo-600 dark:text-indigo-400" /> Legenda de Horários
           </h2>
           <div className="grid grid-cols-2 gap-2">
             {SHIFT_LEGEND.map(s => (
-              <div key={s.code} className="text-xs p-2 bg-gray-50 rounded-lg flex justify-between">
-                <span className="font-bold text-indigo-600">{s.code}</span>
-                <span className="text-gray-600">{s.desc}</span>
+              <div key={s.code} className="text-xs p-2 bg-gray-50 dark:bg-slate-900/50 rounded-lg flex justify-between border border-transparent dark:border-slate-700">
+                <span className="font-bold text-indigo-600 dark:text-indigo-400">{s.code}</span>
+                <span className="text-gray-600 dark:text-slate-400">{s.desc}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            <FileText className="text-indigo-600" /> Roteiro de Atividades
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700">
+          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 dark:text-white">
+            <FileText className="text-indigo-600 dark:text-indigo-400" /> Roteiro de Atividades
           </h2>
           <div className="space-y-4">
             {aiSchedules[currentScheduleIndex]?.data.map((row: any, idx: number) => (
-              <div key={row.bp} className="text-xs p-3 bg-gray-50 rounded-lg">
-                <div className="font-bold text-gray-900">{row.nome}</div>
+              <div key={row.bp} className="text-xs p-3 bg-gray-50 dark:bg-slate-900/50 rounded-lg border border-transparent dark:border-slate-700">
+                <div className="font-bold text-gray-900 dark:text-slate-200">{row.nome}</div>
                 <input 
                   type="text"
                   value={row.tarefa || ''}
@@ -1908,7 +1919,7 @@ export default function SupervisorDashboard() {
                     updatedSchedules[currentScheduleIndex].data[idx].tarefa = e.target.value;
                     setAiSchedules(updatedSchedules);
                   }}
-                  className="w-full mt-1 bg-white border border-gray-200 focus:ring-1 focus:ring-indigo-500 outline-none p-1.5 rounded text-gray-600"
+                  className="w-full mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 focus:ring-1 focus:ring-indigo-500 outline-none p-1.5 rounded text-gray-600 dark:text-slate-300"
                   placeholder="Sem tarefas"
                 />
               </div>
@@ -1916,15 +1927,15 @@ export default function SupervisorDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            <Info className="text-indigo-600" /> Legenda de Siglas
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700">
+          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 dark:text-white">
+            <Info className="text-indigo-600 dark:text-indigo-400" /> Legenda de Siglas
           </h2>
           <div className="grid grid-cols-1 gap-2">
             {SIGLA_LEGEND.map(s => (
-              <div key={s.code} className="text-xs p-2 bg-gray-50 rounded-lg flex items-center gap-2">
-                <span className={`px-2 py-1 rounded ${s.color || 'bg-gray-200'}`}>{s.code}</span>
-                <span className="text-gray-600">{s.desc}</span>
+              <div key={s.code} className="text-xs p-2 bg-gray-50 dark:bg-slate-900/50 rounded-lg flex items-center gap-2 border border-transparent dark:border-slate-700">
+                <span className={`px-2 py-1 rounded ${s.color || 'bg-gray-200 dark:bg-slate-700'}`}>{s.code}</span>
+                <span className="text-gray-600 dark:text-slate-400">{s.desc}</span>
               </div>
             ))}
           </div>
@@ -1932,43 +1943,43 @@ export default function SupervisorDashboard() {
       </div>
 
       {/* Histórico de Escalas Section */}
-      <div className="mt-8 bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+      <div className="mt-8 bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 p-8">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <History className="text-latam-indigo" size={24} />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <History className="text-latam-indigo dark:text-indigo-400" size={24} />
             Histórico de Escalas Publicadas
           </h2>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {scheduleHistory.length === 0 ? (
-            <div className="col-span-full text-center py-8 text-slate-400">
+            <div className="col-span-full text-center py-8 text-slate-400 dark:text-slate-500">
               Nenhuma escala publicada anteriormente.
             </div>
           ) : (
             scheduleHistory.map(schedule => (
-              <div key={schedule.id} className="p-4 border border-slate-100 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors group">
+              <div key={schedule.id} className="p-4 border border-slate-100 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group">
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <div className="font-bold text-slate-900 uppercase">
+                    <div className="font-bold text-slate-900 dark:text-slate-200 uppercase">
                       {new Date(schedule.start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
                     </div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
                       Publicada em: {new Date(schedule.published_at).toLocaleDateString('pt-BR')}
                     </div>
                   </div>
-                  <div className="px-2 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-lg uppercase">
+                  <div className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold rounded-lg uppercase">
                     Publicada
                   </div>
                 </div>
                 
                 <div className="flex items-center justify-between mt-4">
-                  <div className="text-[10px] text-slate-400">
+                  <div className="text-[10px] text-slate-400 dark:text-slate-500">
                     Por: {schedule.created_by_user?.name || 'Sistema'}
                   </div>
                   <button 
                     onClick={() => viewSchedule(schedule)}
-                    className="flex items-center gap-1 text-xs font-bold text-latam-indigo hover:underline"
+                    className="flex items-center gap-1 text-xs font-bold text-latam-indigo dark:text-indigo-400 hover:underline"
                   >
                     <Search size={14} /> Visualizar / Editar
                   </button>
@@ -1980,35 +1991,35 @@ export default function SupervisorDashboard() {
       </div>
 
       {/* Trocas e Solicitações Section */}
-      <div className="mt-8 bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+      <div className="mt-8 bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 p-8">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <ArrowRightLeft className="text-latam-indigo" size={24} />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <ArrowRightLeft className="text-latam-indigo dark:text-indigo-400" size={24} />
             Trocas e Solicitações
           </h2>
         </div>
         
         <div className="space-y-4">
           {shiftRequests.length === 0 ? (
-            <div className="text-center py-8 text-slate-400">
+            <div className="text-center py-8 text-slate-400 dark:text-slate-500">
               Nenhuma solicitação pendente.
             </div>
           ) : (
             shiftRequests.map(request => (
-              <div key={request.id} className="flex items-center justify-between p-4 border border-slate-100 rounded-2xl bg-slate-50">
+              <div key={request.id} className="flex items-center justify-between p-4 border border-slate-100 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-900/50">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-latam-indigo/10 flex items-center justify-center text-latam-indigo font-bold">
+                  <div className="w-10 h-10 rounded-full bg-latam-indigo/10 dark:bg-indigo-900/30 flex items-center justify-center text-latam-indigo dark:text-indigo-400 font-bold">
                     {request.employee_name.charAt(0)}
                   </div>
                   <div>
-                    <div className="font-bold text-slate-900">{request.employee_name}</div>
-                    <div className="text-sm text-slate-500">
-                      Solicita troca do dia <span className="font-medium text-slate-700">{new Date(request.date).toLocaleDateString('pt-BR')}</span> 
+                    <div className="font-bold text-slate-900 dark:text-slate-200">{request.employee_name}</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">
+                      Solicita troca do dia <span className="font-medium text-slate-700 dark:text-slate-300">{new Date(request.date).toLocaleDateString('pt-BR')}</span> 
                       {request.target_employee_name && (
-                        <span> com <span className="font-medium text-slate-700">{request.target_employee_name}</span></span>
+                        <span> com <span className="font-medium text-slate-700 dark:text-slate-300">{request.target_employee_name}</span></span>
                       )}
                     </div>
-                    <div className="text-xs text-slate-400 mt-1">Motivo: {request.reason}</div>
+                    <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">Motivo: {request.reason}</div>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -2017,7 +2028,7 @@ export default function SupervisorDashboard() {
                       <button 
                         onClick={() => handleUpdateRequestStatus(request.id, 'aprovado')}
                         disabled={updatingRequest === request.id}
-                        className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors disabled:opacity-50"
+                        className="p-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-xl transition-colors disabled:opacity-50"
                         title="Aprovar"
                       >
                         <CheckCircle size={20} />
@@ -2025,7 +2036,7 @@ export default function SupervisorDashboard() {
                       <button 
                         onClick={() => handleUpdateRequestStatus(request.id, 'rejeitado')}
                         disabled={updatingRequest === request.id}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
+                        className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-colors disabled:opacity-50"
                         title="Rejeitar"
                       >
                         <X size={20} />
@@ -2033,7 +2044,7 @@ export default function SupervisorDashboard() {
                     </>
                   ) : (
                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      request.status === 'aprovado' || request.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                      request.status === 'aprovado' || request.status === 'approved' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                     }`}>
                       {request.status === 'aprovado' || request.status === 'approved' ? 'Aprovado' : 'Rejeitado'}
                     </span>
@@ -2046,20 +2057,20 @@ export default function SupervisorDashboard() {
       </div>
 
       {/* Base de Conhecimento Section */}
-      <div className="mt-8 bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+      <div className="mt-8 bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 p-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <BookOpen className="text-latam-indigo" size={24} />
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <BookOpen className="text-latam-indigo dark:text-indigo-400" size={24} />
               Base de Conhecimento (IA)
             </h2>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
               Faça upload de escalas anteriores em PDF para que a IA aprenda o padrão e gere escalas mais precisas.
             </p>
           </div>
           
           <div>
-            <label className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-bold text-sm cursor-pointer transition-all ${uploadingKb ? 'bg-slate-100 text-slate-400' : 'bg-latam-indigo text-white hover:bg-opacity-90 shadow-lg shadow-indigo-100'}`}>
+            <label className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-bold text-sm cursor-pointer transition-all ${uploadingKb ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500' : 'bg-latam-indigo text-white hover:bg-opacity-90 shadow-lg shadow-indigo-100 dark:shadow-none'}`}>
               <Upload size={18} />
               {uploadingKb ? 'Processando...' : 'Fazer Upload (PDF)'}
               <input 
@@ -2076,29 +2087,29 @@ export default function SupervisorDashboard() {
         
         <div className="space-y-3">
           {knowledgeFiles.length === 0 ? (
-            <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-              <BookOpen size={32} className="mx-auto mb-3 text-slate-300" />
+            <div className="text-center py-8 text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+              <BookOpen size={32} className="mx-auto mb-3 text-slate-300 dark:text-slate-600" />
               <p>Nenhum arquivo na base de conhecimento.</p>
               <p className="text-xs mt-1">Faça upload de PDFs de escalas antigas para melhorar a IA.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {knowledgeFiles.map(file => (
-                <div key={file.id} className="flex items-center justify-between p-4 border border-slate-100 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors">
+                <div key={file.id} className="flex items-center justify-between p-4 border border-slate-100 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                   <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
                       <FileText size={20} />
                     </div>
                     <div className="min-w-0">
-                      <div className="font-bold text-sm text-slate-900 truncate" title={file.file_name}>{file.file_name}</div>
-                      <div className="text-xs text-slate-500">
+                      <div className="font-bold text-sm text-slate-900 dark:text-slate-200 truncate" title={file.file_name}>{file.file_name}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
                         {new Date(file.created_at).toLocaleDateString('pt-BR')}
                       </div>
                     </div>
                   </div>
                   <button 
                     onClick={() => handleDeleteKb(file.id)}
-                    className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition-colors shrink-0"
+                    className="p-2 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors shrink-0"
                     title="Remover arquivo"
                   >
                     <Trash2 size={18} />
@@ -2117,10 +2128,10 @@ export default function SupervisorDashboard() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
+              className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col border border-slate-200 dark:border-slate-700"
             >
-              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <h3 className="text-lg font-bold text-slate-900">Visualizar Escala - {new Date(viewedSchedule.start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()}</h3>
+              <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Visualizar Escala - {new Date(viewedSchedule.start_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()}</h3>
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={() => {
@@ -2138,7 +2149,7 @@ export default function SupervisorDashboard() {
                   >
                     <Edit2 size={16} /> Editar esta Escala
                   </button>
-                  <button onClick={() => setViewedSchedule(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+                  <button onClick={() => setViewedSchedule(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><X size={20} /></button>
                 </div>
               </div>
               <div className="p-6 overflow-y-auto">
@@ -2161,14 +2172,14 @@ export default function SupervisorDashboard() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-[32px] shadow-2xl w-full max-w-md overflow-hidden"
+              className="bg-white dark:bg-slate-800 rounded-[32px] shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700"
             >
-              <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div className="p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
                 <div>
-                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Configurações da Base</h3>
-                  <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Parâmetros Operacionais JPA</p>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Configurações da Base</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest mt-1">Parâmetros Operacionais JPA</p>
                 </div>
-                <button onClick={() => setShowConfig(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-white rounded-full transition-all">
+                <button onClick={() => setShowConfig(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-2 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all">
                   <X size={24} />
                 </button>
               </div>
@@ -2176,10 +2187,10 @@ export default function SupervisorDashboard() {
               <div className="p-8 space-y-8">
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                       <Users size={18} />
                     </div>
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Cobertura por Turno</label>
+                    <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Cobertura por Turno</label>
                   </div>
                   <div className="flex items-center gap-4">
                     <input 
@@ -2188,21 +2199,21 @@ export default function SupervisorDashboard() {
                       max="10" 
                       value={baseConfig.min_coverage_per_shift}
                       onChange={(e) => setBaseConfig({...baseConfig, min_coverage_per_shift: parseInt(e.target.value)})}
-                      className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-latam-indigo"
+                      className="flex-1 h-2 bg-slate-100 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-latam-indigo"
                     />
-                    <span className="w-12 h-12 flex items-center justify-center bg-indigo-50 text-latam-indigo font-black rounded-2xl border border-indigo-100">
+                    <span className="w-12 h-12 flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/20 text-latam-indigo dark:text-indigo-400 font-black rounded-2xl border border-indigo-100 dark:border-indigo-800/30">
                       {baseConfig.min_coverage_per_shift}
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-500 italic">Mínimo de colaboradores ativos em cada turno (Manhã/Tarde).</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">Mínimo de colaboradores ativos em cada turno (Manhã/Tarde).</p>
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                       <CheckCircle size={18} />
                     </div>
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Cobertura CAT 6</label>
+                    <label className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Cobertura CAT 6</label>
                   </div>
                   <div className="flex items-center gap-4">
                     <input 
@@ -2211,19 +2222,19 @@ export default function SupervisorDashboard() {
                       max="5" 
                       value={baseConfig.min_cat6_per_shift}
                       onChange={(e) => setBaseConfig({...baseConfig, min_cat6_per_shift: parseInt(e.target.value)})}
-                      className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                      className="flex-1 h-2 bg-slate-100 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                     />
-                    <span className="w-12 h-12 flex items-center justify-center bg-emerald-50 text-emerald-600 font-black rounded-2xl border border-emerald-100">
+                    <span className="w-12 h-12 flex items-center justify-center bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 font-black rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
                       {baseConfig.min_cat6_per_shift}
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-500 italic">Mínimo de colaboradores com certificação CAT 6 ativos por dia.</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">Mínimo de colaboradores com certificação CAT 6 ativos por dia.</p>
                 </div>
 
                 <div className="pt-6 flex gap-3">
                   <button 
                     onClick={() => setShowConfig(false)}
-                    className="flex-1 py-4 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 transition-all border border-transparent hover:border-slate-200"
+                    className="flex-1 py-4 rounded-2xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-600"
                   >
                     Cancelar
                   </button>
@@ -2248,75 +2259,75 @@ export default function SupervisorDashboard() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden"
+              className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-700"
             >
-              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <h3 className="text-lg font-bold text-slate-900">Editar Colaborador</h3>
-                <button onClick={() => setEditingEmployee(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+              <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Editar Colaborador</h3>
+                <button onClick={() => setEditingEmployee(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><X size={20} /></button>
               </div>
               <form onSubmit={handleUpdateEmployee} className="p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase">Regime de Trabalho</label>
-                    <div className="w-full p-2 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-500">
+                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Regime de Trabalho</label>
+                    <div className="w-full p-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-500 dark:text-slate-400">
                       5x1 (Fixo LATAM)
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase">Horário de Trabalho</label>
+                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Horário de Trabalho</label>
                     <input 
                       type="text"
                       value={editingEmployee.work_hours || ''}
                       onChange={e => setEditingEmployee({...editingEmployee, work_hours: e.target.value})}
                       placeholder="Ex: 08:00 - 16:00"
-                      className="w-full p-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">Aceitador DG6 (CAT 6)</label>
+                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Aceitador DG6 (CAT 6)</label>
                   <div className="flex items-center gap-2 h-10">
                     <input 
                       type="checkbox" 
                       checked={editingEmployee.cat_6}
                       onChange={e => setEditingEmployee({...editingEmployee, cat_6: e.target.checked})}
-                      className="w-5 h-5 rounded border-slate-300 text-latam-indigo focus:ring-latam-indigo"
+                      className="w-5 h-5 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-latam-indigo focus:ring-latam-indigo"
                     />
-                    <span className="text-sm font-medium">Habilitado</span>
+                    <span className="text-sm font-medium dark:text-slate-300">Habilitado</span>
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase">Folgas Fixas</label>
+                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Folgas Fixas</label>
                   <input 
                     type="text"
                     value={editingEmployee.fixed_days_off || ''}
                     onChange={e => setEditingEmployee({...editingEmployee, fixed_days_off: e.target.value})}
                     placeholder="Ex: Sábados e Domingos"
-                    className="w-full p-2 border rounded-xl text-sm"
+                    className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase">Compensa de Horas</label>
+                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Compensa de Horas</label>
                     <input 
                       type="text"
                       value={editingEmployee.hour_compensation || ''}
                       onChange={e => setEditingEmployee({...editingEmployee, hour_compensation: e.target.value})}
                       placeholder="Ex: 12h"
-                      className="w-full p-2 border rounded-xl text-sm"
+                      className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase">Período de Férias</label>
+                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">Período de Férias</label>
                     <input 
                       type="text"
                       value={editingEmployee.vacation_period || ''}
                       onChange={e => setEditingEmployee({...editingEmployee, vacation_period: e.target.value})}
                       placeholder="Ex: 01/05 a 30/05"
-                      className="w-full p-2 border rounded-xl text-sm"
+                      className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
                   </div>
                 </div>
@@ -2325,21 +2336,21 @@ export default function SupervisorDashboard() {
                   <button 
                     type="button"
                     onClick={handleAnonymizeEmployee}
-                    className="py-3 px-4 rounded-xl font-bold text-red-600 hover:bg-red-50 transition"
+                    className="py-3 px-4 rounded-xl font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition"
                   >
                     Anonimizar
                   </button>
                   <button 
                     type="button"
                     onClick={() => setEditingEmployee(null)}
-                    className="flex-1 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition"
+                    className="flex-1 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
                   >
                     Cancelar
                   </button>
                   <button 
                     type="submit"
                     disabled={saving}
-                    className="flex-1 bg-latam-indigo text-white py-3 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-100 disabled:bg-slate-300"
+                    className="flex-1 bg-latam-indigo text-white py-3 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-100 dark:shadow-none disabled:bg-slate-300 dark:disabled:bg-slate-700"
                   >
                     {saving ? 'Salvando...' : 'Salvar Alterações'}
                   </button>
