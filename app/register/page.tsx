@@ -246,8 +246,8 @@ export default function RegisterPage() {
               />
             </motion.div>
             <div>
-              <h1 className="text-2xl font-bold text-latam-indigo tracking-tight">Primeiro Acesso</h1>
-              <p className="text-xs text-slate-500 font-medium">Crie sua conta corporativa</p>
+              <h1 className="text-2xl font-bold text-latam-indigo dark:text-white tracking-tight">Primeiro Acesso</h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Crie sua conta corporativa</p>
             </div>
           </div>
 
@@ -274,7 +274,7 @@ export default function RegisterPage() {
                   placeholder="BP (Registro Funcional)" 
                   value={bp} 
                   onChange={(e) => setBp(e.target.value)} 
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 border border-white/50 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white outline-none transition-all text-latam-indigo font-medium placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400"
                   required
                 />
               </div>
@@ -285,7 +285,7 @@ export default function RegisterPage() {
                   placeholder="Nome Completo" 
                   value={name} 
                   onChange={(e) => setName(e.target.value)} 
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 border border-white/50 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white outline-none transition-all text-latam-indigo font-medium placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400"
                   required
                 />
               </div>
@@ -322,7 +322,7 @@ export default function RegisterPage() {
                   onChange={(e) => setCat6(e.target.checked)}
                   className="w-5 h-5 rounded border-white/50 text-latam-indigo focus:ring-latam-indigo"
                 />
-                <label htmlFor="cat6" className="text-sm font-medium text-latam-indigo">Possui CAT 6</label>
+                <label htmlFor="cat6" className="text-sm font-medium text-latam-indigo dark:text-slate-200">Possui CAT 6</label>
               </div>
             </div>
 
@@ -457,9 +457,9 @@ export default function RegisterPage() {
           </form>
         </div>
         
-        <div className="bg-white/40 backdrop-blur-md p-6 border-t border-white/20 text-center">
-          <p className="text-sm text-slate-600">
-            Já possui uma conta? <button onClick={() => router.push('/')} className="text-latam-crimson font-bold hover:underline">Fazer Login</button>
+        <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-6 border-t border-white/20 dark:border-slate-700 text-center">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            Já possui uma conta? <button onClick={() => router.push('/')} className="text-latam-crimson dark:text-red-400 font-bold hover:underline">Fazer Login</button>
           </p>
         </div>
       </motion.div>

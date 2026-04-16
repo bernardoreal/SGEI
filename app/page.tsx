@@ -265,8 +265,8 @@ export default function LoginPage() {
                 referrerPolicy="no-referrer"
               />
             </motion.div>
-            <h1 className="text-3xl font-bold text-latam-indigo tracking-tight">LATAM Cargo</h1>
-            <p className="text-sm text-slate-500 font-medium mt-1">SGEI - Gestão de Escalas</p>
+            <h1 className="text-3xl font-bold text-latam-indigo dark:text-white tracking-tight">LATAM Cargo</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">SGEI - Gestão de Escalas</p>
           </div>
 
           <AnimatePresence mode="wait">
@@ -341,9 +341,9 @@ export default function LoginPage() {
           </form>
         </div>
         
-        <div className="bg-white/40 backdrop-blur-md p-6 border-t border-white/20 text-center">
-          <p className="text-sm text-slate-600">
-            Ainda não tem acesso? <a href="/register" className="text-latam-crimson font-bold hover:underline">Cadastre-se aqui</a>
+        <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-6 border-t border-white/20 dark:border-slate-700 text-center">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            Ainda não tem acesso? <a href="/register" className="text-latam-crimson dark:text-red-400 font-bold hover:underline">Cadastre-se aqui</a>
           </p>
         </div>
       </motion.div>
@@ -355,11 +355,11 @@ export default function LoginPage() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-[32px] shadow-2xl border border-white/20 w-full max-w-sm overflow-hidden"
+              className="bg-white dark:bg-slate-800 rounded-[32px] shadow-2xl border border-white/20 dark:border-slate-700 w-full max-w-sm overflow-hidden"
             >
               <div className="p-8">
                 <div className="flex justify-between items-center mb-8">
-                  <div className="w-12 h-12 bg-latam-indigo/10 rounded-2xl flex items-center justify-center text-latam-indigo">
+                  <div className="w-12 h-12 bg-latam-indigo/10 dark:bg-slate-700 rounded-2xl flex items-center justify-center text-latam-indigo dark:text-indigo-300">
                     <KeyRound size={24} />
                   </div>
                   <button 
@@ -374,10 +374,10 @@ export default function LoginPage() {
                   </button>
                 </div>
 
-                <h3 className="text-xl font-bold text-latam-indigo mb-2">
+                <h3 className="text-xl font-bold text-latam-indigo dark:text-white mb-2">
                   {isChangingPassword ? 'Alterar Senha' : 'Recuperação de Senha'}
                 </h3>
-                <p className="text-sm text-slate-500 mb-8 leading-relaxed">
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
                   {isChangingPassword 
                     ? 'Digite sua nova senha abaixo para atualizar seu acesso.' 
                     : 'Identificamos sua conta no sistema. Guarde sua senha em um local seguro.'}
