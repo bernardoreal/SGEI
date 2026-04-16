@@ -21,7 +21,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setTheme(savedTheme);
       if (savedTheme === 'dark') document.documentElement.classList.add('dark');
     } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTheme('dark');
       document.documentElement.classList.add('dark');
     }
