@@ -3,6 +3,45 @@
 import { supabase } from "@/lib/supabase";
 import { maskPrompt, unmaskResponse } from "@/lib/ai-sanitizer";
 
+/**
+ * Registra o uso de tokens de IA de forma assíncrona no Supabase.
+ */
+async function trackUsage(usageData: {
+  model: string;
+  provider: string;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  cost?: number;
+}) {
+  try {
+    // Tenta obter o usuário logado para associar ao log
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+
+    // Inserção assíncrona (não aguardada)
+    supabase
+      .from('ai_usage_logs')
+      .insert([{
+        ...usageData,
+        user_id: userId
+      }])
+      .then(({ error }) => {
+        if (error) {
+          console.error(`[AI-TRACKER] Erro ao registrar uso (${usageData.provider}):`, error);
+        }
+      });
+  } catch (err) {
+    // Se falhar a sessão, ainda tentamos logar sem o user_id
+    supabase
+      .from('ai_usage_logs')
+      .insert([usageData])
+      .then(({ error }) => {
+        if (error) console.error(`[AI-TRACKER] Erro ao registrar uso anônimo:`, error);
+      });
+  }
+}
+
 export async function generateWithOpenRouter(prompt: string, model: string, employees: any[] = []) {
   const apiKey = process.env.OPENROUTER_API_KEY || process.env.NEXT_PUBLIC_OPENROUTER_API_KEY;
   
@@ -45,17 +84,15 @@ export async function generateWithOpenRouter(prompt: string, model: string, empl
     const content = unmaskResponse(maskedContent, map);
     const usage = data.usage;
 
-    // Log usage to Supabase
-    if (supabase && typeof supabase.from === 'function') {
-      supabase.from('ai_usage_logs').insert([{
+    // Rastreamento de uso assíncrono
+    if (usage) {
+      trackUsage({
         model: model,
         provider: 'openrouter',
         prompt_tokens: usage.prompt_tokens || 0,
         completion_tokens: usage.completion_tokens || 0,
         total_tokens: usage.total_tokens || 0,
-        cost: data.usage.cost || 0
-      }]).then(({ error }: { error: any }) => {
-        if (error) console.error('Erro ao logar uso de IA (OpenRouter):', error);
+        cost: usage.cost || 0
       });
     }
 
@@ -173,20 +210,16 @@ export async function generateWithGemini(prompt: string, model: string, employee
       throw new Error('A IA não retornou nenhum conteúdo válido para a escala.');
     }
 
-    // Log usage to Supabase (opcional e seguro)
-    if (supabase && typeof supabase.from === 'function') {
-      const usage = data.usageMetadata;
-      if (usage) {
-        supabase.from('ai_usage_logs').insert([{
-          model: targetModel,
-          provider: 'gemini',
-          prompt_tokens: usage.promptTokenCount,
-          completion_tokens: usage.candidatesTokenCount,
-          total_tokens: usage.totalTokenCount
-        }]).then(({ error }: { error: any }) => {
-          if (error) console.error('Erro ao logar uso de IA:', error);
-        });
-      }
+    // Rastreamento de uso assíncrono (Gemini)
+    const usage = data.usageMetadata;
+    if (usage) {
+      trackUsage({
+        model: targetModel,
+        provider: 'gemini',
+        prompt_tokens: usage.promptTokenCount || 0,
+        completion_tokens: usage.candidatesTokenCount || 0,
+        total_tokens: usage.totalTokenCount || 0
+      });
     }
 
     return content;
