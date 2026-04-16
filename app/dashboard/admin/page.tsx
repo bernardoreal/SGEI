@@ -1005,7 +1005,7 @@ export default function AdminDashboard() {
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Painel de Controle Global</h1>
-            <p className="text-sm md:text-base text-gray-500 mt-1">Visão geral da infraestrutura e governança da LATAM Cargo.</p>
+            <p className="text-sm md:text-base text-gray-500 dark:text-slate-400 mt-1">Visão geral da infraestrutura e governança da LATAM Cargo.</p>
           </div>
         </div>
         
@@ -1590,14 +1590,14 @@ export default function AdminDashboard() {
 
       {/* Base Management Section */}
       <div className="space-y-4">
-        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <Database size={20} className="text-indigo-600" />
           Gestão de Bases e Lideranças
         </h2>
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+              <thead className="bg-gray-50 dark:bg-slate-900 text-gray-500 dark:text-slate-400 text-xs uppercase tracking-wider">
                 <tr>
                   <th className="px-6 py-4 font-medium">Base</th>
                   <th className="px-6 py-4 font-medium">Distribuição</th>
@@ -1610,12 +1610,12 @@ export default function AdminDashboard() {
                 {bases.map(base => (
                   <tr 
                     key={base.id} 
-                    className="hover:bg-gray-50 transition-colors cursor-pointer group"
+                    className="hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer group"
                     onClick={() => openBaseModal(base.id)}
                   >
                     <td className="px-6 py-4">
-                      <div className="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">{base.code_iata}</div>
-                      <div className="text-xs text-gray-500">{base.name}</div>
+                      <div className="font-bold text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{base.code_iata}</div>
+                      <div className="text-xs text-gray-500 dark:text-slate-400">{base.name}</div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-1">
@@ -1644,7 +1644,7 @@ export default function AdminDashboard() {
                         disabled={updatingBaseId === base.id}
                         value={base.supervisor_id || ''}
                         onChange={(e) => handleUpdateBaseAssignment(base.id, 'supervisor_id', e.target.value || null)}
-                        className="text-xs py-1.5 px-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-800 w-full min-w-[130px] max-w-[150px]"
+                        className="text-xs py-1.5 px-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-200 w-full min-w-[130px] max-w-[150px]"
                       >
                         <option value="">Não atribuído</option>
                         {users.filter(u => (u.roles || []).some(r => ['supervisor', 'admin'].includes(r))).map(u => (
@@ -1657,7 +1657,7 @@ export default function AdminDashboard() {
                         disabled={updatingBaseId === base.id}
                         value={base.coordinator_id || ''}
                         onChange={(e) => handleUpdateBaseAssignment(base.id, 'coordinator_id', e.target.value || null)}
-                        className="text-xs py-1.5 px-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-800 w-full min-w-[130px] max-w-[150px]"
+                        className="text-xs py-1.5 px-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-200 w-full min-w-[130px] max-w-[150px]"
                       >
                         <option value="">Não atribuído</option>
                         {users.filter(u => (u.roles || []).some(r => ['coordinator', 'admin'].includes(r))).map(u => (
@@ -1670,7 +1670,7 @@ export default function AdminDashboard() {
                         disabled={updatingBaseId === base.id}
                         value={base.manager_id || ''}
                         onChange={(e) => handleUpdateBaseAssignment(base.id, 'manager_id', e.target.value || null)}
-                        className="text-xs py-1.5 px-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-800 w-full min-w-[130px] max-w-[150px]"
+                        className="text-xs py-1.5 px-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-200 w-full min-w-[130px] max-w-[150px]"
                       >
                         <option value="">Não atribuído</option>
                         {users.filter(u => (u.roles || []).some(r => ['manager', 'admin'].includes(r))).map(u => (
@@ -1688,7 +1688,7 @@ export default function AdminDashboard() {
 
       {/* AI Configuration Section */}
       <div className="space-y-4">
-        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <Cpu size={20} className="text-indigo-600" />
           Configurações de Inteligência Artificial
         </h2>
@@ -1770,13 +1770,13 @@ export default function AdminDashboard() {
                   </p>
                 )}
                 
-                <div className="mt-4 p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center gap-3">
+                <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 rounded-xl flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold text-indigo-900">
+                    <span className="text-xs font-bold text-indigo-900 dark:text-indigo-100">
                       Modelo principal: {llmConfig.model}
                     </span>
-                    <span className="text-[10px] text-indigo-600 italic mt-1">
+                    <span className="text-[10px] text-indigo-600 dark:text-indigo-400 italic mt-1">
                       * O Supervisor precisa atualizar o Dashboard para aplicar mudanças.
                     </span>
                   </div>
@@ -1940,11 +1940,11 @@ export default function AdminDashboard() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-50/50 border-b border-gray-100">
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Colaborador</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">BP</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Função</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Base</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Ações</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Colaborador</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">BP</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Função</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Base</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
