@@ -61,24 +61,41 @@ export async function updateSession(request: NextRequest) {
       return supabaseResponse
     }
 
-    // Role-based access control
-    const roles = user.app_metadata?.roles || []
+    // Role-based access control (RBAC) - Strict URL protection
+    const roles: string[] = user.app_metadata?.roles || []
     
-    if (pathname.startsWith('/dashboard/admin') && !roles.includes('admin')) {
+    // Admin has full access
+    if (roles.includes('admin') || user.email === 'bernardo.real@latam.com') {
+      return supabaseResponse
+    }
+
+    // Manager strict access
+    if (pathname.startsWith('/dashboard/manager') && !roles.includes('manager')) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
     
-    if (pathname.startsWith('/dashboard/manager') && !roles.includes('manager') && !roles.includes('admin')) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-    
-    if (pathname.startsWith('/dashboard/supervisor') && !roles.includes('supervisor') && !roles.includes('admin')) {
+    // Coordinator strict access
+    if (pathname.startsWith('/dashboard/coordinator') && !roles.includes('coordinator')) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
-    if (pathname.startsWith('/dashboard/employee') && roles.length === 0) {
-       // Just a fallback, usually everyone has at least 'employee' or 'pending'
+    // Supervisor strict access
+    if (pathname.startsWith('/dashboard/supervisor') && !roles.includes('supervisor')) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
     }
+
+    // Admin-only paths should already be covered above but just for safety
+    if (pathname.startsWith('/dashboard/admin') && !roles.includes('admin')) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    // Employee strict access (only if not an admin/manager/coordinator/supervisor)
+    if (pathname.startsWith('/dashboard/employee') && !roles.includes('employee')) {
+       // If they don't have the employee role, it's safer to redirect them to the generic dashboard
+       // which will then send them to their own authorized home
+       return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
   }
 
   return supabaseResponse

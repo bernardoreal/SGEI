@@ -519,7 +519,44 @@ CREATE POLICY "Admins can manage system settings" ON system_settings
         LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com'
     );
 
--- Initial System Settings
-INSERT INTO system_settings (key, value) VALUES 
-('llm_config', '{"provider": "gemini", "model": "gemini-3-flash-preview"}'::jsonb)
-ON CONFLICT (key) DO NOTHING;
+-- Function to sync roles to auth.users app_metadata
+CREATE OR REPLACE FUNCTION public.sync_user_roles_to_metadata()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE auth.users
+    SET raw_app_metadata_data = 
+        jsonb_set(
+            COALESCE(raw_app_metadata_data, '{}'::jsonb),
+            '{roles}',
+            to_jsonb(NEW.roles)
+        )
+    WHERE id = NEW.id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to sync on insert or update
+DROP TRIGGER IF EXISTS on_user_roles_change ON public.users;
+CREATE TRIGGER on_user_roles_change
+    AFTER INSERT OR UPDATE OF roles ON public.users
+    FOR EACH ROW
+    EXECUTE FUNCTION public.sync_user_roles_to_metadata();
+
+-- One-time sync for existing users
+DO $$
+DECLARE
+    user_record RECORD;
+BEGIN
+    FOR user_record IN SELECT id, roles FROM public.users
+    LOOP
+        UPDATE auth.users
+        SET raw_app_metadata_data = 
+            jsonb_set(
+                COALESCE(raw_app_metadata_data, '{}'::jsonb),
+                '{roles}',
+                to_jsonb(user_record.roles)
+            )
+        WHERE id = user_record.id;
+    END LOOP;
+END $$;
+

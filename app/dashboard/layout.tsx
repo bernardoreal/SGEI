@@ -29,10 +29,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && user) {
+      // Bypassa para o administrador Bernardo
+      if (user.email === 'bernardo.real@latam.com') return;
+
+      const checkRoleAccess = async () => {
+        const { data: dbUser } = await supabase
+          .from('users')
+          .select('roles')
+          .eq('id', user.id)
+          .single();
+
+        if (dbUser) {
+          const roles = dbUser.roles || [];
+          if (roles.includes('admin')) return; // Admin acessa tudo
+
+          // Regras estritas de URL por role
+          if (pathname.includes('/admin') && !roles.includes('admin')) {
+            router.replace('/dashboard');
+          } else if (pathname.includes('/manager') && !roles.includes('manager')) {
+            router.replace('/dashboard');
+          } else if (pathname.includes('/coordinator') && !roles.includes('coordinator')) {
+            router.replace('/dashboard');
+          } else if (pathname.includes('/supervisor') && !roles.includes('supervisor')) {
+            router.replace('/dashboard');
+          } else if (pathname.includes('/employee') && !roles.includes('employee')) {
+            router.replace('/dashboard');
+          }
+        }
+      };
+
+      checkRoleAccess();
+    } else if (!loading && !user) {
       router.replace('/');
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, pathname]);
 
   if (loading) {
     return (
