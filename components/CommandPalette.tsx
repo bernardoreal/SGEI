@@ -62,6 +62,7 @@ export default function CommandPalette() {
     const isAdmin = userRole === 'admin';
     const isSupervisor = userRole === 'supervisor';
     const isCoordinator = userRole === 'coordinator' || userRole === 'manager';
+    const isEmployee = userRole === 'employee';
     
     // Core Actions (Always present)
     const baseActions = [
@@ -92,17 +93,16 @@ export default function CommandPalette() {
         icon: <MessageSquare size={18} />,
         keywords: ['feedback', 'sugestao', 'ajuda', 'suporte', 'melhoria', 'bug'],
         perform: () => {
-          // Detect scroll focus or navigate to suggestion section
           router.push('/dashboard?action=suggest');
         }
       }
     ];
 
-    const contextualActions = [];
+    const roleActions = [];
 
     // Context: Admin
-    if (isAdmin || pathname.includes('/admin')) {
-      contextualActions.push(
+    if (isAdmin) {
+      roleActions.push(
         {
           id: 'admin_users',
           title: 'Gestão de Usuários (Admin)',
@@ -121,8 +121,8 @@ export default function CommandPalette() {
     }
 
     // Context: Supervisor
-    if (isSupervisor || pathname.includes('/supervisor')) {
-      contextualActions.push(
+    if (isSupervisor) {
+      roleActions.push(
         {
           id: 'sup_employees',
           title: 'Gestão de Colaboradores (Base)',
@@ -148,8 +148,8 @@ export default function CommandPalette() {
     }
 
     // Context: Coordinator/Manager
-    if (isCoordinator || pathname.includes('/coordinator')) {
-      contextualActions.push(
+    if (isCoordinator) {
+      roleActions.push(
         {
           id: 'coord_reports',
           title: 'Relatórios Consolidados',
@@ -158,17 +158,6 @@ export default function CommandPalette() {
           perform: () => router.push('/dashboard/coordinator')
         }
       );
-    }
-
-    // Common navigation based on role if not in context
-    if (!pathname.includes('/supervisor') && isSupervisor) {
-      contextualActions.push({
-        id: 'goto_sup',
-        title: 'Ir para Painel do Supervisor',
-        icon: <ArrowRight size={18} />,
-        keywords: ['supervisor', 'base', 'minha base'],
-        perform: () => router.push('/dashboard/supervisor')
-      });
     }
 
     const footerActions = [
@@ -184,8 +173,9 @@ export default function CommandPalette() {
       }
     ];
 
-    return [...contextualActions, ...baseActions, ...footerActions];
+    return [...roleActions, ...baseActions, ...footerActions];
   };
+
 
   const filteredActions = getActions().filter(a => 
     a.title.toLowerCase().includes(search.toLowerCase()) || 
