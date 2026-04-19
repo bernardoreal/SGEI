@@ -23,6 +23,12 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: 'LATAM Cargo - Gestão de Escalas',
   description: 'Sistema automatizado de gestão de escalas e colaboradores para LATAM Cargo Brasil.',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'SGEI LATAM',
+  },
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
