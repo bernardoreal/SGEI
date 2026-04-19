@@ -34,7 +34,7 @@ export default function ManagerDashboard() {
         
         const enrichedBases = (basesData || []).map((b: any) => ({
             ...b,
-            supervisor: usersData?.find(u => u.base_id === b.id)?.name || 'N/A'
+            supervisor: usersData?.find((u: any) => u.base_id === b.id)?.name || 'N/A'
         }));
         setBases(enrichedBases);
         
