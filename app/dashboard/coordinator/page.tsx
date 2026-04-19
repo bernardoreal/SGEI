@@ -15,7 +15,8 @@ import {
   ArrowUpRight,
   Clock,
   LayoutDashboard,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import SuggestionSection from '@/components/SuggestionSection';
@@ -30,7 +31,9 @@ export default function CoordinatorDashboard() {
     totalEmployees: 0,
     totalBases: 0,
     pendingRequests: 0,
-    publishedSchedules: 0
+    publishedSchedules: 0,
+    basesWithoutSup: 0,
+    feedback: { good: 0, bad: 0 }
   });
   const [selectedBase, setSelectedBase] = useState<any | null>(null);
   const [baseDetails, setBaseDetails] = useState<any>(null);
@@ -102,37 +105,60 @@ export default function CoordinatorDashboard() {
             .limit(1)
             .maybeSingle();
 
+          // Supervisor count
+          const { count: supCount } = await supabase
+            .from('users')
+            .select('*', { count: 'exact', head: true })
+            .eq('base_id', base.id)
+            .contains('roles', ['supervisor']);
+
+          // Feedback stats
+          const { data: feedbackData } = await supabase
+            .from('schedule_feedback')
+            .select('feedback')
+            .eq('base_id', base.id);
+
+          const goodFeedback = feedbackData?.filter(f => f.feedback === 'boa').length || 0;
+          const badFeedback = feedbackData?.filter(f => f.feedback === 'ruim').length || 0;
+
           return {
             ...base,
             employeeCount: userCount || opCount || 0, // Fallback to opCount if userCount is 0
             opCount: opCount || 0,
             userCount: userCount || 0,
             pendingRequests: reqCount || 0,
+            hasSupervisor: (supCount && supCount > 0) ? true : false,
+            feedback: { good: goodFeedback, bad: badFeedback },
             latestSchedule: latestSchedule || null,
             status: latestSchedule ? (latestSchedule.published_at ? 'published' : 'draft') : 'none'
           };
         } catch (e) {
           console.error(`Failed to fetch stats for base ${base.id}:`, e);
-          return { ...base, employeeCount: 0, pendingRequests: 0, status: 'none' };
+          return { ...base, employeeCount: 0, pendingRequests: 0, hasSupervisor: false, feedback: {good:0, bad:0}, status: 'none' };
         }
       }));
 
       setBases(basesWithStats);
 
       // 3. Aggregate Global Stats
-      // Count all users in the system to ensure the KPI matches the Admin view
       const { count: allUsersCount } = await supabase
         .from('users')
         .select('*', { count: 'exact', head: true });
 
       const totalPending = basesWithStats.reduce((acc: number, b: any) => acc + b.pendingRequests, 0);
       const totalPublished = basesWithStats.filter(b => b.status === 'published').length;
+      const basesWithoutSup = basesWithStats.filter(b => !b.hasSupervisor).length;
+      
+      const totalGoodFeedback = basesWithStats.reduce((acc: number, b: any) => acc + b.feedback.good, 0);
+      const totalBadFeedback = basesWithStats.reduce((acc: number, b: any) => acc + b.feedback.bad, 0);
 
       setStats({
         totalEmployees: allUsersCount || 0,
         totalBases: basesWithStats.length,
         pendingRequests: totalPending,
-        publishedSchedules: totalPublished
+        publishedSchedules: totalPublished,
+        basesWithoutSup,
+        feedback: { good: totalGoodFeedback, bad: totalBadFeedback }
       });
 
     } catch (err) {
@@ -252,10 +278,18 @@ export default function CoordinatorDashboard() {
           <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Visão Consolidada</h1>
           <p className="text-slate-500 font-medium">Monitoramento de escalas e performance em todas as bases.</p>
         </div>
-        <div className="flex items-center gap-2 bg-white p-1 rounded-2xl shadow-sm border border-slate-100">
+        <div className="flex flex-wrap items-center gap-2 bg-white p-1 rounded-2xl shadow-sm border border-slate-100">
+           <button 
+             onClick={() => alert("Módulo C-Level de Exportação em desenvolvimento. Em breve você poderá exportar PDF/Excel resumido de eficiência.")}
+             className="flex items-center gap-2 px-3 py-2 bg-slate-50 text-slate-600 rounded-xl font-medium hover:bg-slate-100 transition-all text-sm"
+             title="Exportar Relatório Gerencial"
+           >
+             <Download size={18} />
+             Exportar
+           </button>
           <button 
             onClick={() => setShowInterimModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl font-medium hover:bg-indigo-100 transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl font-medium hover:bg-indigo-100 transition-all text-sm"
           >
             <ArrowRightLeft size={18} />
             Aviso de Férias
@@ -291,34 +325,106 @@ export default function CoordinatorDashboard() {
         </div>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Total de Bases" 
-          value={stats.totalBases} 
-          icon={<MapPin className="text-indigo-600" />} 
-          color="bg-indigo-50"
-        />
-        <StatCard 
-          title="Colaboradores" 
-          value={stats.totalEmployees} 
-          icon={<Users className="text-emerald-600" />} 
-          color="bg-emerald-50"
-        />
-        <StatCard 
-          title="Escalas Publicadas" 
-          value={stats.publishedSchedules} 
-          icon={<Calendar className="text-blue-600" />} 
-          color="bg-blue-50"
-          subtitle={`${bases.length - stats.publishedSchedules} pendentes`}
-        />
-        <StatCard 
-          title="Solicitações Pendentes" 
-          value={stats.pendingRequests} 
-          icon={<AlertCircle className="text-amber-600" />} 
-          color="bg-amber-50"
-          alert={stats.pendingRequests > 0}
-        />
+      {/* KPI Exception Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        {/* Termômetro de IA */}
+        <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center">
+              <CheckCircle2 className="text-emerald-600" size={24} />
+            </div>
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Feedback Global da IA</p>
+            <div className="flex items-baseline gap-2">
+              <h4 className="text-3xl font-black text-slate-900 tracking-tighter">
+                {stats.feedback.good + stats.feedback.bad > 0 
+                  ? Math.round((stats.feedback.good / (stats.feedback.good + stats.feedback.bad)) * 100) 
+                  : 0}%
+              </h4>
+              <span className="text-xs font-bold text-slate-400">Aprovação</span>
+            </div>
+            <div className="mt-4 flex h-2 rounded-full overflow-hidden bg-slate-100">
+              <div style={{ width: `${stats.feedback.good + stats.feedback.bad > 0 ? (stats.feedback.good / (stats.feedback.good + stats.feedback.bad)) * 100 : 0}%` }} className="bg-emerald-500"></div>
+              <div style={{ width: `${stats.feedback.good + stats.feedback.bad > 0 ? (stats.feedback.bad / (stats.feedback.good + stats.feedback.bad)) * 100 : 0}%` }} className="bg-rose-500"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* SLA de Publicação */}
+        <div className={`bg-white p-6 rounded-[32px] shadow-sm border hover:shadow-md transition-shadow flex flex-col justify-between ${bases.length > 0 && bases.length - stats.publishedSchedules > 0 ? 'border-amber-200' : 'border-slate-100'}`}>
+          <div className="flex items-center justify-between mb-4">
+             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${bases.length > 0 && bases.length - stats.publishedSchedules > 0 ? 'bg-amber-50' : 'bg-slate-50'}`}>
+              <Calendar className={bases.length > 0 && bases.length - stats.publishedSchedules > 0 ? "text-amber-600" : "text-slate-400"} size={24} />
+            </div>
+            {bases.length > 0 && bases.length - stats.publishedSchedules > 0 && (
+               <span className="flex h-3 w-3 relative">
+                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                 <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+               </span>
+            )}
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">SLA de Escalas</p>
+            <div className="flex items-baseline gap-2">
+              <h4 className="text-3xl font-black text-slate-900 tracking-tighter">{bases.length > 0 ? bases.length - stats.publishedSchedules : 0}</h4>
+              <span className="text-xs font-bold text-slate-400">Terminais Pendentes</span>
+            </div>
+            <p className="text-xs font-medium text-slate-500 mt-2">
+               Mês seguinte ainda não publicado nestas bases.
+            </p>
+          </div>
+        </div>
+
+        {/* Gargalo de Aprovações */}
+        <div className={`bg-white p-6 rounded-[32px] shadow-sm border hover:shadow-md transition-shadow flex flex-col justify-between ${stats.pendingRequests > 0 ? 'border-rose-200' : 'border-slate-100'}`}>
+          <div className="flex items-center justify-between mb-4">
+             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${stats.pendingRequests > 0 ? 'bg-rose-50' : 'bg-slate-50'}`}>
+              <AlertCircle className={stats.pendingRequests > 0 ? "text-rose-600" : "text-slate-400"} size={24} />
+            </div>
+             {stats.pendingRequests > 0 && (
+               <span className="flex h-3 w-3 relative">
+                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                 <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+               </span>
+            )}
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Monitor de Gargalo</p>
+            <div className="flex items-baseline gap-2">
+              <h4 className="text-3xl font-black text-slate-900 tracking-tighter">{stats.pendingRequests}</h4>
+              <span className="text-xs font-bold text-slate-400">Trocas Pendentes</span>
+            </div>
+             <p className="text-xs font-medium text-slate-500 mt-2">
+               Colaboradores aguardando aprovação do supervisor.
+            </p>
+          </div>
+        </div>
+
+        {/* Alocação de Supervisores */}
+        <div className={`bg-white p-6 rounded-[32px] shadow-sm border hover:shadow-md transition-shadow flex flex-col justify-between ${stats.basesWithoutSup > 0 ? 'border-rose-200 bg-rose-50/30' : 'border-slate-100'}`}>
+          <div className="flex items-center justify-between mb-4">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${stats.basesWithoutSup > 0 ? 'bg-rose-100' : 'bg-slate-50'}`}>
+              <Users className={stats.basesWithoutSup > 0 ? "text-rose-600" : "text-slate-400"} size={24} />
+            </div>
+            {stats.basesWithoutSup > 0 && (
+               <span className="flex h-3 w-3 relative">
+                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                 <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+               </span>
+            )}
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Check de Liderança</p>
+            <div className="flex items-baseline gap-2">
+              <h4 className="text-3xl font-black text-slate-900 tracking-tighter">{stats.basesWithoutSup}</h4>
+              <span className="text-xs font-bold text-slate-400">Bases Acéfalas</span>
+            </div>
+            <p className="text-xs font-medium text-slate-500 mt-2">
+               Requerem atribuição urgente de um novo Supervisor.
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -362,6 +468,11 @@ export default function CoordinatorDashboard() {
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
+                    {!base.hasSupervisor && (
+                      <span className="bg-rose-100 text-rose-700 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                        SEM SUPERVISOR
+                      </span>
+                    )}
                     {base.pendingRequests > 0 && (
                       <span className="bg-amber-100 text-amber-700 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
                         {base.pendingRequests} REQ
