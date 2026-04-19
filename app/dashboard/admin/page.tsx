@@ -1688,21 +1688,23 @@ export default function AdminDashboard() {
 
       {/* AI Configuration Section - Moved to Dedicated Dashboard */}
       <div className="w-full">
-        <div className="bg-gradient-to-br from-indigo-900 to-[#0B1120] text-white p-8 sm:p-12 rounded-[32px] shadow-2xl relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-8 my-8">
-          <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 20% 150%, #818cf8 0%, transparent 50%)' }}></div>
+        <div className="bg-white dark:bg-slate-800 p-8 sm:p-12 rounded-[32px] shadow-sm border border-indigo-100 dark:border-indigo-500/20 relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-8 my-8">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 dark:bg-indigo-900/20 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
           
           <div className="relative z-10 max-w-xl">
-            <h2 className="text-2xl sm:text-4xl font-black mb-4 tracking-tight flex items-center gap-3">
-              <Sparkles className="text-indigo-400" size={32} />
-              Inteligência Artificial Central
+            <h2 className="text-2xl sm:text-4xl font-black mb-4 tracking-tight flex items-center gap-3 text-slate-900 dark:text-white">
+              <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/50 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                <Sparkles size={24} />
+              </div>
+              Central de Inteligência Artificial
             </h2>
-            <p className="text-slate-300 font-medium text-sm sm:text-base leading-relaxed">
-              As configurações detalhadas do motor gerador de escalas LATAM SGEI, controle financeiro, limite de tokens e histórico de solicitações da inteligência artificial foram movidas para o seu novo <strong className="text-white">Dashboard Dedicado de IA</strong>.
+            <p className="text-slate-600 dark:text-slate-300 font-medium text-sm sm:text-base leading-relaxed sm:pl-[60px]">
+              As configurações detalhadas do motor gerador de escalas LATAM SGEI, controle financeiro, limite de tokens e histórico de solicitações da inteligência artificial foram movidas para o seu novo <strong className="text-slate-900 dark:text-white">Dashboard Dedicado de IA</strong>.
             </p>
           </div>
 
           <div className="relative z-10 shrink-0 w-full sm:w-auto">
-            <a href="/dashboard/admin/ai" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-4 px-8 rounded-2xl transition-all shadow-[0_0_40px_-10px_rgba(99,102,241,0.5)] hover:shadow-[0_0_60px_-15px_rgba(99,102,241,0.7)] group">
+            <a href="/dashboard/admin/ai" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-2xl transition-all shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/30 group">
               Acessar AI Dashboard
               <ArrowUpRight size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
             </a>
