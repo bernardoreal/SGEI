@@ -40,7 +40,7 @@ export default function NotificationBell({ email, userId }: { email: string, use
       .contains('roles', ['pending']);
       
     if (pendingUsers) {
-      pendingUsers.forEach(u => {
+      pendingUsers.forEach((u: any) => {
         notifs.push({
           id: `user-${u.id}`,
           type: 'access',
@@ -59,7 +59,7 @@ export default function NotificationBell({ email, userId }: { email: string, use
       .eq('status', 'pendente');
 
     if (pendingSuggestions) {
-      pendingSuggestions.forEach(s => {
+      pendingSuggestions.forEach((s: any) => {
         notifs.push({
           id: `sug-${s.id}`,
           type: 'suggestion',
