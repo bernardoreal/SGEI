@@ -118,8 +118,8 @@ export default function CoordinatorDashboard() {
             .select('feedback')
             .eq('base_id', base.id);
 
-          const goodFeedback = feedbackData?.filter(f => f.feedback === 'boa').length || 0;
-          const badFeedback = feedbackData?.filter(f => f.feedback === 'ruim').length || 0;
+          const goodFeedback = feedbackData?.filter((f: any) => f.feedback === 'boa').length || 0;
+          const badFeedback = feedbackData?.filter((f: any) => f.feedback === 'ruim').length || 0;
 
           return {
             ...base,
