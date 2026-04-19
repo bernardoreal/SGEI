@@ -80,7 +80,7 @@ export default function AIDashboard() {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
 
-          formattedLogs.forEach(log => {
+          formattedLogs.forEach((log: AILog) => {
             const cost = Number(log.cost) || 0;
             tCost += cost;
             tTokens += log.total_tokens || 0;
@@ -100,7 +100,7 @@ export default function AIDashboard() {
 
           // Generate simple chart data
           const charGrp: Record<string, number> = {};
-          formattedLogs.forEach(log => {
+          formattedLogs.forEach((log: AILog) => {
             const dStr = new Date(log.created_at).toLocaleDateString('pt-BR');
             charGrp[dStr] = (charGrp[dStr] || 0) + (log.total_tokens || 0);
           });
