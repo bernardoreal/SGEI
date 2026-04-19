@@ -128,6 +128,7 @@ export default function AdminDashboard() {
   };
   const [emergencyMode, setEmergencyMode] = useState<'create' | 'delete'>('create');
   const [deleteSearchQuery, setDeleteSearchQuery] = useState('');
+  const [showStorageModal, setShowStorageModal] = useState(false);
   const [selectedRoleForModal, setSelectedRoleForModal] = useState<string | null>(null);
   const [selectedBaseIdForModal, setSelectedBaseIdForModal] = useState<string | null>(null);
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
@@ -1164,13 +1165,15 @@ export default function AdminDashboard() {
           trend="JPA Piloto"
           color="indigo"
         />
-        <StatCard 
-          title="Uso de Banco" 
-          value={`${storagePercentage.toFixed(1)}%`} 
-          icon={<HardDrive size={24} />} 
-          trend={`${storageLimit - storageUsed}MB livres`}
-          color="emerald"
-        />
+        <div onClick={() => setShowStorageModal(true)} className="cursor-pointer transition-transform hover:scale-[1.02] active:scale-95">
+          <StatCard 
+            title="Uso de Banco" 
+            value={`${storagePercentage.toFixed(1)}%`} 
+            icon={<HardDrive size={24} />} 
+            trend={`${storageLimit - storageUsed}MB livres`}
+            color="emerald"
+          />
+        </div>
       </div>
 
       {/* Role Distribution Grid */}
@@ -1819,64 +1822,8 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-        {/* Sidebar: Storage & Logs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
-          {/* Storage KPI Card */}
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <HardDrive size={18} className="text-emerald-600" />
-              Armazenamento Supabase
-            </h3>
-            
-            <div className="flex justify-center mb-6">
-              <div className="relative w-48 h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={chartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                      startAngle={90}
-                      endAngle={450}
-                    >
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-bold text-gray-900">{storagePercentage.toFixed(0)}%</span>
-                  <span className="text-xs text-gray-500 uppercase tracking-widest">Usado</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Espaço Utilizado</span>
-                <span className="font-medium text-gray-900">{storageUsed} MB</span>
-              </div>
-              <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                <div 
-                  className="h-full transition-all duration-1000" 
-                  style={{ 
-                    width: `${storagePercentage}%`, 
-                    backgroundColor: getStorageBarColor() 
-                  }}
-                ></div>
-              </div>
-              <div className="flex justify-between text-xs text-gray-400">
-                <span>0 MB</span>
-                <span>Plano Spark: 500 MB</span>
-              </div>
-            </div>
-          </div>
-
+        {/* Sidebar: Audit Logs */}
+        <div className="w-full">
           {/* Audit Logs Card */}
           <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-6">
@@ -2187,6 +2134,78 @@ export default function AdminDashboard() {
           </motion.div>
         </div>
       )}
+
+      {/* Storage Modal */}
+      {showStorageModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-gray-50 dark:border-slate-700/50 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                  <HardDrive size={20} />
+                </div>
+                Armazenamento Supabase
+              </h3>
+              <button onClick={() => setShowStorageModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-400 dark:text-slate-500">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-8">
+              <div className="flex justify-center">
+                <div className="relative w-48 h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={chartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                        startAngle={90}
+                        endAngle={450}
+                      >
+                        {chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-3xl font-black text-slate-900 dark:text-white">{storagePercentage.toFixed(0)}%</span>
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Usado</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between text-sm font-medium">
+                  <span className="text-slate-500 dark:text-slate-400">Espaço Utilizado</span>
+                  <span className="text-slate-900 dark:text-white">{storageUsed} MB</span>
+                </div>
+                <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-3 overflow-hidden">
+                  <div 
+                    className="h-full transition-all duration-1000 rounded-full" 
+                    style={{ 
+                      width: `${storagePercentage}%`, 
+                      backgroundColor: getStorageBarColor() 
+                    }}
+                  ></div>
+                </div>
+                <div className="flex justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span>0 MB</span>
+                  <span>Plano Spark: 500 MB</span>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 border-t border-slate-50 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/20 text-center">
+              <p className="text-xs text-slate-500 font-medium">Os dados de armazenamento englobam todos os usuários e esquemas internos do projeto no Supabase.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showDebug && debugInfo && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
           <motion.div 
