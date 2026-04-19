@@ -1,7 +1,23 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { checkRateLimit } from '@/lib/security/rate-limiter'
 
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
+  // Web Application Firewall (WAF) - Edge Rate Limiting Block
+  const routeType = (pathname === '/' || pathname === '/login' || pathname === '/register') ? 'AUTH' : 'STANDARD';
+  const { allowed, remaining } = checkRateLimit(request, routeType);
+  
+  if (!allowed) {
+    // Drop connection on rate limit exceeded via standard 429 Too Many Requests response
+    // Further logging to the DB could optionally be pushed asynchronously using fetch here if needed
+    return new NextResponse(
+      JSON.stringify({ error: 'Too Many Requests', message: 'SGEI Security: Rate Limit Exceeded' }),
+      { status: 429, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -40,7 +56,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const pathname = request.nextUrl.pathname
+  // pathname is already declared at the top of the function for the WAF
 
   // Public routes
   if (pathname === '/' || pathname === '/register') {
@@ -56,16 +72,11 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(new URL('/', request.url))
     }
 
-    // Super Admin Fallback: bernardo.real@latam.com bypasses all role checks
-    if (user.email === 'bernardo.real@latam.com') {
-      return supabaseResponse
-    }
-
     // Role-based access control (RBAC) - Strict URL protection
     const roles: string[] = user.app_metadata?.roles || []
     
     // Admin has full access
-    if (roles.includes('admin') || user.email === 'bernardo.real@latam.com') {
+    if (roles.includes('admin')) {
       return supabaseResponse
     }
 

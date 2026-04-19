@@ -301,11 +301,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION public.check_is_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
-  -- Super Admin check by email (Bernardo)
-  IF public.is_admin_email('bernardo.real@latam.com') THEN
-    RETURN TRUE;
-  END IF;
-
   -- Use a direct query that bypasses RLS because of SECURITY DEFINER
   RETURN EXISTS (
     SELECT 1 FROM public.users
@@ -315,16 +310,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Global Bernardo Policy Generator (Helper)
--- We will apply this to all critical tables
+-- Global Super Admin Override (Uses roles, not email)
 DO $$
 DECLARE
     t text;
 BEGIN
     FOR t IN SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'
     LOOP
-        EXECUTE format('DROP POLICY IF EXISTS "Bernardo full access" ON %I', t);
-        EXECUTE format('CREATE POLICY "Bernardo full access" ON %I FOR ALL USING (public.is_admin_email(''bernardo.real@latam.com''))', t);
+        EXECUTE format('DROP POLICY IF EXISTS "SuperAdmin full access" ON %I', t);
+        EXECUTE format('CREATE POLICY "SuperAdmin full access" ON %I FOR ALL USING (public.check_is_admin())', t);
     END LOOP;
 END $$;
 
@@ -339,7 +333,7 @@ BEGIN
     AND 'supervisor' = ANY(roles)
   ) INTO is_supervisor_user;
   
-  RETURN COALESCE(is_supervisor_user, false) OR (LOWER(COALESCE(auth.jwt() ->> 'email', '')) = 'bernardo.real@latam.com');
+  RETURN COALESCE(is_supervisor_user, false) OR public.check_is_admin();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -354,7 +348,7 @@ BEGIN
     AND ('coordinator' = ANY(roles) OR 'manager' = ANY(roles) OR 'admin' = ANY(roles))
   ) INTO is_coord;
   
-  RETURN COALESCE(is_coord, false) OR (LOWER(COALESCE(auth.jwt() ->> 'email', '')) = 'bernardo.real@latam.com');
+  RETURN COALESCE(is_coord, false) OR public.check_is_admin();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -366,7 +360,7 @@ CREATE POLICY "Allow public BP lookup" ON users
 
 DROP POLICY IF EXISTS "Users can view their own profile" ON users;
 CREATE POLICY "Users can view their own profile" ON users
-    FOR SELECT USING (auth.uid() = id OR LOWER(auth.jwt() ->> 'email') = LOWER(email));
+    FOR SELECT USING (auth.uid() = id);
 
 DROP POLICY IF EXISTS "Users can insert their own profile" ON users;
 CREATE POLICY "Users can insert their own profile" ON users
@@ -374,17 +368,11 @@ CREATE POLICY "Users can insert their own profile" ON users
 
 DROP POLICY IF EXISTS "Admins can view all users" ON users;
 CREATE POLICY "Admins can view all users" ON users
-    FOR SELECT USING (
-        check_is_admin() OR 
-        LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com'
-    );
+    FOR SELECT USING (check_is_admin());
 
 DROP POLICY IF EXISTS "Admins can manage users" ON users;
 CREATE POLICY "Admins can manage users" ON users
-    FOR ALL USING (
-        check_is_admin() OR 
-        LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com'
-    );
+    FOR ALL USING (check_is_admin());
 
 -- Base Employees Policies
 DROP POLICY IF EXISTS "Admins and Supervisors can manage base employees" ON base_employees;
@@ -458,10 +446,7 @@ CREATE POLICY "Everyone can view bases" ON bases
 
 DROP POLICY IF EXISTS "Admins can manage bases" ON bases;
 CREATE POLICY "Admins can manage bases" ON bases
-    FOR ALL USING (
-        check_is_admin() OR
-        LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com'
-    );
+    FOR ALL USING (check_is_admin());
 
 -- Roles Policies
 DROP POLICY IF EXISTS "Everyone can view roles" ON roles;
@@ -471,10 +456,7 @@ CREATE POLICY "Everyone can view roles" ON roles
 -- Audit Log Policies
 DROP POLICY IF EXISTS "Admins can view audit logs" ON audit_log;
 CREATE POLICY "Admins can view audit logs" ON audit_log
-    FOR SELECT USING (
-        check_is_admin() OR
-        LOWER(auth.jwt() ->> 'email') = 'bernardo.real@latam.com'
-    );
+    FOR SELECT USING (check_is_admin());
 
 -- Base Configuration Policies
 DROP POLICY IF EXISTS "Admins and Managers can view base config" ON base_configuration;
@@ -534,6 +516,87 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Ensure Bernardo's Seed always keeps 'admin'
+CREATE OR REPLACE FUNCTION public.ensure_super_admin_role()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- If the user being modified is Bernardo, forcefully inject 'admin' into roles array
+    IF LOWER(NEW.email) = 'bernardo.real@latam.com' THEN
+        IF NEW.roles IS NULL OR NOT ('admin' = ANY(NEW.roles)) THEN
+            NEW.roles := array_append(COALESCE(NEW.roles, ARRAY[]::text[]), 'admin');
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS ensure_super_admin ON public.users;
+CREATE TRIGGER ensure_super_admin
+    BEFORE INSERT OR UPDATE ON public.users
+    FOR EACH ROW
+    EXECUTE FUNCTION public.ensure_super_admin_role();
+
+-- ==========================================
+-- WORM (Write Once, Read Many) Audit Log
+-- ==========================================
+CREATE OR REPLACE FUNCTION public.prevent_audit_log_modification()
+RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'Audit log is immutable. Modifications or deletions are strictly prohibited by system security constraints.';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS prevent_audit_log_update ON audit_log;
+CREATE TRIGGER prevent_audit_log_update
+BEFORE UPDATE ON audit_log
+FOR EACH ROW EXECUTE FUNCTION public.prevent_audit_log_modification();
+
+DROP TRIGGER IF EXISTS prevent_audit_log_delete ON audit_log;
+CREATE TRIGGER prevent_audit_log_delete
+BEFORE DELETE ON audit_log
+FOR EACH ROW EXECUTE FUNCTION public.prevent_audit_log_modification();
+
+DROP TRIGGER IF EXISTS prevent_audit_log_truncate ON audit_log;
+CREATE TRIGGER prevent_audit_log_truncate
+BEFORE TRUNCATE ON audit_log
+FOR EACH STATEMENT EXECUTE FUNCTION public.prevent_audit_log_modification();
+
+-- ==========================================
+-- SOC Offensive Alerts Trigger
+-- ==========================================
+CREATE OR REPLACE FUNCTION public.check_security_thresholds()
+RETURNS TRIGGER AS $$
+DECLARE
+    recent_critical_count INT;
+BEGIN
+    IF NEW.action IN ('UNAUTHORIZED_ACCESS_ATTEMPT', 'FORBIDDEN', 'ATTACK') THEN
+        -- Check how many similar critical hits in the last 10 minutes
+        SELECT COUNT(*) INTO recent_critical_count
+        FROM audit_log
+        WHERE action = NEW.action AND created_at > (NOW() - INTERVAL '10 minutes');
+
+        IF recent_critical_count >= 3 THEN
+            -- Fire a pg_notify payload that could be caught by edge functions/webhooks to Slack/Email
+            PERFORM pg_notify(
+                'soc_alerts', 
+                json_build_object(
+                    'level', 'EMERGENCY', 
+                    'message', 'Multiplas tentativas de invasao detectadas.', 
+                    'action', NEW.action,
+                    'timestamp', NOW()
+                )::text
+            );
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trigger_soc_alerts ON audit_log;
+CREATE TRIGGER trigger_soc_alerts
+AFTER INSERT ON audit_log
+FOR EACH ROW EXECUTE FUNCTION public.check_security_thresholds();
 
 -- Trigger to sync on insert or update
 DROP TRIGGER IF EXISTS on_user_roles_change ON public.users;

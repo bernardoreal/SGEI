@@ -57,7 +57,7 @@ export default function SecurityCenterPage() {
     
     // Subscribe to realtime security logs
     const channel = supabase.channel('audit_realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_log' }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_log' }, (payload: any) => {
         setLogs(prev => [payload.new, ...prev].slice(0, 200));
       })
       .subscribe();
