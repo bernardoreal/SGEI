@@ -32,7 +32,7 @@ export default function ManagerDashboard() {
         const { data: basesData } = await supabase.from('bases').select('*');
         const { data: usersData } = await supabase.from('users').select('name, base_id, roles').contains('roles', ['supervisor']);
         
-        const enrichedBases = (basesData || []).map(b => ({
+        const enrichedBases = (basesData || []).map((b: any) => ({
             ...b,
             supervisor: usersData?.find(u => u.base_id === b.id)?.name || 'N/A'
         }));
