@@ -40,7 +40,7 @@ export default function ManagerDashboard() {
         
         setStats({
             totalBases: basesData?.length || 0,
-            basesWithIssues: enrichedBases.filter(b => b.supervisor === 'N/A').length,
+            basesWithIssues: enrichedBases.filter((b: any) => b.supervisor === 'N/A').length,
             avgCompliance: 96
         });
         setLoading(false);
