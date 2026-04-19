@@ -1686,225 +1686,33 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* AI Configuration Section */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <Cpu size={20} className="text-indigo-600" />
-          Configurações de Inteligência Artificial
-        </h2>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Card 1: Configuração do Motor */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
-            <div className="space-y-4">
-              <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                <Settings size={18} className="text-indigo-600" />
-                Motor de Escalas
-              </h3>
-              
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Provedor</label>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => {
-                      const newProvider = 'gemini';
-                      const newModel = 'gemini-1.5-flash';
-                      setLlmConfig({ provider: newProvider, model: newModel });
-                      handleUpdateLlmConfig(newProvider, newModel, true);
-                    }}
-                    className={`flex-1 py-2 rounded-lg border transition-all text-xs font-bold ${llmConfig.provider === 'gemini' ? 'border-indigo-600 bg-indigo-50 text-indigo-900' : 'border-gray-100 text-gray-400'}`}
-                  >
-                    Gemini
-                  </button>
-                  <button 
-                    onClick={() => {
-                      const newProvider = 'openrouter';
-                      const newModel = 'google/gemma-2-9b-it:free';
-                      setLlmConfig({ provider: newProvider, model: newModel });
-                      handleUpdateLlmConfig(newProvider, newModel, true);
-                    }}
-                    className={`flex-1 py-2 rounded-lg border transition-all text-xs font-bold ${llmConfig.provider === 'openrouter' ? 'border-indigo-600 bg-indigo-50 text-indigo-900' : 'border-gray-100 text-gray-400'}`}
-                  >
-                    OpenRouter
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Modelo</label>
-                <select 
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-slate-800"
-                  value={llmConfig.model}
-                  onChange={(e) => {
-                    const newModel = e.target.value;
-                    setLlmConfig({ ...llmConfig, model: newModel });
-                    handleUpdateLlmConfig(llmConfig.provider, newModel, true);
-                  }}
-                >
-                  {llmConfig.provider === 'gemini' ? (
-                    <>
-                      <option value="gemini-3-flash-preview">Gemini 3 Flash (Mais Recente - Recomendado)</option>
-                      <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (Complexo/Raciocínio)</option>
-                      <option value="gemini-3.1-flash-lite-preview">Gemini 3.1 Flash Lite (Econômico)</option>
-                      <option value="gemini-flash-latest">Gemini Flash Latest (Sempre Atualizado)</option>
-                      <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Experimental)</option>
-                      <option value="gemini-1.5-pro">Gemini 1.5 Pro (Legado)</option>
-                      <option value="gemini-1.5-flash">Gemini 1.5 Flash (Legado)</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value="google/gemma-2-9b-it:free">Gemma 2 9B (FREE - Google)</option>
-                      <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B (FREE - Meta)</option>
-                      <option value="qwen/qwen-2-7b-instruct:free">Qwen 2 7B (FREE - Alibaba)</option>
-                      <option value="mistralai/mistral-7b-instruct:free">Mistral 7B (FREE - Mistral AI)</option>
-                      <option value="microsoft/phi-3-mini-128k-instruct:free">Phi-3 Mini (FREE - Microsoft)</option>
-                      <option value="huggingfaceh4/zephyr-7b-beta:free">Zephyr 7B Beta (FREE)</option>
-                      <option value="openchat/openchat-7b:free">OpenChat 7B (FREE)</option>
-                      <option value="meta-llama/llama-3-8b-instruct:free">Llama 3 8B (FREE - Meta)</option>
-                    </>
-                  )}
-                </select>
-                {llmConfig.provider === 'openrouter' && (
-                  <p className="mt-1 text-[9px] text-amber-600 font-medium italic">
-                    * Modelos gratuitos do OpenRouter podem estar sujeitos a instabilidade ou limites de cota.
-                  </p>
-                )}
-                
-                <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 rounded-xl flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-indigo-900 dark:text-indigo-100">
-                      Modelo principal: {llmConfig.model}
-                    </span>
-                    <span className="text-[10px] text-indigo-600 dark:text-indigo-400 italic mt-1">
-                      * O Supervisor precisa atualizar o Dashboard para aplicar mudanças.
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+      {/* AI Configuration Section - Moved to Dedicated Dashboard */}
+      <div className="w-full">
+        <div className="bg-gradient-to-br from-indigo-900 to-[#0B1120] text-white p-8 sm:p-12 rounded-[32px] shadow-2xl relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-8 my-8">
+          <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 20% 150%, #818cf8 0%, transparent 50%)' }}></div>
+          
+          <div className="relative z-10 max-w-xl">
+            <h2 className="text-2xl sm:text-4xl font-black mb-4 tracking-tight flex items-center gap-3">
+              <Sparkles className="text-indigo-400" size={32} />
+              Inteligência Artificial Central
+            </h2>
+            <p className="text-slate-300 font-medium text-sm sm:text-base leading-relaxed">
+              As configurações detalhadas do motor gerador de escalas LATAM SGEI, controle financeiro, limite de tokens e histórico de solicitações da inteligência artificial foram movidas para o seu novo <strong className="text-white">Dashboard Dedicado de IA</strong>.
+            </p>
           </div>
 
-          {/* Card 2: Controle de Custos (OpenRouter) */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Activity size={18} className="text-indigo-600" />
-              Controle Financeiro
-            </h3>
-            
-            {llmConfig.provider === 'gemini' ? (
-              <div className="space-y-4">
-                <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                  <div className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Requisições Hoje (Plano Free)</div>
-                  <div className="text-3xl font-black text-emerald-700">
-                    {geminiDailyRequests} <span className="text-lg text-emerald-600/70">/ 1500</span>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[10px] font-bold uppercase text-gray-400">
-                    <span>Consumo Diário</span>
-                    <span>{((geminiDailyRequests / 1500) * 100).toFixed(1)}%</span>
-                  </div>
-                  <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full transition-all duration-500 ${geminiDailyRequests > 1200 ? 'bg-red-500' : 'bg-emerald-500'}`}
-                      style={{ width: `${Math.min((geminiDailyRequests / 1500) * 100, 100)}%` }}
-                    />
-                  </div>
-                </div>
-                <p className="text-[10px] text-gray-500 italic mt-2">
-                  * O plano gratuito do Gemini possui limite de 1.500 requisições por dia.
-                </p>
-              </div>
-            ) : openRouterInfo ? (
-              <div className="space-y-4">
-                <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                  <div className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Saldo Disponível</div>
-                  <div className="text-3xl font-black text-emerald-700">
-                    {openRouterInfo.limit ? `$${(openRouterInfo.limit - openRouterInfo.usage).toFixed(2)}` : 'Ilimitado'}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                    <div className="text-[10px] font-bold text-gray-400 uppercase">Uso Total</div>
-                    <div className="text-lg font-bold text-gray-900">${openRouterInfo.usage.toFixed(4)}</div>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                    <div className="text-[10px] font-bold text-gray-400 uppercase">Limite</div>
-                    <div className="text-lg font-bold text-gray-900">{openRouterInfo.limit ? `$${openRouterInfo.limit}` : 'N/A'}</div>
-                  </div>
-                </div>
-
-                {openRouterInfo.limit && (
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] font-bold uppercase text-gray-400">
-                      <span>Consumo do Limite</span>
-                      <span>{((openRouterInfo.usage / openRouterInfo.limit) * 100).toFixed(1)}%</span>
-                    </div>
-                    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-indigo-500 transition-all duration-500" 
-                        style={{ width: `${Math.min((openRouterInfo.usage / openRouterInfo.limit) * 100, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="h-full flex items-center justify-center text-gray-400 text-sm italic text-center p-4">
-                Aguardando conexão com OpenRouter...
-              </div>
-            )}
-          </div>
-
-          {/* Card 3: Controle de Tokens */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Sparkles size={18} className="text-indigo-600" />
-              Estatísticas de Tokens
-            </h3>
-            
-            <div className="space-y-4">
-              <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-                <div className="text-[10px] font-bold text-indigo-600 uppercase mb-1">Total de Tokens</div>
-                <div className="text-3xl font-black text-indigo-700">
-                  {tokenStats.total.toLocaleString()}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                    <span className="text-xs font-bold text-gray-600 uppercase">Input (Prompt)</span>
-                  </div>
-                  <span className="font-mono font-bold text-gray-900">{tokenStats.prompt.toLocaleString()}</span>
-                </div>
-
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                    <span className="text-xs font-bold text-gray-600 uppercase">Output (Completion)</span>
-                  </div>
-                  <span className="font-mono font-bold text-gray-900">{tokenStats.completion.toLocaleString()}</span>
-                </div>
-
-                <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-                  <p className="text-[10px] text-blue-700 leading-relaxed italic">
-                    * Tokens do sistema são contabilizados em cada requisição para monitoramento de eficiência.
-                  </p>
-                </div>
-              </div>
-            </div>
+          <div className="relative z-10 shrink-0 w-full sm:w-auto">
+            <a href="/dashboard/admin/ai" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-4 px-8 rounded-2xl transition-all shadow-[0_0_40px_-10px_rgba(99,102,241,0.5)] hover:shadow-[0_0_60px_-15px_rgba(99,102,241,0.7)] group">
+              Acessar AI Dashboard
+              <ArrowUpRight size={20} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+            </a>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 gap-8 mb-8">
         {/* Main Content: User Management */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="w-full space-y-6">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-6 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
@@ -2010,7 +1818,7 @@ export default function AdminDashboard() {
           </div>
 
         {/* Sidebar: Storage & Logs */}
-        <div className="space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
           {/* Storage KPI Card */}
           <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">

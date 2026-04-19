@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogOut, X, AlertTriangle, Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
+import NotificationBell from '@/components/NotificationBell';
 
 function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
@@ -90,6 +91,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             </div>
             <div className="flex items-center gap-4">
+              <NotificationBell userId={user.id} email={user.email || ''} />
               <ThemeToggle />
               <div className="hidden md:block text-right">
                 <div className="text-xs font-bold text-gray-900 dark:text-slate-200 truncate max-w-[150px]">{user.email}</div>
