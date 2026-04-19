@@ -6,7 +6,8 @@ import {
   ShieldCheck, 
   TrendingUp, 
   FileText,
-  ArrowRightLeft
+  ArrowRightLeft,
+  AlertCircle
 } from 'lucide-react';
 import { getMonthlyComplianceTrend } from '@/lib/manager-analytics';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -85,6 +86,7 @@ export default function ManagerDashboard() {
       {/* ... Gráfico de Tendência e Sugestões ... */}
     </div>
   );
+}
 
 function StatCard({ title, value, icon }: any) {
   return (
