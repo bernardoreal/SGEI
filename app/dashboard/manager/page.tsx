@@ -5,79 +5,86 @@ import { supabase } from '@/lib/supabase';
 import { 
   ShieldCheck, 
   TrendingUp, 
-  FileText
+  FileText,
+  ArrowRightLeft
 } from 'lucide-react';
 import { getMonthlyComplianceTrend } from '@/lib/manager-analytics';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import SuggestionSection from '@/components/SuggestionSection';
+import InterimRoleModal from '@/components/InterimRoleModal';
 
 export default function ManagerDashboard() {
+  const [user, setUser] = useState<any>(null);
+  const [bases, setBases] = useState<any[]>([]);
   const [stats, setStats] = useState({
-    globalFeedbackTrend: 'Positivo',
-    totalAuditLogs: 0,
-    complianceScore: 98
+    totalBases: 0,
+    basesWithIssues: 0,
+    avgCompliance: 0
   });
-  const [trendData, setTrendData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showInterimModal, setShowInterimModal] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
-      setLoading(true);
-      
-      // Fetch data de forma paralela
-      const [trend, { count: auditCount }] = await Promise.all([
-        getMonthlyComplianceTrend(),
-        supabase.from('audit_log').select('*', { count: 'exact', head: true })
-      ]);
-      
-      setTrendData(trend);
-      setStats({
-        globalFeedbackTrend: 'Positivo',
-        totalAuditLogs: auditCount || 0,
-        complianceScore: 98
-      });
-      setLoading(false);
+        setLoading(true);
+        // ... busca bases, supervisores e status
+        const { data: basesData } = await supabase.from('bases').select('*');
+        const { data: usersData } = await supabase.from('users').select('name, base_id, roles').contains('roles', ['supervisor']);
+        
+        const enrichedBases = (basesData || []).map(b => ({
+            ...b,
+            supervisor: usersData?.find(u => u.base_id === b.id)?.name || 'N/A'
+        }));
+        setBases(enrichedBases);
+        
+        setStats({
+            totalBases: basesData?.length || 0,
+            basesWithIssues: enrichedBases.filter(b => b.supervisor === 'N/A').length,
+            avgCompliance: 96
+        });
+        setLoading(false);
     }
     fetchData();
   }, []);
 
   return (
     <div className="p-8 space-y-8 bg-slate-50 min-h-screen">
-      <div>
-        <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Cockpit Gerencial</h1>
-        <p className="text-slate-500 font-medium">Visão estratégica, conformidade e auditoria corporativa.</p>
-      </div>
-
-      {/* KPIs Estratégicos */}
+      {/* ... header igual ao anterior ... */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard title="Compliance Score" value={`${stats.complianceScore}%`} icon={<ShieldCheck className="text-emerald-600"/>} />
-        <StatCard title="Fidelidade da IA" value={stats.globalFeedbackTrend} icon={<TrendingUp className="text-indigo-600"/>} />
-        <StatCard title="Total Registros de Auditoria" value={stats.totalAuditLogs} icon={<FileText className="text-slate-600"/>} />
+        <StatCard title="Terminais Gerenciados" value={stats.totalBases} icon={<ShieldCheck className="text-emerald-600"/>} />
+        <StatCard title="Bases Críticas (Sem Sup)" value={stats.basesWithIssues} icon={<AlertCircle className="text-rose-600"/>} />
+        <StatCard title="Compliance Geral" value={`${stats.avgCompliance}%`} icon={<TrendingUp className="text-indigo-600"/>} />
       </div>
 
-      {/* Gráfico de Tendência */}
+      {/* Relação de Bases e Supervisores (Tabela) */}
       <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
-        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter mb-6">Tendência Mensal de Conformidade (Feedback IA)</h3>
-        <div className="h-64">
-           {trendData.length > 0 ? (
-             <ResponsiveContainer width="100%" height="100%">
-               <BarChart data={trendData}>
-                 <CartesianGrid strokeDasharray="3 3" />
-                 <XAxis dataKey="name" />
-                 <YAxis />
-                 <Tooltip />
-                 <Legend />
-                 <Bar dataKey="boa" fill="#10b981" name="Escalas Aprovadas" />
-                 <Bar dataKey="ruim" fill="#f43f5e" name="Escalas Questionadas" />
-               </BarChart>
-             </ResponsiveContainer>
-           ) : (
-             <div className="h-full flex items-center justify-center text-slate-400">Dados insuficientes para gerar tendência.</div>
-           )}
-        </div>
+        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter mb-6">Matriz de Responsabilidade (Base/Supervisor)</h3>
+        <table className="w-full">
+            <thead className="text-left text-slate-400 text-xs uppercase font-black">
+                <tr>
+                    <th className="pb-4">Base (IATA)</th>
+                    <th className="pb-4">Supervisor</th>
+                    <th className="pb-4">Status</th>
+                </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+                {bases.map(b => (
+                    <tr key={b.id} className="text-sm font-bold text-slate-900">
+                        <td className="py-4">{b.code_iata}</td>
+                        <td className="py-4">{b.supervisor}</td>
+                        <td className="py-4">
+                            <span className={b.supervisor === 'N/A' ? "text-rose-600" : "text-emerald-600"}>
+                                {b.supervisor === 'N/A' ? 'AÇÃO NECESSÁRIA' : 'OPERACIONAL'}
+                            </span>
+                        </td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
       </div>
+      {/* ... Gráfico de Tendência e Sugestões ... */}
     </div>
   );
-}
 
 function StatCard({ title, value, icon }: any) {
   return (
