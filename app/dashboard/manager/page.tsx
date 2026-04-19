@@ -20,26 +20,25 @@ export default function ManagerDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchManagerData();
+    async function fetchData() {
+      setLoading(true);
+      
+      // Fetch data de forma paralela
+      const [trend, { count: auditCount }] = await Promise.all([
+        getMonthlyComplianceTrend(),
+        supabase.from('audit_log').select('*', { count: 'exact', head: true })
+      ]);
+      
+      setTrendData(trend);
+      setStats({
+        globalFeedbackTrend: 'Positivo',
+        totalAuditLogs: auditCount || 0,
+        complianceScore: 98
+      });
+      setLoading(false);
+    }
+    fetchData();
   }, []);
-
-  const fetchManagerData = async () => {
-    setLoading(true);
-    
-    // Fetch data de forma paralela
-    const [trend, { count: auditCount }] = await Promise.all([
-      getMonthlyComplianceTrend(),
-      supabase.from('audit_log').select('*', { count: 'exact', head: true })
-    ]);
-    
-    setTrendData(trend);
-    setStats({
-      globalFeedbackTrend: 'Positivo',
-      totalAuditLogs: auditCount || 0,
-      complianceScore: 98
-    });
-    setLoading(false);
-  };
 
   return (
     <div className="p-8 space-y-8 bg-slate-50 min-h-screen">
