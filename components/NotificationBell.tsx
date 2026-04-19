@@ -31,7 +31,7 @@ export default function NotificationBell({ email, userId }: { email: string, use
   }, [userId, email]);
 
   const fetchNotifications = async () => {
-    const notifs = [];
+    const notifs: any[] = [];
     
     // Novas solicitações de acesso (roles array contains 'pending')
     const { data: pendingUsers } = await supabase
