@@ -58,6 +58,25 @@ export default function ManagerDashboard() {
   return (
     <div className="p-8 space-y-8 bg-slate-50 dark:bg-[#0B1120] min-h-screen transition-colors duration-300">
       {/* ... header igual ao anterior ... */}
+      <div className="flex justify-end p-4">
+        <button 
+          onClick={() => setShowInterimModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-xl font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all text-sm"
+        >
+          <ArrowRightLeft size={18} />
+          Aviso de Férias
+        </button>
+      </div>
+      
+      {user && (
+        <InterimRoleModal 
+          isOpen={showInterimModal} 
+          onClose={() => setShowInterimModal(false)}
+          roleType="manager"
+          currentUserId={user.id}
+        />
+      )}
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard title="Terminais Gerenciados" value={stats.totalBases} icon={<ShieldCheck className="text-emerald-600 dark:text-emerald-400"/>} />
         <StatCard title="Bases Críticas (Sem Sup)" value={stats.basesWithIssues} icon={<AlertCircle className="text-rose-600 dark:text-rose-400"/>} />
