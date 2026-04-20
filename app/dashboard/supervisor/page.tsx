@@ -553,6 +553,23 @@ export default function SupervisorDashboard() {
 
             const data = await response.json();
             responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+            // Registra o uso de tokens das requisições via cliente
+            const usage = data.usageMetadata;
+            if (usage) {
+              const { data: { session } } = await supabase.auth.getSession();
+              supabase.from('ai_usage_logs').insert([{
+                model: targetModel,
+                provider: 'gemini',
+                prompt_tokens: usage.promptTokenCount || 0,
+                completion_tokens: usage.candidatesTokenCount || 0,
+                total_tokens: usage.totalTokenCount || 0,
+                user_id: session?.user?.id,
+                cost: 0
+              }]).then(({ error }) => {
+                if (error) console.error("Falha ao registrar uso de IA:", error);
+              });
+            }
           } catch (clientErr: any) {
             console.warn("[SGEI] Falha na chamada direta, tentando via API Route...", clientErr);
             // Se falhar a direta, tenta via API Route (que é mais estável que Server Action no Cloudflare)
