@@ -19,26 +19,23 @@ async function trackUsage(usageData: {
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id;
 
-    // Inserção assíncrona (não aguardada)
-    supabase
+    const { error } = await supabase
       .from('ai_usage_logs')
       .insert([{
         ...usageData,
         user_id: userId
-      }])
-      .then(({ error }: { error: any }) => {
-        if (error) {
-          console.error(`[AI-TRACKER] Erro ao registrar uso (${usageData.provider}):`, error);
-        }
-      });
+      }]);
+      
+    if (error) {
+      console.error(`[AI-TRACKER] Erro ao registrar uso (${usageData.provider}):`, error);
+    }
   } catch (err) {
     // Se falhar a sessão, ainda tentamos logar sem o user_id
-    supabase
+    const { error } = await supabase
       .from('ai_usage_logs')
-      .insert([usageData])
-      .then(({ error }: { error: any }) => {
-        if (error) console.error(`[AI-TRACKER] Erro ao registrar uso anônimo:`, error);
-      });
+      .insert([usageData]);
+      
+    if (error) console.error(`[AI-TRACKER] Erro ao registrar uso anônimo:`, error);
   }
 }
 
@@ -86,7 +83,7 @@ export async function generateWithOpenRouter(prompt: string, model: string, empl
 
     // Rastreamento de uso assíncrono
     if (usage) {
-      trackUsage({
+      await trackUsage({
         model: model,
         provider: 'openrouter',
         prompt_tokens: usage.prompt_tokens || 0,
@@ -210,10 +207,10 @@ export async function generateWithGemini(prompt: string, model: string, employee
       throw new Error('A IA não retornou nenhum conteúdo válido para a escala.');
     }
 
-    // Rastreamento de uso assíncrono (Gemini)
+    // Rastreamento de uso (Gemini)
     const usage = data.usageMetadata;
     if (usage) {
-      trackUsage({
+      await trackUsage({
         model: targetModel,
         provider: 'gemini',
         prompt_tokens: usage.promptTokenCount || 0,
