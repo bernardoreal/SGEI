@@ -1413,9 +1413,10 @@ export default function SupervisorDashboard() {
               <button 
                 onClick={() => setCurrentScheduleIndex(prev => Math.max(0, prev - 1))}
                 disabled={currentScheduleIndex === 0}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg disabled:opacity-30 transition-all"
+                className="flex items-center gap-2 px-3 py-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-700/50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg disabled:opacity-30 transition-all font-medium text-sm"
               >
-                <ArrowRightLeft size={20} className="rotate-180" />
+                <ArrowRightLeft size={16} className="rotate-180" />
+                Anterior
               </button>
               <div className="flex gap-1 px-4">
                 {aiSchedules.map((s, i) => (
@@ -1436,9 +1437,10 @@ export default function SupervisorDashboard() {
               <button 
                 onClick={() => setCurrentScheduleIndex(prev => Math.min(aiSchedules.length - 1, prev + 1))}
                 disabled={currentScheduleIndex === aiSchedules.length - 1}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg disabled:opacity-30 transition-all"
+                className="flex items-center gap-2 px-3 py-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-700/50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg disabled:opacity-30 transition-all font-medium text-sm"
               >
-                <ArrowRightLeft size={20} />
+                Próximo
+                <ArrowRightLeft size={16} />
               </button>
             </div>
           </div>
