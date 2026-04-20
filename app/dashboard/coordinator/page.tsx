@@ -271,7 +271,7 @@ export default function CoordinatorDashboard() {
   }
 
   return (
-    <div className="space-y-8 pb-12 min-h-screen bg-gray-50 dark:bg-slate-900 px-6 pt-8">
+    <div className="space-y-8 pb-12 min-h-screen bg-gray-50 dark:bg-[#0B1120] px-6 pt-8 transition-colors duration-300">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -328,23 +328,23 @@ export default function CoordinatorDashboard() {
       {/* KPI Exception Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {/* Termômetro de IA */}
-        <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col justify-between hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center">
-              <CheckCircle2 className="text-emerald-600" size={24} />
+            <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center">
+              <CheckCircle2 className="text-emerald-600 dark:text-emerald-400" size={24} />
             </div>
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Feedback Global da IA</p>
+            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Feedback Global da IA</p>
             <div className="flex items-baseline gap-2">
-              <h4 className="text-3xl font-black text-slate-900 tracking-tighter">
+              <h4 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">
                 {stats.feedback.good + stats.feedback.bad > 0 
                   ? Math.round((stats.feedback.good / (stats.feedback.good + stats.feedback.bad)) * 100) 
                   : 0}%
               </h4>
-              <span className="text-xs font-bold text-slate-400">Aprovação</span>
+              <span className="text-xs font-bold text-slate-400 dark:text-slate-500">Aprovação</span>
             </div>
-            <div className="mt-4 flex h-2 rounded-full overflow-hidden bg-slate-100">
+            <div className="mt-4 flex h-2 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700">
               <div style={{ width: `${stats.feedback.good + stats.feedback.bad > 0 ? (stats.feedback.good / (stats.feedback.good + stats.feedback.bad)) * 100 : 0}%` }} className="bg-emerald-500"></div>
               <div style={{ width: `${stats.feedback.good + stats.feedback.bad > 0 ? (stats.feedback.bad / (stats.feedback.good + stats.feedback.bad)) * 100 : 0}%` }} className="bg-rose-500"></div>
             </div>
@@ -352,10 +352,10 @@ export default function CoordinatorDashboard() {
         </div>
 
         {/* SLA de Publicação */}
-        <div className={`bg-white p-6 rounded-[32px] shadow-sm border hover:shadow-md transition-shadow flex flex-col justify-between ${bases.length > 0 && bases.length - stats.publishedSchedules > 0 ? 'border-amber-200' : 'border-slate-100'}`}>
+        <div className={`bg-white dark:bg-slate-800 p-6 rounded-[32px] shadow-sm border hover:shadow-md transition-shadow flex flex-col justify-between ${bases.length > 0 && bases.length - stats.publishedSchedules > 0 ? 'border-amber-200 dark:border-amber-800' : 'border-slate-100 dark:border-slate-700'}`}>
           <div className="flex items-center justify-between mb-4">
-             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${bases.length > 0 && bases.length - stats.publishedSchedules > 0 ? 'bg-amber-50' : 'bg-slate-50'}`}>
-              <Calendar className={bases.length > 0 && bases.length - stats.publishedSchedules > 0 ? "text-amber-600" : "text-slate-400"} size={24} />
+             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${bases.length > 0 && bases.length - stats.publishedSchedules > 0 ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-slate-50 dark:bg-slate-700'}`}>
+              <Calendar className={bases.length > 0 && bases.length - stats.publishedSchedules > 0 ? "text-amber-600 dark:text-amber-400" : "text-slate-400"} size={24} />
             </div>
             {bases.length > 0 && bases.length - stats.publishedSchedules > 0 && (
                <span className="flex h-3 w-3 relative">
@@ -365,22 +365,22 @@ export default function CoordinatorDashboard() {
             )}
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">SLA de Escalas</p>
+            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">SLA de Escalas</p>
             <div className="flex items-baseline gap-2">
-              <h4 className="text-3xl font-black text-slate-900 tracking-tighter">{bases.length > 0 ? bases.length - stats.publishedSchedules : 0}</h4>
-              <span className="text-xs font-bold text-slate-400">Terminais Pendentes</span>
+              <h4 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{bases.length > 0 ? bases.length - stats.publishedSchedules : 0}</h4>
+              <span className="text-xs font-bold text-slate-400 dark:text-slate-500">Terminais Pendentes</span>
             </div>
-            <p className="text-xs font-medium text-slate-500 mt-2">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-2">
                Mês seguinte ainda não publicado nestas bases.
             </p>
           </div>
         </div>
 
         {/* Gargalo de Aprovações */}
-        <div className={`bg-white p-6 rounded-[32px] shadow-sm border hover:shadow-md transition-shadow flex flex-col justify-between ${stats.pendingRequests > 0 ? 'border-rose-200' : 'border-slate-100'}`}>
+        <div className={`bg-white dark:bg-slate-800 p-6 rounded-[32px] shadow-sm border hover:shadow-md transition-shadow flex flex-col justify-between ${stats.pendingRequests > 0 ? 'border-rose-200 dark:border-rose-800' : 'border-slate-100 dark:border-slate-700'}`}>
           <div className="flex items-center justify-between mb-4">
-             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${stats.pendingRequests > 0 ? 'bg-rose-50' : 'bg-slate-50'}`}>
-              <AlertCircle className={stats.pendingRequests > 0 ? "text-rose-600" : "text-slate-400"} size={24} />
+             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${stats.pendingRequests > 0 ? 'bg-rose-50 dark:bg-rose-900/20' : 'bg-slate-50 dark:bg-slate-700'}`}>
+              <AlertCircle className={stats.pendingRequests > 0 ? "text-rose-600 dark:text-rose-400" : "text-slate-400"} size={24} />
             </div>
              {stats.pendingRequests > 0 && (
                <span className="flex h-3 w-3 relative">
@@ -390,22 +390,22 @@ export default function CoordinatorDashboard() {
             )}
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Monitor de Gargalo</p>
+            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Monitor de Gargalo</p>
             <div className="flex items-baseline gap-2">
-              <h4 className="text-3xl font-black text-slate-900 tracking-tighter">{stats.pendingRequests}</h4>
-              <span className="text-xs font-bold text-slate-400">Trocas Pendentes</span>
+              <h4 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{stats.pendingRequests}</h4>
+              <span className="text-xs font-bold text-slate-400 dark:text-slate-500">Trocas Pendentes</span>
             </div>
-             <p className="text-xs font-medium text-slate-500 mt-2">
+             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-2">
                Colaboradores aguardando aprovação do supervisor.
             </p>
           </div>
         </div>
 
         {/* Alocação de Supervisores */}
-        <div className={`bg-white p-6 rounded-[32px] shadow-sm border hover:shadow-md transition-shadow flex flex-col justify-between ${stats.basesWithoutSup > 0 ? 'border-rose-200 bg-rose-50/30' : 'border-slate-100'}`}>
+        <div className={`bg-white dark:bg-slate-800 p-6 rounded-[32px] shadow-sm border hover:shadow-md transition-shadow flex flex-col justify-between ${stats.basesWithoutSup > 0 ? 'border-rose-200 dark:border-rose-800 bg-rose-50/30 dark:bg-rose-900/10' : 'border-slate-100 dark:border-slate-700'}`}>
           <div className="flex items-center justify-between mb-4">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${stats.basesWithoutSup > 0 ? 'bg-rose-100' : 'bg-slate-50'}`}>
-              <Users className={stats.basesWithoutSup > 0 ? "text-rose-600" : "text-slate-400"} size={24} />
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${stats.basesWithoutSup > 0 ? 'bg-rose-100 dark:bg-rose-900/30' : 'bg-slate-50 dark:bg-slate-700'}`}>
+              <Users className={stats.basesWithoutSup > 0 ? "text-rose-600 dark:text-rose-400" : "text-slate-400"} size={24} />
             </div>
             {stats.basesWithoutSup > 0 && (
                <span className="flex h-3 w-3 relative">
@@ -415,12 +415,12 @@ export default function CoordinatorDashboard() {
             )}
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Check de Liderança</p>
+            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Check de Liderança</p>
             <div className="flex items-baseline gap-2">
-              <h4 className="text-3xl font-black text-slate-900 tracking-tighter">{stats.basesWithoutSup}</h4>
-              <span className="text-xs font-bold text-slate-400">Bases Acéfalas</span>
+              <h4 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{stats.basesWithoutSup}</h4>
+              <span className="text-xs font-bold text-slate-400 dark:text-slate-500">Bases Acéfalas</span>
             </div>
-            <p className="text-xs font-medium text-slate-500 mt-2">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-2">
                Requerem atribuição urgente de um novo Supervisor.
             </p>
           </div>

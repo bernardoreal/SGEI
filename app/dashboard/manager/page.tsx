@@ -28,7 +28,14 @@ export default function ManagerDashboard() {
   useEffect(() => {
     async function fetchData() {
         setLoading(true);
-        // ... busca bases, supervisores e status
+        // Fetch current user
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data: userData } = await supabase.from('users').select('*').eq('id', session.user.id).maybeSingle();
+          setUser(userData || session.user);
+        }
+
+        // Fetch bases
         const { data: basesData } = await supabase.from('bases').select('*');
         const { data: usersData } = await supabase.from('users').select('name, base_id, roles').contains('roles', ['supervisor']);
         
@@ -49,28 +56,28 @@ export default function ManagerDashboard() {
   }, []);
 
   return (
-    <div className="p-8 space-y-8 bg-slate-50 min-h-screen">
+    <div className="p-8 space-y-8 bg-slate-50 dark:bg-[#0B1120] min-h-screen transition-colors duration-300">
       {/* ... header igual ao anterior ... */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard title="Terminais Gerenciados" value={stats.totalBases} icon={<ShieldCheck className="text-emerald-600"/>} />
-        <StatCard title="Bases Críticas (Sem Sup)" value={stats.basesWithIssues} icon={<AlertCircle className="text-rose-600"/>} />
-        <StatCard title="Compliance Geral" value={`${stats.avgCompliance}%`} icon={<TrendingUp className="text-indigo-600"/>} />
+        <StatCard title="Terminais Gerenciados" value={stats.totalBases} icon={<ShieldCheck className="text-emerald-600 dark:text-emerald-400"/>} />
+        <StatCard title="Bases Críticas (Sem Sup)" value={stats.basesWithIssues} icon={<AlertCircle className="text-rose-600 dark:text-rose-400"/>} />
+        <StatCard title="Compliance Geral" value={`${stats.avgCompliance}%`} icon={<TrendingUp className="text-indigo-600 dark:text-indigo-400"/>} />
       </div>
 
       {/* Relação de Bases e Supervisores (Tabela) */}
-      <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
-        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter mb-6">Matriz de Responsabilidade (Base/Supervisor)</h3>
+      <div className="bg-white dark:bg-slate-800 p-8 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-700">
+        <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-6">Matriz de Responsabilidade (Base/Supervisor)</h3>
         <table className="w-full">
-            <thead className="text-left text-slate-400 text-xs uppercase font-black">
+            <thead className="text-left text-slate-400 dark:text-slate-500 text-xs uppercase font-black">
                 <tr>
                     <th className="pb-4">Base (IATA)</th>
                     <th className="pb-4">Supervisor</th>
                     <th className="pb-4">Status</th>
                 </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {bases.map(b => (
-                    <tr key={b.id} className="text-sm font-bold text-slate-900">
+                    <tr key={b.id} className="text-sm font-bold text-slate-900 dark:text-slate-200">
                         <td className="py-4">{b.code_iata}</td>
                         <td className="py-4">{b.supervisor}</td>
                         <td className="py-4">
@@ -84,18 +91,26 @@ export default function ManagerDashboard() {
         </table>
       </div>
       {/* ... Gráfico de Tendência e Sugestões ... */}
+      
+      {user && (
+        <SuggestionSection 
+            userId={user.id} 
+            userName={user.name || user.email} 
+            userRole={user.roles?.[0] || 'manager'} 
+        />
+      )}
     </div>
   );
 }
 
 function StatCard({ title, value, icon }: any) {
   return (
-    <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow">
       <div className="flex items-center gap-4 mb-4">
-        <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center">{icon}</div>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{title}</p>
+        <div className="w-12 h-12 bg-slate-50 dark:bg-slate-700 rounded-2xl flex items-center justify-center">{icon}</div>
+        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{title}</p>
       </div>
-      <h4 className="text-3xl font-black text-slate-900 tracking-tighter">{value}</h4>
+      <h4 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{value}</h4>
     </div>
   );
 }
