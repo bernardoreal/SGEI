@@ -1871,8 +1871,8 @@ export default function AdminDashboard() {
                       <div className="w-2 h-2 rounded-full bg-indigo-400"></div>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-gray-800">{log.action}</div>
-                      <div className="text-xs text-gray-500 flex items-center gap-2">
+                      <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{log.action}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
                         <span className="font-mono">{log.table_name}</span>
                         <span>•</span>
                         <span>{new Date(log.created_at).toLocaleTimeString('pt-BR')}</span>
