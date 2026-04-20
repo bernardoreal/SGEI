@@ -566,7 +566,7 @@ export default function SupervisorDashboard() {
                 total_tokens: usage.totalTokenCount || 0,
                 user_id: session?.user?.id,
                 cost: 0
-              }]).then(({ error }) => {
+              }]).then(({ error }: any) => {
                 if (error) console.error("Falha ao registrar uso de IA:", error);
               });
             }
