@@ -72,7 +72,7 @@ export default function ManagerDashboard() {
         <InterimRoleModal 
           isOpen={showInterimModal} 
           onClose={() => setShowInterimModal(false)}
-          roleType="manager"
+          roleType="supervisor"
           currentUserId={user.id}
         />
       )}
