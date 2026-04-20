@@ -1006,7 +1006,7 @@ export default function AdminDashboard() {
             <ShieldCheck className="text-white" size={28} />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">Painel de Controle Global</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Painel de Controle Global</h1>
             <p className="text-sm md:text-base text-gray-500 dark:text-slate-400 mt-1">Visão geral da infraestrutura e governança da LATAM Cargo.</p>
           </div>
         </div>
@@ -1595,7 +1595,7 @@ export default function AdminDashboard() {
       {/* Base Management Section */}
       <div className="space-y-4">
         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <Database size={20} className="text-indigo-600" />
+          <Database size={20} className="text-indigo-600 dark:text-indigo-400" />
           Gestão de Bases e Lideranças
         </h2>
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -1852,8 +1852,8 @@ export default function AdminDashboard() {
           {/* Audit Logs Card */}
           <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Activity size={18} className="text-indigo-600" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <Activity size={18} className="text-indigo-600 dark:text-indigo-400" />
                 Logs do Banco
               </h3>
               <button className="text-xs text-indigo-600 hover:underline">Ver todos</button>
@@ -1890,12 +1890,12 @@ export default function AdminDashboard() {
       <div className="mt-12 bg-white dark:bg-slate-800 p-8 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-700/50">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
+            <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/50 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
               <ClipboardList size={24} />
             </div>
             <div>
-              <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Sugestões de Melhoria</h3>
-              <p className="text-slate-500 font-medium">Gerencie as solicitações de melhoria via Kanban drag-and-drop.</p>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Sugestões de Melhoria</h3>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">Gerencie as solicitações de melhoria via Kanban drag-and-drop.</p>
             </div>
           </div>
           <div className="bg-slate-50 dark:bg-slate-900/50 px-4 py-2 rounded-xl text-xs font-bold text-slate-500 uppercase tracking-widest">
