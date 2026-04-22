@@ -40,12 +40,37 @@ import { generateWithOpenRouter, generateWithGemini } from '@/app/actions/ai';
 import { logAudit } from '@/lib/audit';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import Tutorial from '@/components/Tutorial';
 
 const monthNames = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
 
 export default function SupervisorDashboard() {
   const { theme, toggleTheme } = useTheme();
   const [loading, setLoading] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  useEffect(() => {
+    const hasSeenTutorial = localStorage.getItem('tutorial_seen_supervisor');
+    if (!hasSeenTutorial) {
+      setShowTutorial(true);
+    }
+  }, []);
+
+  const handleCloseTutorial = (dontShowAgain: boolean) => {
+    if (dontShowAgain) {
+      localStorage.setItem('tutorial_seen_supervisor', 'true');
+    }
+    setShowTutorial(false);
+  };
+
+  const supervisorTutorialSteps = [
+    { title: "Bem-vindo à Central do Supervisor", description: "Aqui você gerencia sua base com inteligência e precisão operacional." },
+    { title: "Equipe e Colaboradores", description: "Visualize e edite dados de sua equipe, regimes de trabalho e qualificações CAT 6 na aba de 'Colaboradores'." },
+    { title: "Solicitações de Troca", description: "Monitore as preferências e pedidos de folga de seus colaboradores em tempo real para planejar melhor a escala." },
+    { title: "Inteligência Artificial", description: "Gere rascunhos de escalas otimizados pelo motor de IA do SGEI, respeitando todas as regras CLT e regimes 5x1." },
+    { title: "Edição e Publicação", description: "Ajuste as sugestões da IA manualmente se necessário e publique a escala oficial que será visível para toda sua equipe." }
+  ];
+
   const [loadingStep, setLoadingStep] = useState(0);
   const loadingSteps = [
     "Analisando banco de dados de colaboradores...",
@@ -1363,6 +1388,13 @@ export default function SupervisorDashboard() {
           currentUserId={user.id}
         />
       )}
+
+      <Tutorial 
+        role="supervisor"
+        isOpen={showTutorial}
+        steps={supervisorTutorialSteps}
+        onClose={handleCloseTutorial}
+      />
 
       {/* Indicador de Progresso Proeminente */}
       <AnimatePresence>

@@ -13,9 +13,33 @@ import { getMonthlyComplianceTrend } from '@/lib/manager-analytics';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import SuggestionSection from '@/components/SuggestionSection';
 import InterimRoleModal from '@/components/InterimRoleModal';
+import Tutorial from '@/components/Tutorial';
 
 export default function ManagerDashboard() {
   const [user, setUser] = useState<any>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  useEffect(() => {
+    const hasSeenTutorial = localStorage.getItem('tutorial_seen_manager');
+    if (!hasSeenTutorial) {
+      setShowTutorial(true);
+    }
+  }, []);
+
+  const handleCloseTutorial = (dontShowAgain: boolean) => {
+    if (dontShowAgain) {
+      localStorage.setItem('tutorial_seen_manager', 'true');
+    }
+    setShowTutorial(false);
+  };
+
+  const managerTutorialSteps = [
+    { title: "Visão Estratégica do Gerente", description: "Bem-vindo. Aqui você acompanha a saúde operacional de todas as bases da LATAM em um único painel centralizado." },
+    { title: "Matriz de Responsabilidade", description: "Identifique rapidamente bases críticas que estão sem supervisores ativos ou que necessitam de intervenção imediata." },
+    { title: "Compliance e Eficiência", description: "Monitore o índice de conformidade das escalas com os padrões corporativos e a eficiência do motor de IA." },
+    { title: "Avisos de Férias", description: "No botão 'Aviso de Férias', você pode designar supervisores interinos para garantir a continuidade operacional." }
+  ];
+
   const [bases, setBases] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalBases: 0,
@@ -76,6 +100,13 @@ export default function ManagerDashboard() {
           currentUserId={user.id}
         />
       )}
+
+      <Tutorial 
+        role="manager"
+        isOpen={showTutorial}
+        steps={managerTutorialSteps}
+        onClose={handleCloseTutorial}
+      />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard title="Terminais Gerenciados" value={stats.totalBases} icon={<ShieldCheck className="text-emerald-600 dark:text-emerald-400"/>} />

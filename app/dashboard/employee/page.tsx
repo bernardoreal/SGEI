@@ -8,9 +8,33 @@ import LATAMScheduleTable from '@/components/LATAMScheduleTable';
 import MobileScheduleView from '@/components/MobileScheduleView';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import Tutorial from '@/components/Tutorial';
 
 export default function EmployeeDashboard() {
   const [user, setUser] = useState<any>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  useEffect(() => {
+    const hasSeenTutorial = localStorage.getItem('tutorial_seen_employee');
+    if (!hasSeenTutorial) {
+      setShowTutorial(true);
+    }
+  }, []);
+
+  const handleCloseTutorial = (dontShowAgain: boolean) => {
+    if (dontShowAgain) {
+      localStorage.setItem('tutorial_seen_employee', 'true');
+    }
+    setShowTutorial(false);
+  };
+
+  const employeeTutorialSteps = [
+    { title: "Minha Escala Individual", description: "Bem-vindo ao SGEI. Aqui você visualiza sua escala de trabalho oficial publicada pelo seu supervisor." },
+    { title: "Detalhes do Turno", description: "Verifique seus horários exatos, códigos de folga e tarefas designadas para cada dia do mês de forma clara." },
+    { title: "Solicitações de Folga", description: "Envie pedidos de troca, justificativas ou folgas específicas diretamente para a revisão do seu supervisor." },
+    { title: "Exportação e PDF", description: "Utilize o botão de exportação para baixar sua escala em PDF e ter seus horários sempre acessíveis no seu dispositivo." }
+  ];
+
   const [schedule, setSchedule] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<any[]>([]);
@@ -257,6 +281,13 @@ export default function EmployeeDashboard() {
           </button>
         </div>
       </div>
+
+      <Tutorial 
+        role="employee"
+        isOpen={showTutorial}
+        steps={employeeTutorialSteps}
+        onClose={handleCloseTutorial}
+      />
 
       {/* Conteúdo Principal */}
       <div className="max-w-7xl mx-auto px-6 -mt-12 relative z-10">

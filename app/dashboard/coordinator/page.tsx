@@ -22,9 +22,33 @@ import { motion, AnimatePresence } from 'motion/react';
 import SuggestionSection from '@/components/SuggestionSection';
 import InterimRoleModal from '@/components/InterimRoleModal';
 import LATAMScheduleTable from '@/components/LATAMScheduleTable';
+import Tutorial from '@/components/Tutorial';
 
 export default function CoordinatorDashboard() {
   const [user, setUser] = useState<any>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  useEffect(() => {
+    const hasSeenTutorial = localStorage.getItem('tutorial_seen_coordinator');
+    if (!hasSeenTutorial) {
+      setShowTutorial(true);
+    }
+  }, []);
+
+  const handleCloseTutorial = (dontShowAgain: boolean) => {
+    if (dontShowAgain) {
+      localStorage.setItem('tutorial_seen_coordinator', 'true');
+    }
+    setShowTutorial(false);
+  };
+
+  const coordinatorTutorialSteps = [
+    { title: "Central do Coordenador", description: "Bem-vindo à sua torre de controle para o monitoramento regional das operações LATAM." },
+    { title: "Mapa de Bases", description: "Visualize o status de todas as bases sob sua coordenação e acesse detalhes específicos de cada terminal." },
+    { title: "Auditoria de Escalas", description: "Verifique rapidamente as escalas publicadas e rascunhos pendentes em cada unidade operacional." },
+    { title: "Gestão de Pessoal", description: "Acompanhe o quadro de funcionários e pedidos de swap/folga de forma consolidada para sua região." }
+  ];
+
   const [loading, setLoading] = useState(true);
   const [bases, setBases] = useState<any[]>([]);
   const [stats, setStats] = useState({
@@ -312,6 +336,14 @@ export default function CoordinatorDashboard() {
           currentUserId={user.id}
         />
       )}
+
+      <Tutorial 
+        role="coordinator"
+        isOpen={showTutorial}
+        steps={coordinatorTutorialSteps}
+        onClose={handleCloseTutorial}
+      />
+
       {user?.email === 'bernardo.real@latam.com' && (
         <div className="mb-6 p-4 bg-slate-800 rounded-xl text-slate-300 font-mono text-xs overflow-auto max-h-40">
           <div className="flex justify-between items-center mb-2">
