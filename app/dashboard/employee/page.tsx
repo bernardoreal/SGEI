@@ -17,7 +17,7 @@ export default function EmployeeDashboard() {
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem('tutorial_seen_employee');
     if (!hasSeenTutorial) {
-      setShowTutorial(true);
+      setTimeout(() => setShowTutorial(true), 0);
     }
   }, []);
 

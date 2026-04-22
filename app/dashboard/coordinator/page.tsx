@@ -31,7 +31,7 @@ export default function CoordinatorDashboard() {
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem('tutorial_seen_coordinator');
     if (!hasSeenTutorial) {
-      setShowTutorial(true);
+      setTimeout(() => setShowTutorial(true), 0);
     }
   }, []);
 

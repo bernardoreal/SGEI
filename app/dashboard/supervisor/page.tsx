@@ -52,7 +52,7 @@ export default function SupervisorDashboard() {
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem('tutorial_seen_supervisor');
     if (!hasSeenTutorial) {
-      setShowTutorial(true);
+      setTimeout(() => setShowTutorial(true), 0);
     }
   }, []);
 

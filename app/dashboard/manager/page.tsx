@@ -22,7 +22,7 @@ export default function ManagerDashboard() {
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem('tutorial_seen_manager');
     if (!hasSeenTutorial) {
-      setShowTutorial(true);
+      setTimeout(() => setShowTutorial(true), 0);
     }
   }, []);
 
