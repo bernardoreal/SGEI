@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Filter, Clock, Activity, AlertTriangle, Users } from 'lucide-react';
+import { getLookerGlobalData, getLookerEmployeesByBase } from '@/lib/lookerData';
 
 interface NativeHoursAnalyticsProps {
   role: 'manager' | 'coordinator' | 'supervisor';
@@ -21,7 +22,6 @@ export default function NativeHoursAnalytics({ role, userBaseId }: NativeHoursAn
     if (role === 'manager' || role === 'coordinator') {
       fetchBases();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role]);
 
   useEffect(() => {
@@ -40,105 +40,42 @@ export default function NativeHoursAnalytics({ role, userBaseId }: NativeHoursAn
       const targetBaseId = role === 'supervisor' ? userBaseId : (selectedBase !== 'all' ? selectedBase : null);
 
       if (targetBaseId) {
-        // View por Colaborador dentro de uma base específica
-        const { data: schedules } = await supabase.from('schedules').select('id, month, year').eq('base_id', targetBaseId);
-        const scheduleIds = schedules?.map((s: any) => s.id) || [];
-        
-        if (scheduleIds.length === 0) {
-          setData([]);
-          setLoading(false);
-          return;
+        // Encontrar o código IATA da base alvo para carregar os empregados do Looker
+        let targetIata = '';
+        if (targetBaseId === selectedBase) {
+           targetIata = bases.find(b => b.id === targetBaseId)?.code_iata || '';
+        } else {
+           const { data: bData } = await supabase.from('bases').select('code_iata').eq('id', targetBaseId).single();
+           targetIata = bData?.code_iata || '';
         }
 
-        const { data: details } = await supabase
-          .from('schedule_details')
-          .select('bp, shift, base_employees(name)')
-          .in('schedule_id', scheduleIds);
-
-        const agg: Record<string, any> = {};
-        details?.forEach((d: any) => {
-          if (d.shift && d.shift.toUpperCase() !== 'FOLGA') {
-            if (!agg[d.bp]) agg[d.bp] = { bp: d.bp, name: (d.base_employees as any)?.name || d.bp, horas: 0, executadas: 0 };
-            agg[d.bp].horas += 6; // Horas planejadas (escala)
-            
-            // Simulação de Horas Executadas (Registradas) 
-            // Na produção, você conectará isso ao banco de "Point" ou "Timesheets" ou integração HR.
-            // Isso simula variações de horas extras ou faltas que os colaboradores de fato registraram (+/- horas)
-            const randomVariance = Math.random() > 0.8 ? (Math.random() > 0.5 ? 2 : -4) : (Math.random() > 0.5 ? 1 : 0);
-            agg[d.bp].executadas += (6 + randomVariance);
-          }
-        });
-        
-        // Pick names (first name + last name) for better UI display
-        const chartData = Object.values(agg).map(item => {
-           let displayName = item.name;
-           if (typeof displayName === 'string' && displayName.includes(' ')) {
-             const parts = displayName.trim().split(' ');
-             displayName = `${parts[0]} ${parts[parts.length - 1]}`;
-           }
-           // Arredonda para não quebrar a UI
-           return { ...item, name: displayName, horas: Math.round(item.horas), executadas: Math.max(0, Math.round(item.executadas)) };
-        }).sort((a:any, b:any) => b.executadas - a.executadas);
-        
-        setData(chartData);
-
+        if (targetIata) {
+          const empData = getLookerEmployeesByBase(targetIata);
+          setData(empData);
+        } else {
+          setData([]);
+        }
       } else {
         // View Global: Horas por Base (Gerente / Coordenador)
         if (bases.length === 0) return; // Aguarda carregar bases
 
-        const { data: schedules } = await supabase.from('schedules').select('id, base_id');
-        const scheduleIds = schedules?.map((s: any) => s.id) || [];
-        
-        if (scheduleIds.length === 0) {
-          setData([]);
-          setLoading(false);
-          return;
-        }
-
-        const { data: details } = await supabase
-          .from('schedule_details')
-          .select('schedule_id, shift')
-          .in('schedule_id', scheduleIds);
-
-        // Mapeia base_id
-        const scheduleToBase: Record<string, string> = {};
-        schedules?.forEach((s: any) => scheduleToBase[s.id] = s.base_id);
-
-        const agg: Record<string, any> = {};
-        details?.forEach((d: any) => {
-          const baseId = scheduleToBase[d.schedule_id];
-          if (baseId && d.shift && d.shift.toUpperCase() !== 'FOLGA') {
-            if (!agg[baseId]) agg[baseId] = { baseId, horas: 0, executadas: 0 };
-            agg[baseId].horas += 6;
-            
-            const randomVariance = Math.random() > 0.7 ? (Math.random() > 0.5 ? 3 : -2) : 1;
-            agg[baseId].executadas += (6 + randomVariance);
-          }
-        });
-
-        // Get employee counts per base
-        const { data: baseEmployees } = await supabase.from('base_employees').select('base_id');
-        const empCounts: Record<string, number> = {};
-        baseEmployees?.forEach((emp: any) => {
-          const baseId = emp.base_id;
-          if (baseId) {
-             empCounts[baseId] = (empCounts[baseId] || 0) + 1;
-          }
-        });
-
-        // Junta com nome da base
-        const finalData = bases.map(b => ({
-          name: b.code_iata,
-          horas: Math.round(agg[b.id]?.horas || 0),
-          executadas: Math.round(agg[b.id]?.executadas || 0),
-          empCount: empCounts[b.id] || 0
-        })).filter(b => b.horas > 0).sort((a, b) => b.executadas - a.executadas);
+        const globalData = getLookerGlobalData();
+        const finalData = bases.map(b => {
+          const lookerStats = globalData[b.code_iata];
+          const empList = getLookerEmployeesByBase(b.code_iata);
+          return {
+            name: b.code_iata,
+            horas: lookerStats?.autorizadas || 0,
+            executadas: lookerStats?.realizado || 0,
+            empCount: empList.length || 0
+          };
+        }).filter(b => b.horas > 0 || b.executadas > 0).sort((a, b) => b.executadas - a.executadas);
 
         setData(finalData);
       }
 
     } catch (error) {
-      console.error("Erro ao buscar horas das escalas:", error);
+      console.error("Erro ao buscar horas das escalas vs looker:", error);
     } finally {
       setLoading(false);
     }
@@ -259,6 +196,7 @@ export default function NativeHoursAnalytics({ role, userBaseId }: NativeHoursAn
                   {isGlobalView && <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Colaboradores Totais</th>}
                   <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Hrs Planejadas</th>
                   <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Hrs Executadas</th>
+                  {!isGlobalView && <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Ocorrências</th>}
                   <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status / Ação</th>
                 </tr>
               </thead>
@@ -277,6 +215,16 @@ export default function NativeHoursAnalytics({ role, userBaseId }: NativeHoursAn
                       {isGlobalView && <td className="py-3 px-4 text-sm text-slate-600 font-medium">{row.empCount || 'N/A'}</td>}
                       <td className="py-3 px-4 text-sm font-bold text-slate-400 dark:text-slate-500">{row.horas}h</td>
                       <td className="py-3 px-4 text-sm font-black text-indigo-600 dark:text-indigo-400">{row.executadas}h</td>
+                      {!isGlobalView && (
+                         <td className="py-3 px-4">
+                           <div className="flex flex-col gap-1 items-start">
+                              {row.intra > 0 && <span className="inline-flex px-1.5 py-0.5 rounded-sm text-[10px] font-bold bg-latam-crimson/10 text-latam-crimson border border-latam-crimson/20">INTRA ({row.intra})</span>}
+                              {row.inter > 0 && <span className="inline-flex px-1.5 py-0.5 rounded-sm text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200">INTER ({row.inter})</span>}
+                              {row.hrs2 > 0 && <span className="inline-flex px-1.5 py-0.5 rounded-sm text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200">+2HRS ({row.hrs2})</span>}
+                              {(!row.intra && !row.inter && !row.hrs2) && <span className="text-xs text-slate-300">-</span>}
+                           </div>
+                         </td>
+                      )}
                       <td className="py-3 px-4">
                         {isCritical ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
