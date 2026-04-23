@@ -23,6 +23,7 @@ export default function NativeHoursAnalytics({ role, userBaseId }: NativeHoursAn
     }
   }, [role]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchData();
   }, [selectedBase, userBaseId, role, bases]); // Added bases to dependency to ensure it runs when bases load
@@ -40,7 +41,7 @@ export default function NativeHoursAnalytics({ role, userBaseId }: NativeHoursAn
       if (targetBaseId) {
         // View por Colaborador dentro de uma base específica
         const { data: schedules } = await supabase.from('schedules').select('id, month, year').eq('base_id', targetBaseId);
-        const scheduleIds = schedules?.map(s => s.id) || [];
+        const scheduleIds = schedules?.map((s: any) => s.id) || [];
         
         if (scheduleIds.length === 0) {
           setData([]);
@@ -54,7 +55,7 @@ export default function NativeHoursAnalytics({ role, userBaseId }: NativeHoursAn
           .in('schedule_id', scheduleIds);
 
         const agg: Record<string, any> = {};
-        details?.forEach(d => {
+        details?.forEach((d: any) => {
           if (d.shift && d.shift.toUpperCase() !== 'FOLGA') {
             if (!agg[d.bp]) agg[d.bp] = { bp: d.bp, name: (d.base_employees as any)?.name || d.bp, horas: 0 };
             agg[d.bp].horas += 6; // Estimativa média de 6h por turno produtivo (considerando parciais e cheios no 5x1)
@@ -78,7 +79,7 @@ export default function NativeHoursAnalytics({ role, userBaseId }: NativeHoursAn
         if (bases.length === 0) return; // Aguarda carregar bases
 
         const { data: schedules } = await supabase.from('schedules').select('id, base_id');
-        const scheduleIds = schedules?.map(s => s.id) || [];
+        const scheduleIds = schedules?.map((s: any) => s.id) || [];
         
         if (scheduleIds.length === 0) {
           setData([]);
@@ -93,10 +94,10 @@ export default function NativeHoursAnalytics({ role, userBaseId }: NativeHoursAn
 
         // Mapeia base_id
         const scheduleToBase: Record<string, string> = {};
-        schedules?.forEach(s => scheduleToBase[s.id] = s.base_id);
+        schedules?.forEach((s: any) => scheduleToBase[s.id] = s.base_id);
 
         const agg: Record<string, any> = {};
-        details?.forEach(d => {
+        details?.forEach((d: any) => {
           const baseId = scheduleToBase[d.schedule_id];
           if (baseId && d.shift && d.shift.toUpperCase() !== 'FOLGA') {
             if (!agg[baseId]) agg[baseId] = { baseId, horas: 0 };
@@ -107,7 +108,7 @@ export default function NativeHoursAnalytics({ role, userBaseId }: NativeHoursAn
         // Get employee counts per base
         const { data: baseEmployees } = await supabase.from('base_employees').select('base_id');
         const empCounts: Record<string, number> = {};
-        baseEmployees?.forEach(emp => {
+        baseEmployees?.forEach((emp: any) => {
           const baseId = emp.base_id;
           if (baseId) {
              empCounts[baseId] = (empCounts[baseId] || 0) + 1;
