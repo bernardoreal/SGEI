@@ -21,11 +21,12 @@ export default function NativeHoursAnalytics({ role, userBaseId }: NativeHoursAn
     if (role === 'manager' || role === 'coordinator') {
       fetchBases();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBase, userBaseId, role, bases]); // Added bases to dependency to ensure it runs when bases load
 
   const fetchBases = async () => {
@@ -198,7 +199,7 @@ export default function NativeHoursAnalytics({ role, userBaseId }: NativeHoursAn
               <Tooltip 
                 cursor={{ fill: 'rgba(79, 70, 229, 0.05)' }}
                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                formatter={(value: number) => [`${value} Hrs`, 'Esforço (Mensal)']}
+                formatter={(value: any) => [`${value} Hrs`, 'Esforço (Mensal)']}
               />
               <Bar 
                 dataKey="horas" 
