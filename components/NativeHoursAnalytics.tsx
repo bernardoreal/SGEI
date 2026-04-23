@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Filter, Clock, Activity } from 'lucide-react';
+import { Filter, Clock, Activity, AlertTriangle, Users } from 'lucide-react';
 
 interface NativeHoursAnalyticsProps {
   role: 'manager' | 'coordinator' | 'supervisor';
@@ -104,10 +104,21 @@ export default function NativeHoursAnalytics({ role, userBaseId }: NativeHoursAn
           }
         });
 
+        // Get employee counts per base
+        const { data: baseEmployees } = await supabase.from('base_employees').select('base_id');
+        const empCounts: Record<string, number> = {};
+        baseEmployees?.forEach(emp => {
+          const baseId = emp.base_id;
+          if (baseId) {
+             empCounts[baseId] = (empCounts[baseId] || 0) + 1;
+          }
+        });
+
         // Junta com nome da base
         const finalData = bases.map(b => ({
           name: b.code_iata,
-          horas: agg[b.id]?.horas || 0
+          horas: agg[b.id]?.horas || 0,
+          empCount: empCounts[b.id] || 0
         })).filter(b => b.horas > 0).sort((a, b) => b.horas - a.horas);
 
         setData(finalData);
@@ -199,6 +210,58 @@ export default function NativeHoursAnalytics({ role, userBaseId }: NativeHoursAn
           </ResponsiveContainer>
         )}
       </div>
+
+      {!loading && data.length > 0 && (
+        <div className="mt-8 border-t border-slate-100 dark:border-slate-700 pt-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Users size={18} className="text-slate-400" />
+            <h4 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">Detalhamento para Controle</h4>
+          </div>
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 dark:border-slate-700">
+                  <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">{isGlobalView ? 'Base' : 'Colaborador'}</th>
+                  {!isGlobalView && <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">BP</th>}
+                  {isGlobalView && <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Colaboradores Totais</th>}
+                  <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Total de Horas</th>
+                  <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status / Ação</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                {data.map((row, idx) => {
+                  const isOvertimeAlert = isGlobalView ? row.horas / (row.empCount || 1) > 180 : row.horas > 180;
+                  const isCritical = isGlobalView ? row.horas / (row.empCount || 1) > 200 : row.horas > 200;
+                  
+                  return (
+                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-200">{row.name}</td>
+                      {!isGlobalView && <td className="py-3 px-4 text-sm text-slate-500 font-mono">{row.bp}</td>}
+                      {isGlobalView && <td className="py-3 px-4 text-sm text-slate-600 font-medium">{row.empCount || 'N/A'}</td>}
+                      <td className="py-3 px-4 text-sm font-black text-indigo-600 dark:text-indigo-400">{row.horas}h</td>
+                      <td className="py-3 px-4">
+                        {isCritical ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+                            <AlertTriangle size={14} /> Alto Risco de HE
+                          </span>
+                        ) : isOvertimeAlert ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                            <AlertTriangle size={14} /> Perto do Limite
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                            <Activity size={14} /> Normal
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
