@@ -147,7 +147,7 @@ export default function NativeHoursAnalytics({ role, userBaseId }: NativeHoursAn
               <Tooltip 
                 cursor={{ fill: 'rgba(79, 70, 229, 0.05)' }}
                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px' }}
-                formatter={(value: any, name: string) => {
+                formatter={(value: any, name: any) => {
                   if (name === 'horas') return [`${value} Hrs`, 'Planejado'];
                   if (name === 'executadas') return [`${value} Hrs`, 'Executado (Registrado)'];
                   return [`${value} Hrs`, name];
