@@ -140,7 +140,24 @@ export default function ManagerDashboard() {
             </tbody>
         </table>
       </div>
-      {/* ... Gráfico de Tendência e Sugestões ... */}
+      <div className="bg-white dark:bg-slate-800 p-8 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-700">
+        <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-6 flex items-center gap-2">
+          <TrendingUp className="text-indigo-600" />
+          Análise de Horas e Visão Estratégica (Looker Studio)
+        </h3>
+        <p className="text-sm text-slate-500 mb-6 font-medium">Insights operacionais e de tomada de decisão para todas as bases da LATAM.</p>
+        <div className="w-full rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-700 aspect-video">
+          <iframe 
+            width="100%" 
+            height="100%" 
+            src="https://lookerstudio.google.com/embed/reporting/aeca8423-e77f-49a2-88ae-97b555f65173/page/p_2m9q27r4sd" 
+            frameBorder="0" 
+            style={{ border: 0 }} 
+            allowFullScreen 
+            sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          ></iframe>
+        </div>
+      </div>
       
       {user && (
         <SuggestionSection 

@@ -459,6 +459,26 @@ export default function CoordinatorDashboard() {
         </div>
       </div>
 
+      {/* Looker Studio Embed */}
+      <div className="bg-white dark:bg-slate-800 p-8 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-700">
+        <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-6 flex items-center gap-2">
+          <Clock className="text-indigo-600" />
+          Análise Detalhada de Horas e Efetivo (Looker Studio)
+        </h3>
+        <p className="text-sm text-slate-500 mb-6 font-medium">Dashboard analítico completo das horas operacionais, projetado para rápida tomada de decisão.</p>
+        <div className="w-full rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-700 aspect-video">
+          <iframe 
+            width="100%" 
+            height="100%" 
+            src="https://lookerstudio.google.com/embed/reporting/aeca8423-e77f-49a2-88ae-97b555f65173/page/p_2m9q27r4sd" 
+            frameBorder="0" 
+            style={{ border: 0 }} 
+            allowFullScreen 
+            sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          ></iframe>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Bases List */}
         <div className="lg:col-span-1 space-y-4">
