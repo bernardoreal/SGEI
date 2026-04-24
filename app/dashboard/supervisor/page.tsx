@@ -41,7 +41,6 @@ import { logAudit } from '@/lib/audit';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Tutorial from '@/components/Tutorial';
-import NativeHoursAnalytics from '@/components/NativeHoursAnalytics';
 
 const monthNames = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
 
@@ -1388,10 +1387,6 @@ export default function SupervisorDashboard() {
           baseId={user.base_id}
           currentUserId={user.id}
         />
-      )}
-
-      {user && (
-        <NativeHoursAnalytics role="supervisor" userBaseId={user.base_id} />
       )}
 
       <Tutorial 

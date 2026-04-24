@@ -14,7 +14,6 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import SuggestionSection from '@/components/SuggestionSection';
 import InterimRoleModal from '@/components/InterimRoleModal';
 import Tutorial from '@/components/Tutorial';
-import NativeHoursAnalytics from '@/components/NativeHoursAnalytics';
 
 export default function ManagerDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -141,9 +140,6 @@ export default function ManagerDashboard() {
             </tbody>
         </table>
       </div>
-      
-      <NativeHoursAnalytics role="manager" />
-      
       {/* ... Gráfico de Tendência e Sugestões ... */}
       
       {user && (

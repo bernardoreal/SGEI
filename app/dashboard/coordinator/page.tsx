@@ -23,7 +23,6 @@ import SuggestionSection from '@/components/SuggestionSection';
 import InterimRoleModal from '@/components/InterimRoleModal';
 import LATAMScheduleTable from '@/components/LATAMScheduleTable';
 import Tutorial from '@/components/Tutorial';
-import NativeHoursAnalytics from '@/components/NativeHoursAnalytics';
 
 export default function CoordinatorDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -459,8 +458,6 @@ export default function CoordinatorDashboard() {
           </div>
         </div>
       </div>
-
-      <NativeHoursAnalytics role="coordinator" />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Bases List */}
