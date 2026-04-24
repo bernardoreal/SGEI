@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     title: 'SGEI LATAM',
   },
   icons: {
-    apple: 'https://placehold.co/192x192/002169/ffffff?text=LATAM',
+    apple: 'https://placehold.co/192x192/1B0088/ffffff?text=LATAM',
   },
 };
 

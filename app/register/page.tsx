@@ -296,7 +296,7 @@ export default function RegisterPage() {
                   placeholder="Telefone (Opcional)" 
                   value={phone} 
                   onChange={(e) => setPhone(e.target.value)} 
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 border border-white/50 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white outline-none transition-all text-latam-indigo font-medium placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400"
                 />
               </div>
               <div className="relative group">
@@ -304,14 +304,14 @@ export default function RegisterPage() {
                 <select 
                   value={cargo} 
                   onChange={(e) => setCargo(e.target.value)} 
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 border border-white/50 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white outline-none transition-all text-latam-indigo font-medium placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400"
                   required
                 >
-                  <option value="" disabled>Selecione o Cargo</option>
-                  <option value="Auxiliar de Cargas">Auxiliar de Cargas</option>
-                  <option value="Despachante">Despachante</option>
-                  <option value="Supervisor">Supervisor</option>
-                  <option value="Coordenador">Coordenador</option>
+                  <option value="" disabled className="dark:bg-slate-900">Selecione o Cargo</option>
+                  <option value="Auxiliar de Cargas" className="dark:bg-slate-900">Auxiliar de Cargas</option>
+                  <option value="Despachante" className="dark:bg-slate-900">Despachante</option>
+                  <option value="Supervisor" className="dark:bg-slate-900">Supervisor</option>
+                  <option value="Coordenador" className="dark:bg-slate-900">Coordenador</option>
                 </select>
               </div>
               <div className="flex items-center gap-2 ml-1">
@@ -348,7 +348,7 @@ export default function RegisterPage() {
                       setBaseSearch('');
                     }
                   }}
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 border border-white/50 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white outline-none transition-all text-latam-indigo font-medium placeholder:text-slate-400 cursor-pointer"
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400 cursor-pointer"
                   required
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-latam-indigo/40">
@@ -411,7 +411,7 @@ export default function RegisterPage() {
                       setEmailError(null);
                     }
                   }}
-                  className={`w-full pl-12 pr-4 py-4 bg-white/50 border ${emailError ? 'border-red-500' : 'border-white/50'} rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white outline-none transition-all text-latam-indigo font-medium placeholder:text-slate-400`}
+                  className={`w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border ${emailError ? 'border-red-500' : 'border-white/50 dark:border-slate-700'} rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400`}
                   required
                 />
                 {emailError && <p className="text-red-500 text-xs mt-1 ml-1">{emailError}</p>}
@@ -423,7 +423,7 @@ export default function RegisterPage() {
                   placeholder="Senha" 
                   value={password} 
                   onChange={(e) => setPassword(e.target.value)} 
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 border border-white/50 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white outline-none transition-all text-latam-indigo font-medium placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400"
                   required
                 />
               </div>
@@ -434,7 +434,7 @@ export default function RegisterPage() {
                   placeholder="Confirmar Senha" 
                   value={confirmPassword} 
                   onChange={(e) => setConfirmPassword(e.target.value)} 
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 border border-white/50 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white outline-none transition-all text-latam-indigo font-medium placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400"
                   required
                 />
               </div>

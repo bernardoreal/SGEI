@@ -150,7 +150,7 @@ export default function LATAMScheduleTable({ month, year, data, onDataChange, va
         )}
       </AnimatePresence>
 
-      <div className="bg-[#002169] text-white p-4 text-center rounded-t-xl flex justify-between items-center border-b-2 border-white dark:border-slate-800">
+      <div className="bg-latam-indigo text-white p-4 text-center rounded-t-xl flex justify-between items-center border-b-2 border-white dark:border-slate-800">
         <div className="w-10" />
         <h2 className="text-2xl font-black tracking-[0.2em] uppercase">
           ESCALA JPA {month} _ {year}

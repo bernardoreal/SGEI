@@ -1530,7 +1530,7 @@ export default function SupervisorDashboard() {
                 </button>
                 <button 
                   onClick={handlePrint}
-                  className="flex items-center gap-2 bg-latam-indigo text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-[#001a54] transition shadow-md no-print"
+                  className="flex items-center gap-2 bg-latam-indigo text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-latam-indigo/90 transition shadow-md no-print"
                 >
                   <Printer size={18} /> Imprimir
                 </button>
@@ -1784,7 +1784,7 @@ export default function SupervisorDashboard() {
               <button 
                 onClick={handleValidateAndPublish}
                 disabled={saving}
-                className="flex items-center gap-2 bg-latam-indigo text-white px-8 py-3 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-200 dark:shadow-none disabled:bg-slate-300 dark:disabled:bg-slate-700"
+                className="flex items-center gap-2 bg-latam-indigo text-white px-8 py-3 rounded-xl font-bold hover:bg-latam-indigo/90 transition shadow-lg shadow-indigo-200 dark:shadow-none disabled:bg-slate-300 dark:disabled:bg-slate-700"
               >
                 <ShieldCheck size={20} />
                 {saving ? 'Publicando...' : (aiSchedules[currentScheduleIndex].status === 'published' || editingScheduleId ? 'Validar e Republicar' : 'Validar e Publicar Escala')}
@@ -2285,7 +2285,7 @@ export default function SupervisorDashboard() {
                   <button 
                     onClick={handleSaveBaseConfig}
                     disabled={savingConfig}
-                    className="flex-1 bg-latam-indigo text-white py-4 rounded-2xl font-bold hover:bg-[#001a54] transition-all shadow-xl shadow-indigo-100 disabled:bg-slate-300"
+                    className="flex-1 bg-latam-indigo text-white py-4 rounded-2xl font-bold hover:bg-latam-indigo/90 transition-all shadow-xl shadow-indigo-100 disabled:bg-slate-300"
                   >
                     {savingConfig ? 'Salvando...' : 'Salvar Config'}
                   </button>
@@ -2394,7 +2394,7 @@ export default function SupervisorDashboard() {
                   <button 
                     type="submit"
                     disabled={saving}
-                    className="flex-1 bg-latam-indigo text-white py-3 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-100 dark:shadow-none disabled:bg-slate-300 dark:disabled:bg-slate-700"
+                    className="flex-1 bg-latam-indigo text-white py-3 rounded-xl font-bold hover:bg-latam-indigo/90 transition shadow-lg shadow-indigo-100 dark:shadow-none disabled:bg-slate-300 dark:disabled:bg-slate-700"
                   >
                     {saving ? 'Salvando...' : 'Salvar Alterações'}
                   </button>

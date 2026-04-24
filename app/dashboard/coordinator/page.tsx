@@ -299,13 +299,13 @@ export default function CoordinatorDashboard() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Visão Consolidada</h1>
-          <p className="text-slate-500 font-medium">Monitoramento de escalas e performance em todas as bases.</p>
+          <h1 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Visão Consolidada</h1>
+          <p className="text-slate-500 dark:text-slate-400 font-medium">Monitoramento de escalas e performance em todas as bases.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 bg-white p-1 rounded-2xl shadow-sm border border-slate-100">
+        <div className="flex flex-wrap items-center gap-2 bg-white dark:bg-slate-800 p-1 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
            <button 
              onClick={() => alert("Módulo C-Level de Exportação em desenvolvimento. Em breve você poderá exportar PDF/Excel resumido de eficiência.")}
-             className="flex items-center gap-2 px-3 py-2 bg-slate-50 text-slate-600 rounded-xl font-medium hover:bg-slate-100 transition-all text-sm"
+             className="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-medium hover:bg-slate-100 dark:hover:bg-slate-600 transition-all text-sm"
              title="Exportar Relatório Gerencial"
            >
              <Download size={18} />
@@ -313,14 +313,14 @@ export default function CoordinatorDashboard() {
            </button>
           <button 
             onClick={() => setShowInterimModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl font-medium hover:bg-indigo-100 transition-all text-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-xl font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900 transition-all text-sm"
           >
             <ArrowRightLeft size={18} />
             Aviso de Férias
           </button>
           <button 
             onClick={() => fetchGlobalData()}
-            className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-latam-indigo transition-all"
+            className="p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl text-slate-400 hover:text-latam-indigo dark:hover:text-latam-crimson transition-all"
             title="Atualizar Dados"
           >
             <Clock size={20} />
@@ -462,17 +462,17 @@ export default function CoordinatorDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Bases List */}
         <div className="lg:col-span-1 space-y-4">
-          <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-700">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Terminais</h2>
+              <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Terminais</h2>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />
                 <input 
                   type="text" 
                   placeholder="Buscar base..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 pr-4 py-2 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-full"
+                  className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-full dark:text-white dark:placeholder:text-slate-600"
                 />
               </div>
             </div>
@@ -484,33 +484,35 @@ export default function CoordinatorDashboard() {
                   onClick={() => fetchBaseDetails(base)}
                   className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all border ${
                     selectedBase?.id === base.id 
-                      ? 'bg-indigo-50 border-indigo-100 shadow-sm' 
-                      : 'bg-white border-transparent hover:bg-slate-50'
+                      ? 'bg-indigo-50 border-indigo-100 dark:bg-indigo-900/40 dark:border-indigo-800 shadow-sm' 
+                      : 'bg-white border-transparent hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/50'
                   }`}
                 >
                   <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg ${
-                      base.status === 'published' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                      base.status === 'published' 
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
+                        : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
                     }`}>
                       {base.code_iata}
                     </div>
                     <div className="text-left">
-                      <p className="font-bold text-slate-900">{base.name}</p>
-                      <p className="text-xs text-slate-500 font-medium">{base.employeeCount} colaboradores</p>
+                      <p className="font-bold text-slate-900 dark:text-slate-100">{base.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{base.employeeCount} colaboradores</p>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-end gap-1 text-slate-900 dark:text-slate-100">
                     {!base.hasSupervisor && (
-                      <span className="bg-rose-100 text-rose-700 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                      <span className="bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
                         SEM SUPERVISOR
                       </span>
                     )}
                     {base.pendingRequests > 0 && (
-                      <span className="bg-amber-100 text-amber-700 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                      <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
                         {base.pendingRequests} REQ
                       </span>
                     )}
-                    <ChevronRight size={16} className={selectedBase?.id === base.id ? 'text-indigo-600' : 'text-slate-300'} />
+                    <ChevronRight size={16} className={selectedBase?.id === base.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-300 dark:text-slate-600'} />
                   </div>
                 </button>
               ))}
@@ -530,21 +532,21 @@ export default function CoordinatorDashboard() {
                 className="space-y-6"
               >
                 {/* Base Header Card */}
-                <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100 relative overflow-hidden">
+                <div className="bg-white dark:bg-slate-800 p-8 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-700 relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-8 opacity-5">
                     <MapPin size={120} />
                   </div>
                   
                   <div className="relative z-10">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="bg-latam-indigo text-white px-4 py-2 rounded-xl font-black text-xl">
+                    <div className="flex items-center gap-4 mb-6 transition-colors">
+                      <div className="bg-latam-indigo text-white px-4 py-2 rounded-xl font-black text-xl shadow-lg shadow-latam-indigo/20">
                         {selectedBase.code_iata}
                       </div>
                       <div>
-                        <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">{selectedBase.name}</h2>
+                        <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">{selectedBase.name}</h2>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className={`w-2 h-2 rounded-full ${selectedBase.status === 'published' ? 'bg-emerald-500' : 'bg-slate-300'}`}></span>
-                          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                          <span className={`w-2 h-2 rounded-full ${selectedBase.status === 'published' ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'bg-slate-300 dark:bg-slate-600'}`}></span>
+                          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                             {selectedBase.status === 'published' ? 'Escala Publicada' : 'Sem Escala Ativa'}
                           </span>
                         </div>
@@ -552,17 +554,17 @@ export default function CoordinatorDashboard() {
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-slate-50 p-4 rounded-2xl">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Efetivo</p>
-                        <p className="text-xl font-black text-slate-900">{selectedBase.employeeCount}</p>
+                      <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl transition-colors">
+                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Efetivo</p>
+                        <p className="text-xl font-black text-slate-900 dark:text-white">{selectedBase.employeeCount}</p>
                       </div>
-                      <div className="bg-slate-50 p-4 rounded-2xl">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Trocas Pendentes</p>
-                        <p className="text-xl font-black text-slate-900">{selectedBase.pendingRequests}</p>
+                      <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl transition-colors">
+                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Trocas Pendentes</p>
+                        <p className="text-xl font-black text-slate-900 dark:text-white">{selectedBase.pendingRequests}</p>
                       </div>
-                      <div className="bg-slate-50 p-4 rounded-2xl">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Última Atualização</p>
-                        <p className="text-sm font-bold text-slate-900">
+                      <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl transition-colors">
+                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Última Atualização</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">
                           {selectedBase.latestSchedule?.published_at 
                             ? new Date(selectedBase.latestSchedule.published_at).toLocaleDateString('pt-BR') 
                             : 'N/A'}
@@ -573,15 +575,15 @@ export default function CoordinatorDashboard() {
                 </div>
 
                 {/* Employees List Card */}
-                <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
+                <div className="bg-white dark:bg-slate-800 p-8 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-700">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-latam-indigo/10 text-latam-indigo rounded-xl flex items-center justify-center">
+                      <div className="w-10 h-10 bg-latam-indigo/10 dark:bg-latam-indigo/20 text-latam-indigo rounded-xl flex items-center justify-center transition-colors">
                         <Users size={20} />
                       </div>
-                      <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Colaboradores da Base</h3>
+                      <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Colaboradores da Base</h3>
                     </div>
-                    <span className="bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1 rounded-full uppercase">
+                    <span className="bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 text-xs font-bold px-3 py-1 rounded-full uppercase transition-colors">
                       {baseDetails?.employees?.length || 0} Ativos
                     </span>
                   </div>

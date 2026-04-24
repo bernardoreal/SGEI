@@ -1095,7 +1095,7 @@ export default function AdminDashboard() {
               setEmergencyMode('create');
               setShowAddUserModal(true);
             }}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-latam-indigo text-white rounded-xl text-sm font-bold hover:bg-[#001a54] transition shadow-lg shadow-latam-indigo/20 w-full sm:w-auto"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-latam-indigo text-white rounded-xl text-sm font-bold hover:bg-latam-indigo/90 transition shadow-lg shadow-latam-indigo/20 w-full sm:w-auto"
           >
             <UserPlus size={16} />
             Gestão Emergencial
@@ -1404,10 +1404,10 @@ export default function AdminDashboard() {
                 )}
               </div>
 
-              <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
+              <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 flex justify-end">
                 <button 
                   onClick={() => setShowBaseModal(false)}
-                  className="w-full sm:w-auto px-6 py-2 bg-white dark:bg-slate-800 border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-100 transition"
+                  className="w-full sm:w-auto px-6 py-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-600 transition dark:text-white shadow-sm"
                 >
                   Fechar
                 </button>
@@ -1427,14 +1427,14 @@ export default function AdminDashboard() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
             >
-              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-indigo-100 rounded-lg text-indigo-700">
+                  <div className="p-2 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg text-indigo-700 dark:text-indigo-400">
                     {emergencyMode === 'create' ? <UserPlus size={24} /> : <Users size={24} />}
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">Gestão Emergencial</h3>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">Gestão Emergencial</h3>
                 </div>
-                <button type="button" onClick={() => setShowAddUserModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <button type="button" onClick={() => setShowAddUserModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors dark:text-slate-400">
                   <X size={20} />
                 </button>
               </div>
@@ -2359,10 +2359,10 @@ function StatCard({ title, value, icon, trend, color, highlight = false }: any) 
   return (
     <motion.div 
       whileHover={{ y: -4 }}
-      className={`p-6 rounded-3xl border shadow-sm transition-all ${colorClasses[color] || 'border-slate-100 dark:border-slate-700/50 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50/30 dark:bg-slate-800/60'} ${highlight ? 'ring-2 ring-latam-crimson ring-offset-2 dark:ring-offset-[#0B1120]' : ''}`}
+      className={`p-6 rounded-3xl border shadow-sm transition-all ${colorClasses[color] || 'border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800'} ${highlight ? 'ring-2 ring-latam-crimson ring-offset-2 dark:ring-offset-[#0B1120]' : ''}`}
     >
       <div className="flex justify-between items-start mb-4">
-        <div className="p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/50 dark:border-slate-700/50 text-latam-indigo dark:text-indigo-400">
+        <div className="p-3 bg-white dark:bg-slate-900/50 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 text-latam-indigo dark:text-indigo-400">
           {icon}
         </div>
         <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1 uppercase tracking-widest">
@@ -2371,8 +2371,8 @@ function StatCard({ title, value, icon, trend, color, highlight = false }: any) 
         </div>
       </div>
       <div>
-        <div className="text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{value}</div>
-        <div className="text-xs font-bold text-slate-400 dark:text-slate-500 dark:text-slate-500 uppercase tracking-widest mt-1">{title}</div>
+        <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{value}</div>
+        <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">{title}</div>
       </div>
     </motion.div>
   );

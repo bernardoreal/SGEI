@@ -3,8 +3,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-latam-indigo: #002169;
-  --color-latam-crimson: #E60000;
+  --color-latam-indigo: #1B0088;
+  --color-latam-crimson: #ED1650;
   --font-latam: var(--font-sans), system-ui, sans-serif;
   --font-display: var(--font-display), system-ui, sans-serif;
 }

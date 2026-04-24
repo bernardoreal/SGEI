@@ -124,25 +124,25 @@ export default function DashboardPage() {
 
   if (status === 'pending') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-latam-indigo p-4">
-        <div className="max-w-md w-full glass rounded-[32px] p-8 md:p-10 text-center relative overflow-hidden">
+      <div className="min-h-screen flex items-center justify-center bg-latam-indigo dark:bg-[#0B1120] p-4 transition-colors duration-300">
+        <div className="max-w-md w-full glass dark:bg-slate-800/80 rounded-[32px] p-8 md:p-10 text-center relative overflow-hidden border border-white/20 dark:border-slate-700">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-latam-crimson" />
           <div className="flex justify-center mb-8">
-            <div className="bg-white/10 p-5 rounded-3xl text-white backdrop-blur-md border border-white/20">
+            <div className="bg-white/10 dark:bg-slate-900/50 p-5 rounded-3xl text-white backdrop-blur-md border border-white/20 dark:border-slate-700">
               <Clock size={40} />
             </div>
           </div>
           <h2 className="text-2xl font-bold text-white mb-4 tracking-tight">Aguardando Aprovação</h2>
-          <p className="text-white/70 mb-8 leading-relaxed font-medium">
+          <p className="text-white/70 dark:text-slate-300 mb-8 leading-relaxed font-medium">
             Seu cadastro foi recebido com sucesso. Por motivos de segurança, um administrador precisa revisar seu perfil e atribuir seu cargo antes que você possa acessar o sistema.
           </p>
-          <div className="p-5 bg-white/5 rounded-2xl mb-8 text-left border border-white/10">
-            <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Usuário Identificado:</p>
+          <div className="p-5 bg-white/5 dark:bg-slate-900/30 rounded-2xl mb-8 text-left border border-white/10 dark:border-slate-700/50">
+            <p className="text-[10px] font-bold text-white/40 dark:text-slate-500 uppercase tracking-widest mb-1">Usuário Identificado:</p>
             <p className="text-sm font-bold text-white">{userEmail}</p>
           </div>
           <button 
             onClick={() => window.location.reload()}
-            className="w-full bg-white text-latam-indigo py-4 rounded-2xl font-bold hover:bg-slate-100 transition-all shadow-xl active:scale-[0.98]"
+            className="w-full bg-white dark:bg-slate-700 text-latam-indigo dark:text-white py-4 rounded-2xl font-bold hover:bg-slate-100 dark:hover:bg-slate-600 transition-all shadow-xl active:scale-[0.98]"
           >
             Verificar Status Novamente
           </button>
@@ -151,7 +151,7 @@ export default function DashboardPage() {
               await supabase.auth.signOut();
               router.push('/');
             }}
-            className="w-full mt-6 text-white/50 text-xs font-bold uppercase tracking-widest hover:text-latam-crimson transition-colors"
+            className="w-full mt-6 text-white/50 dark:text-slate-500 text-xs font-bold uppercase tracking-widest hover:text-latam-crimson transition-colors"
           >
             Sair do Sistema
           </button>
@@ -162,24 +162,24 @@ export default function DashboardPage() {
 
   if (status === 'error') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-latam-indigo p-4">
-        <div className="max-w-md w-full glass rounded-[32px] p-8 md:p-10 border-t-4 border-latam-crimson">
+      <div className="min-h-screen flex items-center justify-center bg-latam-indigo dark:bg-[#0B1120] p-4 transition-colors duration-300">
+        <div className="max-w-md w-full glass dark:bg-slate-800/80 rounded-[32px] p-8 md:p-10 border-t-4 border-latam-crimson border-x border-white/20 dark:border-slate-700 shadow-2xl">
           <div className="flex items-center space-x-4 mb-6">
             <div className="bg-latam-crimson/20 p-3 rounded-2xl text-latam-crimson">
               <AlertCircle size={24} />
             </div>
             <h2 className="text-xl font-bold text-white tracking-tight">Erro de Acesso</h2>
           </div>
-          <p className="text-white/70 mb-8 font-medium leading-relaxed">{errorDetails}</p>
+          <p className="text-white/70 dark:text-slate-300 mb-8 font-medium leading-relaxed">{errorDetails}</p>
           <button 
             onClick={() => window.location.href = '/dashboard'}
-            className="w-full bg-white text-latam-indigo py-4 rounded-2xl font-bold hover:bg-slate-100 transition-all shadow-xl active:scale-[0.98]"
+            className="w-full bg-white dark:bg-slate-700 text-latam-indigo dark:text-white py-4 rounded-2xl font-bold hover:bg-slate-100 dark:hover:bg-slate-600 transition-all shadow-xl active:scale-[0.98]"
           >
             Tentar Novamente
           </button>
           <button 
             onClick={() => router.push('/')}
-            className="w-full mt-6 text-white/50 text-xs font-bold uppercase tracking-widest hover:text-white transition-colors"
+            className="w-full mt-6 text-white/50 dark:text-slate-500 text-xs font-bold uppercase tracking-widest hover:text-white transition-colors"
           >
             Voltar para o Login
           </button>
@@ -190,23 +190,23 @@ export default function DashboardPage() {
 
   if (status === 'no-user') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-latam-indigo p-4">
-        <div className="max-w-md w-full glass rounded-[32px] p-8 md:p-10 border-t-4 border-amber-500">
+      <div className="min-h-screen flex items-center justify-center bg-latam-indigo dark:bg-[#0B1120] p-4 transition-colors duration-300">
+        <div className="max-w-md w-full glass dark:bg-slate-800/80 rounded-[32px] p-8 md:p-10 border-t-4 border-amber-500 border-x border-white/20 dark:border-slate-700 shadow-2xl">
           <div className="flex items-center space-x-4 mb-6">
             <div className="bg-amber-500/20 p-3 rounded-2xl text-amber-500">
               <AlertCircle size={24} />
             </div>
             <h2 className="text-xl font-bold text-white tracking-tight">Perfil não encontrado</h2>
           </div>
-          <p className="text-white/80 text-sm mb-4 font-medium">
+          <p className="text-white/80 dark:text-slate-200 text-sm mb-4 font-medium">
             Logado como: <span className="font-bold text-white">{userEmail}</span>
           </p>
-          <p className="text-white/60 text-sm mb-8 leading-relaxed">
+          <p className="text-white/60 dark:text-slate-400 text-sm mb-8 leading-relaxed">
             Sua conta de e-mail está ativa, mas você ainda não possui um perfil de acesso configurado na base de dados da LATAM Cargo.
           </p>
           <button 
             onClick={() => router.push('/register')}
-            className="w-full bg-white text-latam-indigo py-4 rounded-2xl font-bold hover:bg-slate-100 transition-all shadow-xl active:scale-[0.98]"
+            className="w-full bg-white dark:bg-slate-700 text-latam-indigo dark:text-white py-4 rounded-2xl font-bold hover:bg-slate-100 dark:hover:bg-slate-600 transition-all shadow-xl active:scale-[0.98]"
           >
             Realizar Cadastro Inicial
           </button>
@@ -216,7 +216,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-latam-indigo">
+    <div className="min-h-screen flex items-center justify-center bg-latam-indigo dark:bg-[#0B1120] transition-colors duration-300">
       <div className="text-center space-y-8">
         <div className="flex justify-center">
           <div className="relative">

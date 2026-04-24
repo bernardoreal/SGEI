@@ -174,7 +174,7 @@ export default function SuggestionSection({ userId, userName, userRole }: Sugges
                   <button
                     type="submit"
                     disabled={loading || !suggestion.trim()}
-                    className="w-full bg-latam-indigo text-white py-4 rounded-xl font-bold hover:bg-[#001a54] transition shadow-lg shadow-indigo-100 dark:shadow-none disabled:bg-slate-300 dark:disabled:bg-slate-700 flex items-center justify-center gap-2"
+                    className="w-full bg-latam-indigo text-white py-4 rounded-xl font-bold hover:bg-latam-indigo/90 transition shadow-lg shadow-indigo-100 dark:shadow-none disabled:bg-slate-300 dark:disabled:bg-slate-700 flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

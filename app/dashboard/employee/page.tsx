@@ -400,7 +400,7 @@ export default function EmployeeDashboard() {
                   <button 
                     type="submit"
                     disabled={submitting}
-                    className="w-full bg-latam-indigo text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#001a54] transition shadow-lg shadow-indigo-100 dark:shadow-none disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:text-slate-500"
+                    className="w-full bg-latam-indigo text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-latam-indigo/90 transition shadow-lg shadow-indigo-100 dark:shadow-none disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:text-slate-500"
                   >
                     {submitting ? 'Enviando...' : 'Enviar Solicitação'}
                   </button>
