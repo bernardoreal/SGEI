@@ -295,7 +295,7 @@ export default function CoordinatorDashboard() {
   }
 
   return (
-    <div className="space-y-8 pb-12 min-h-screen bg-gray-50 dark:bg-[#0B1120] px-6 pt-8 transition-colors duration-300">
+    <div className="space-y-8 pb-12">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>

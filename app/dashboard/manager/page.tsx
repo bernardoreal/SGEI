@@ -80,7 +80,7 @@ export default function ManagerDashboard() {
   }, []);
 
   return (
-    <div className="p-8 space-y-8 bg-slate-50 dark:bg-[#0B1120] min-h-screen transition-colors duration-300">
+    <div className="space-y-8 pb-12">
       {/* ... header igual ao anterior ... */}
       <div className="flex justify-end p-4">
         <button 

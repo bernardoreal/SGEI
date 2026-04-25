@@ -137,7 +137,7 @@ export default function SecurityCenterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B1120] text-slate-900 dark:text-slate-100 p-4 sm:p-8 font-sans transition-colors duration-200">
+    <div className="space-y-8 pb-12 font-sans transition-colors duration-200">
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header */}

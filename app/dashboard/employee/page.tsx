@@ -249,16 +249,16 @@ export default function EmployeeDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#0B1120]">
+      <div className="flex items-center justify-center py-20">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-latam-indigo dark:border-indigo-400"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-12 transition-colors duration-300">
+    <div className="space-y-8 pb-12">
       {/* Header do Colaborador */}
-      <div className="bg-latam-indigo dark:bg-slate-800/60 dark:backdrop-blur-xl text-white pb-24 pt-12 px-6 transition-colors duration-300">
+      <div className="bg-latam-indigo dark:bg-slate-800/60 dark:backdrop-blur-xl text-white pb-16 pt-8 px-6 rounded-3xl transition-colors duration-300 relative overflow-hidden -mt-4 shadow-sm">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="flex items-center gap-5">
             <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20">
@@ -290,7 +290,7 @@ export default function EmployeeDashboard() {
       />
 
       {/* Conteúdo Principal */}
-      <div className="max-w-7xl mx-auto px-6 -mt-12 relative z-10">
+      <div className="relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Coluna da Esquerda: Escala */}
           <div className="lg:col-span-2 space-y-8">
