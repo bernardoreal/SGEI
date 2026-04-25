@@ -143,6 +143,42 @@ export default function AdminDashboard() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const [editingSuggestion, setEditingSuggestion] = useState<any>(null);
+  const [suggestionForm, setSuggestionForm] = useState({ text: '', priority: 'média' });
+
+  const handleSaveSuggestion = async () => {
+    if (!suggestionForm.text.trim()) return;
+    try {
+      if (editingSuggestion) {
+        const { error } = await supabase
+          .from('system_suggestions')
+          .update({ suggestion: suggestionForm.text.trim(), priority: suggestionForm.priority })
+          .eq('id', editingSuggestion.id);
+        if (!error) {
+           setSuggestions(prev => prev.map(s => s.id === editingSuggestion.id ? { ...s, suggestion: suggestionForm.text.trim(), priority: suggestionForm.priority } : s));
+        }
+      } else {
+        const { error, data } = await supabase
+          .from('system_suggestions')
+          .insert({
+            user_id: currentUser?.id,
+            user_name: currentUser?.name || currentUser?.email || 'Admin',
+            user_role: 'admin',
+            suggestion: suggestionForm.text.trim(),
+            priority: suggestionForm.priority
+          }).select().single();
+        if (!error && data) {
+           setSuggestions(prev => [data, ...prev]);
+        }
+      }
+      setShowSuggestionModal(false);
+      setEditingSuggestion(null);
+      setSuggestionForm({ text: '', priority: 'média' });
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const pendingSuggestions = useMemo(() => 
     suggestions.filter(s => s.status === 'pendente' || !s.status),
@@ -1417,6 +1453,68 @@ export default function AdminDashboard() {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {showSuggestionModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-800 rounded-[32px] shadow-2xl w-full max-w-md overflow-hidden border border-slate-100 dark:border-slate-700/50"
+            >
+              <div className="p-6 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center">
+                <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                  {editingSuggestion ? 'Editar Sugestão' : 'Nova Sugestão'}
+                </h3>
+                <button onClick={() => { setShowSuggestionModal(false); setEditingSuggestion(null); setSuggestionForm({ text: '', priority: 'média' }); }} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest mb-2">Sua Ideia</label>
+                  <textarea
+                    value={suggestionForm.text}
+                    onChange={(e) => setSuggestionForm(prev => ({ ...prev, text: e.target.value }))}
+                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-[#ED1650] focus:border-transparent transition-all outline-none"
+                    rows={4}
+                    placeholder="Descreva a melhoria que você gostaria de ver..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest mb-2">Prioridade</label>
+                  <select
+                    value={suggestionForm.priority}
+                    onChange={(e) => setSuggestionForm(prev => ({ ...prev, priority: e.target.value }))}
+                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#ED1650] focus:border-transparent transition-all outline-none"
+                  >
+                    <option value="baixa">Baixa</option>
+                    <option value="média">Média</option>
+                    <option value="alta">Alta</option>
+                    <option value="crítica">Crítica</option>
+                  </select>
+                </div>
+              </div>
+              <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700/50 flex justify-end gap-3">
+                <button
+                  onClick={() => { setShowSuggestionModal(false); setEditingSuggestion(null); setSuggestionForm({ text: '', priority: 'média' }); }}
+                  className="px-6 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors uppercase text-sm tracking-widest"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveSuggestion}
+                  disabled={!suggestionForm.text.trim()}
+                  className="px-6 py-2.5 rounded-xl bg-[#1B0088] hover:bg-[#1B0088]/90 text-white font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase text-sm tracking-widest"
+                >
+                  Salvar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Emergency Management Modal */}
       <AnimatePresence>
         {showAddUserModal && (
@@ -1898,8 +1996,16 @@ export default function AdminDashboard() {
               <p className="text-slate-500 dark:text-slate-400 font-medium">Gerencie as solicitações de melhoria via Kanban drag-and-drop.</p>
             </div>
           </div>
-          <div className="bg-slate-50 dark:bg-slate-900/50 px-4 py-2 rounded-xl text-xs font-bold text-slate-500 uppercase tracking-widest">
-            {suggestions.length} Sugestões
+          <div className="flex items-center gap-3">
+            <div className="bg-slate-50 dark:bg-slate-900/50 px-4 py-2 rounded-xl text-xs font-bold text-slate-500 uppercase tracking-widest hidden sm:block">
+              {suggestions.length} Sugestões
+            </div>
+            <button
+              onClick={() => { setSuggestionForm({ text: '', priority: 'média' }); setEditingSuggestion(null); setShowSuggestionModal(true); }}
+              className="px-4 py-2 rounded-xl bg-[#1B0088] hover:bg-[#1B0088]/90 text-white text-xs font-bold transition-all uppercase tracking-widest flex items-center gap-2"
+            >
+              + Nova Sugestão
+            </button>
           </div>
         </div>
 
@@ -1965,14 +2071,25 @@ export default function AdminDashboard() {
                                 <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">
                                   {new Date(item.created_at).toLocaleDateString('pt-BR')}
                                 </span>
-                                {columnId === 'finalizado' && (
-                                  <button 
-                                    onClick={() => handleDeleteSuggestion(item.id)}
-                                    className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                    title="Excluir Sugestão"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
+                                {(columnId === 'finalizado' || item.user_id === currentUser?.id) && (
+                                  <div className="flex gap-1">
+                                    {item.user_id === currentUser?.id && (
+                                      <button 
+                                        onClick={() => { setEditingSuggestion(item); setSuggestionForm({ text: item.suggestion, priority: item.priority || 'média' }); setShowSuggestionModal(true); }}
+                                        className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 rounded-lg transition-all"
+                                        title="Editar Sugestão"
+                                      >
+                                        <Edit2 size={14} />
+                                      </button>
+                                    )}
+                                    <button 
+                                      onClick={() => handleDeleteSuggestion(item.id)}
+                                      className="p-1.5 text-slate-400 hover:text-[#ED1650] hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-all"
+                                      title="Excluir Sugestão"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
                                 )}
                               </div>
                             </div>
