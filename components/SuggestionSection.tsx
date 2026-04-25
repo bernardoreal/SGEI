@@ -14,6 +14,7 @@ interface SuggestionSectionProps {
 export default function SuggestionSection({ userId, userName, userRole }: SuggestionSectionProps) {
   const [suggestion, setSuggestion] = useState('');
   const [priority, setPriority] = useState('média');
+  const [category, setCategory] = useState('Outros');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [mySuggestions, setMySuggestions] = useState<any[]>([]);
@@ -67,7 +68,8 @@ export default function SuggestionSection({ userId, userName, userRole }: Sugges
           user_name: userName,
           user_role: userRole,
           suggestion: suggestion.trim(),
-          priority: priority
+          priority: priority,
+          category: category
         });
 
       if (error) throw error;
@@ -159,6 +161,19 @@ export default function SuggestionSection({ userId, userName, userRole }: Sugges
                 </div>
                 <div className="space-y-4">
                   <div>
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block ml-1">Categoria</label>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full p-3 bg-slate-50 dark:bg-slate-900/50 border border-transparent dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-700 dark:text-slate-300 mb-4"
+                    >
+                      <option value="UI/UX">UI/UX</option>
+                      <option value="Sistema">Sistema</option>
+                      <option value="Nova Funcionalidade">Nova Funcionalidade</option>
+                      <option value="Outros">Outros</option>
+                    </select>
+                  </div>
+                  <div>
                     <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block ml-1">Prioridade</label>
                     <select
                       value={priority}
@@ -203,6 +218,11 @@ export default function SuggestionSection({ userId, userName, userRole }: Sugges
                     <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
                       {new Date(s.created_at).toLocaleDateString('pt-BR')}
                     </span>
+                    {s.category && (
+                      <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+                        {s.category}
+                      </span>
+                    )}
                     <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${
                       s.priority === 'crítica' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
                       s.priority === 'alta' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' :

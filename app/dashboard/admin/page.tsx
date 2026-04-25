@@ -145,7 +145,7 @@ export default function AdminDashboard() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
   const [editingSuggestion, setEditingSuggestion] = useState<any>(null);
-  const [suggestionForm, setSuggestionForm] = useState({ text: '', priority: 'média' });
+  const [suggestionForm, setSuggestionForm] = useState({ text: '', priority: 'média', category: 'Outros' });
 
   const handleSaveSuggestion = async () => {
     if (!suggestionForm.text.trim()) return;
@@ -153,10 +153,10 @@ export default function AdminDashboard() {
       if (editingSuggestion) {
         const { error } = await supabase
           .from('system_suggestions')
-          .update({ suggestion: suggestionForm.text.trim(), priority: suggestionForm.priority })
+          .update({ suggestion: suggestionForm.text.trim(), priority: suggestionForm.priority, category: suggestionForm.category })
           .eq('id', editingSuggestion.id);
         if (!error) {
-           setSuggestions(prev => prev.map(s => s.id === editingSuggestion.id ? { ...s, suggestion: suggestionForm.text.trim(), priority: suggestionForm.priority } : s));
+           setSuggestions(prev => prev.map(s => s.id === editingSuggestion.id ? { ...s, suggestion: suggestionForm.text.trim(), priority: suggestionForm.priority, category: suggestionForm.category } : s));
         }
       } else {
         const { error, data } = await supabase
@@ -166,7 +166,8 @@ export default function AdminDashboard() {
             user_name: currentUser?.name || currentUser?.email || 'Admin',
             user_role: 'admin',
             suggestion: suggestionForm.text.trim(),
-            priority: suggestionForm.priority
+            priority: suggestionForm.priority,
+            category: suggestionForm.category
           }).select().single();
         if (!error && data) {
            setSuggestions(prev => [data, ...prev]);
@@ -174,7 +175,7 @@ export default function AdminDashboard() {
       }
       setShowSuggestionModal(false);
       setEditingSuggestion(null);
-      setSuggestionForm({ text: '', priority: 'média' });
+      setSuggestionForm({ text: '', priority: 'média', category: 'Outros' });
     } catch (e) {
       console.error(e);
     }
@@ -1466,7 +1467,7 @@ export default function AdminDashboard() {
                 <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
                   {editingSuggestion ? 'Editar Sugestão' : 'Nova Sugestão'}
                 </h3>
-                <button onClick={() => { setShowSuggestionModal(false); setEditingSuggestion(null); setSuggestionForm({ text: '', priority: 'média' }); }} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <button onClick={() => { setShowSuggestionModal(false); setEditingSuggestion(null); setSuggestionForm({ text: '', priority: 'média', category: 'Outros' }); }} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                   <X size={20} />
                 </button>
               </div>
@@ -1480,6 +1481,19 @@ export default function AdminDashboard() {
                     rows={4}
                     placeholder="Descreva a melhoria que você gostaria de ver..."
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest mb-2">Categoria</label>
+                  <select
+                    value={suggestionForm.category}
+                    onChange={(e) => setSuggestionForm(prev => ({ ...prev, category: e.target.value }))}
+                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#ED1650] focus:border-transparent transition-all outline-none"
+                  >
+                    <option value="UI/UX">UI/UX</option>
+                    <option value="Sistema">Sistema</option>
+                    <option value="Nova Funcionalidade">Nova Funcionalidade</option>
+                    <option value="Outros">Outros</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest mb-2">Prioridade</label>
@@ -1497,7 +1511,7 @@ export default function AdminDashboard() {
               </div>
               <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700/50 flex justify-end gap-3">
                 <button
-                  onClick={() => { setShowSuggestionModal(false); setEditingSuggestion(null); setSuggestionForm({ text: '', priority: 'média' }); }}
+                  onClick={() => { setShowSuggestionModal(false); setEditingSuggestion(null); setSuggestionForm({ text: '', priority: 'média', category: 'Outros' }); }}
                   className="px-6 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors uppercase text-sm tracking-widest"
                 >
                   Cancelar
@@ -2001,7 +2015,7 @@ export default function AdminDashboard() {
               {suggestions.length} Sugestões
             </div>
             <button
-              onClick={() => { setSuggestionForm({ text: '', priority: 'média' }); setEditingSuggestion(null); setShowSuggestionModal(true); }}
+              onClick={() => { setSuggestionForm({ text: '', priority: 'média', category: 'Outros' }); setEditingSuggestion(null); setShowSuggestionModal(true); }}
               className="px-4 py-2 rounded-xl bg-[#1B0088] hover:bg-[#1B0088]/90 text-white text-xs font-bold transition-all uppercase tracking-widest flex items-center gap-2"
             >
               + Nova Sugestão
@@ -2053,14 +2067,21 @@ export default function AdminDashboard() {
                                     <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{item.user_role}</span>
                                   </div>
                                 </div>
-                                <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                                  item.priority === 'crítica' ? 'bg-red-100 text-red-700' :
-                                  item.priority === 'alta' ? 'bg-orange-100 text-orange-700' :
-                                  item.priority === 'média' ? 'bg-blue-100 text-blue-700' :
-                                  'bg-slate-100 text-slate-600 dark:text-slate-400'
-                                }`}>
-                                  {item.priority}
-                                </span>
+                                <div className="flex items-center gap-1">
+                                  {item.category && (
+                                    <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                      {item.category}
+                                    </span>
+                                  )}
+                                  <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
+                                    item.priority === 'crítica' ? 'bg-red-100 text-red-700' :
+                                    item.priority === 'alta' ? 'bg-orange-100 text-orange-700' :
+                                    item.priority === 'média' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-slate-100 text-slate-600 dark:text-slate-400'
+                                  }`}>
+                                    {item.priority}
+                                  </span>
+                                </div>
                               </div>
                               
                               <p className="text-xs text-slate-600 leading-relaxed mb-4 line-clamp-3 group-hover:line-clamp-none transition-all">
@@ -2075,7 +2096,7 @@ export default function AdminDashboard() {
                                   <div className="flex gap-1">
                                     {item.user_id === currentUser?.id && (
                                       <button 
-                                        onClick={() => { setEditingSuggestion(item); setSuggestionForm({ text: item.suggestion, priority: item.priority || 'média' }); setShowSuggestionModal(true); }}
+                                        onClick={() => { setEditingSuggestion(item); setSuggestionForm({ text: item.suggestion, priority: item.priority || 'média', category: item.category || 'Outros' }); setShowSuggestionModal(true); }}
                                         className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 rounded-lg transition-all"
                                         title="Editar Sugestão"
                                       >

@@ -211,10 +211,13 @@ CREATE TABLE IF NOT EXISTS system_suggestions (
     user_role TEXT,
     suggestion TEXT NOT NULL,
     priority TEXT CHECK (priority IN ('baixa', 'média', 'alta', 'crítica')),
+    category TEXT DEFAULT 'Outros',
     status TEXT DEFAULT 'pendente' CHECK (status IN ('pendente', 'em_analise', 'implementado', 'arquivado', 'finalizado')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE system_suggestions ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'Outros';
 
 -- Seed Data
 INSERT INTO roles (name, description) VALUES 
