@@ -285,40 +285,40 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-[11px] font-bold uppercase tracking-widest text-latam-indigo/60 ml-1">Identificação</label>
-              <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 group-focus-within:text-latam-indigo transition-colors" size={18} />
-                <input 
-                  type="text" 
-                  placeholder="E-mail ou BP" 
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400"
+                <label className="text-[11px] font-bold uppercase tracking-widest text-latam-indigo/60 dark:text-slate-400 ml-1">Identificação</label>
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 dark:text-slate-500 group-focus-within:text-latam-indigo dark:group-focus-within:text-white transition-colors" size={18} />
+                  <input 
+                    type="text" 
+                    placeholder="E-mail ou BP" 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)} 
+                    className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 dark:focus:ring-white/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <div className="flex justify-between items-center ml-1">
-                <label className="text-[11px] font-bold uppercase tracking-widest text-latam-indigo/60">Senha</label>
-                <button 
-                  type="button"
-                  onClick={handleForgotPassword}
-                  disabled={forgotLoading}
-                  className="text-[10px] font-bold uppercase tracking-widest text-latam-crimson hover:text-red-700 transition-colors disabled:opacity-50"
-                >
-                  {forgotLoading ? 'Buscando...' : 'Esqueci minha senha'}
-                </button>
-              </div>
-              <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 group-focus-within:text-latam-indigo transition-colors" size={18} />
-                <input 
-                  type="password" 
-                  placeholder="Sua senha" 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400"
+                <div className="flex justify-between items-center ml-1">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-latam-indigo/60 dark:text-slate-400">Senha</label>
+                  <button 
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={forgotLoading}
+                    className="text-[10px] font-bold uppercase tracking-widest text-latam-crimson hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors disabled:opacity-50"
+                  >
+                    {forgotLoading ? 'Buscando...' : 'Esqueci minha senha'}
+                  </button>
+                </div>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 dark:text-slate-500 group-focus-within:text-latam-indigo dark:group-focus-within:text-white transition-colors" size={18} />
+                  <input 
+                    type="password" 
+                    placeholder="Sua senha" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 dark:focus:ring-white/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   required
                 />
               </div>
@@ -385,28 +385,28 @@ export default function LoginPage() {
 
                 {isChangingPassword ? (
                   <div className="space-y-4">
-                    <div className="relative group">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 group-focus-within:text-latam-indigo transition-colors" size={18} />
-                      <input 
-                        type="password" 
-                        placeholder="Nova senha (mín. 6 caracteres)" 
-                        value={newPassword} 
-                        onChange={(e) => setNewPassword(e.target.value)} 
-                        className="w-full pl-12 pr-4 py-4 bg-latam-indigo/5 border border-latam-indigo/10 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 outline-none transition-all text-latam-indigo font-medium"
-                        autoFocus
-                      />
-                    </div>
-                    <div className="flex gap-3">
-                      <button 
-                        onClick={() => setIsChangingPassword(false)}
-                        className="flex-1 px-4 py-4 border border-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-50 transition-colors"
-                      >
-                        Cancelar
-                      </button>
-                      <button 
-                        onClick={handleChangePassword}
-                        disabled={changeLoading}
-                        className="flex-[2] bg-latam-crimson hover:bg-red-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-latam-crimson/20 disabled:opacity-50"
+                  <div className="relative group">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 dark:text-slate-500 group-focus-within:text-latam-indigo dark:group-focus-within:text-white transition-colors" size={18} />
+                    <input 
+                      type="password" 
+                      placeholder="Nova senha (mín. 6 caracteres)" 
+                      value={newPassword} 
+                      onChange={(e) => setNewPassword(e.target.value)} 
+                      className="w-full pl-12 pr-4 py-4 bg-latam-indigo/5 dark:bg-slate-900/50 border border-latam-indigo/10 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 dark:focus:ring-white/20 outline-none transition-all text-latam-indigo dark:text-white font-medium"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => setIsChangingPassword(false)}
+                      className="flex-1 px-4 py-4 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button 
+                      onClick={handleChangePassword}
+                      disabled={changeLoading}
+                      className="flex-[2] bg-latam-crimson hover:bg-red-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-latam-crimson/20 dark:shadow-none disabled:opacity-50"
                       >
                         {changeLoading ? 'Salvando...' : 'Salvar Nova Senha'}
                       </button>
@@ -414,16 +414,16 @@ export default function LoginPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="bg-latam-indigo/5 border border-latam-indigo/10 rounded-3xl p-8 text-center relative overflow-hidden">
+                    <div className="bg-latam-indigo/5 dark:bg-slate-900/50 border border-latam-indigo/10 dark:border-slate-700 rounded-3xl p-8 text-center relative overflow-hidden">
                       <div className="absolute top-0 left-0 w-full h-1 bg-latam-crimson" />
-                      <p className="text-[10px] font-bold text-latam-indigo/40 uppercase tracking-[0.2em] mb-3">Sua senha é:</p>
-                      <p className="text-3xl font-black text-latam-indigo tracking-tight">{retrievedPassword}</p>
+                      <p className="text-[10px] font-bold text-latam-indigo/40 dark:text-slate-500 uppercase tracking-[0.2em] mb-3">Sua senha é:</p>
+                      <p className="text-3xl font-black text-latam-indigo dark:text-white tracking-tight">{retrievedPassword}</p>
                     </div>
 
                     <div className="mt-6 flex flex-col gap-3">
                       <button 
                         onClick={() => setIsChangingPassword(true)}
-                        className="w-full text-sm font-bold text-latam-crimson hover:underline"
+                        className="w-full text-sm font-bold text-latam-crimson dark:text-red-400 hover:underline"
                       >
                         Deseja alterar sua senha? Clique aqui
                       </button>
@@ -433,7 +433,7 @@ export default function LoginPage() {
                           setIsChangingPassword(false);
                           setNewPassword('');
                         }}
-                        className="w-full bg-latam-indigo hover:bg-latam-indigo/90 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-latam-indigo/20"
+                        className="w-full bg-latam-indigo dark:bg-white hover:bg-latam-indigo/90 dark:hover:bg-slate-200 text-white dark:text-latam-indigo font-bold py-4 rounded-2xl transition-all shadow-lg shadow-latam-indigo/20 dark:shadow-none"
                       >
                         Entendido
                       </button>

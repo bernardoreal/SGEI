@@ -626,12 +626,12 @@ export default function CoordinatorDashboard() {
                 </div>
 
                 {/* Schedule View */}
-                <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
+                <div className="bg-white dark:bg-slate-800 p-8 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-700">
                   <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Escala Operacional</h3>
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Escala Operacional</h3>
                     {baseDetails?.schedule && (
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-500 uppercase bg-slate-100 px-3 py-1 rounded-full">
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-full">
                           {baseDetails.schedule.month} {baseDetails.schedule.year}
                         </span>
                       </div>
@@ -653,21 +653,21 @@ export default function CoordinatorDashboard() {
                       />
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-20 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-                      <Calendar size={48} className="text-slate-300 mb-4" />
-                      <p className="text-slate-500 font-bold uppercase tracking-tight">Nenhuma escala publicada para esta base</p>
-                      <p className="text-slate-400 text-sm mt-1">O supervisor ainda não publicou a escala do mês.</p>
+                    <div className="flex flex-col items-center justify-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700/50">
+                      <Calendar size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
+                      <p className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight text-center px-4">Nenhuma escala publicada para esta base</p>
+                      <p className="text-slate-400 dark:text-slate-500 text-sm mt-1 text-center px-4">O supervisor ainda não publicou a escala do mês.</p>
                     </div>
                   )}
                 </div>
               </motion.div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center bg-white rounded-[32px] border-2 border-dashed border-slate-200 p-12 text-center">
-                <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 mb-6">
+              <div className="h-full flex flex-col items-center justify-center bg-white dark:bg-slate-800 rounded-[32px] border-2 border-dashed border-slate-200 dark:border-slate-700/50 p-12 text-center h-[50vh]">
+                <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-6">
                   <LayoutDashboard size={40} />
                 </div>
-                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-2">Selecione uma Base</h3>
-                <p className="text-slate-500 max-w-sm">
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-2">Selecione uma Base</h3>
+                <p className="text-slate-500 dark:text-slate-400 max-w-sm font-medium">
                   Escolha um terminal na lista ao lado para visualizar o status das escalas, efetivo e solicitações em tempo real.
                 </p>
               </div>
@@ -688,7 +688,7 @@ export default function CoordinatorDashboard() {
 
 function StatCard({ title, value, icon, color, subtitle, alert }: any) {
   return (
-    <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
         <div className={`w-12 h-12 ${color} rounded-2xl flex items-center justify-center`}>
           {icon}
@@ -701,10 +701,10 @@ function StatCard({ title, value, icon, color, subtitle, alert }: any) {
         )}
       </div>
       <div>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{title}</p>
+        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">{title}</p>
         <div className="flex items-baseline gap-2">
-          <h4 className="text-3xl font-black text-slate-900 tracking-tighter">{value}</h4>
-          {subtitle && <span className="text-xs font-bold text-slate-400">{subtitle}</span>}
+          <h4 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">{value}</h4>
+          {subtitle && <span className="text-xs font-bold text-slate-400 dark:text-slate-500">{subtitle}</span>}
         </div>
       </div>
     </div>

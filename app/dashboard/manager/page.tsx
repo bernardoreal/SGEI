@@ -81,15 +81,21 @@ export default function ManagerDashboard() {
 
   return (
     <div className="space-y-8 pb-12">
-      {/* ... header igual ao anterior ... */}
-      <div className="flex justify-end p-4">
-        <button 
-          onClick={() => setShowInterimModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-xl font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all text-sm"
-        >
-          <ArrowRightLeft size={18} />
-          Aviso de Férias
-        </button>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Visão Gerencial</h1>
+          <p className="text-slate-500 dark:text-slate-400 font-medium">Liderança e governança das bases operacionais.</p>
+        </div>
+        <div className="flex justify-end p-4">
+          <button 
+            onClick={() => setShowInterimModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-xl font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all text-sm"
+          >
+            <ArrowRightLeft size={18} />
+            Aviso de Férias
+          </button>
+        </div>
       </div>
       
       {user && (
@@ -140,7 +146,29 @@ export default function ManagerDashboard() {
             </tbody>
         </table>
       </div>
-      {/* ... Gráfico de Tendência e Sugestões ... */}
+      {/* Gráfico de Tendência */}
+      <div className="bg-white dark:bg-slate-800 p-8 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-700">
+        <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-6">Evolução do Compliance</h3>
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={[
+              { month: 'Jan', compliance: 92 },
+              { month: 'Fev', compliance: 94 },
+              { month: 'Mar', compliance: 92 },
+              { month: 'Abr', compliance: 98 },
+            ]}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.2} />
+              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} domain={[80, 100]} dx={-10} />
+              <Tooltip 
+                cursor={{fill: 'rgba(59, 130, 246, 0.1)'}}
+                contentStyle={{backgroundColor: '#0F172A', border: 'none', borderRadius: '16px', color: '#fff'}}
+              />
+              <Bar dataKey="compliance" fill="#1B0088" radius={[8, 8, 0, 0]} barSize={40} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
       
       {user && (
         <SuggestionSection 

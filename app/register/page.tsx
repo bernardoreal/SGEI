@@ -266,45 +266,45 @@ export default function RegisterPage() {
 
           <form onSubmit={handleRegister} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-latam-indigo/60 ml-1">Dados Identificação</label>
+              <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-latam-indigo/60 dark:text-slate-400 ml-1">Dados Identificação</label>
               <div className="relative group">
-                <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 group-focus-within:text-latam-indigo transition-colors" size={18} />
+                <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 dark:text-slate-500 group-focus-within:text-latam-indigo dark:group-focus-within:text-white transition-colors" size={18} />
                 <input 
                   type="text" 
                   placeholder="BP (Registro Funcional)" 
                   value={bp} 
                   onChange={(e) => setBp(e.target.value)} 
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 dark:focus:ring-white/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   required
                 />
               </div>
               <div className="relative group">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 group-focus-within:text-latam-indigo transition-colors" size={18} />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 dark:text-slate-500 group-focus-within:text-latam-indigo dark:group-focus-within:text-white transition-colors" size={18} />
                 <input 
                   type="text" 
                   placeholder="Nome Completo" 
                   value={name} 
                   onChange={(e) => setName(e.target.value)} 
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 dark:focus:ring-white/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   required
                 />
               </div>
               <div className="relative group">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 group-focus-within:text-latam-indigo transition-colors" size={18} />
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 dark:text-slate-500 group-focus-within:text-latam-indigo dark:group-focus-within:text-white transition-colors" size={18} />
                 <input 
                   type="tel" 
                   placeholder="Telefone (Opcional)" 
                   value={phone} 
                   onChange={(e) => setPhone(e.target.value)} 
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 dark:focus:ring-white/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 />
               </div>
               <div className="relative group">
-                <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 group-focus-within:text-latam-indigo transition-colors" size={18} />
+                <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 dark:text-slate-500 group-focus-within:text-latam-indigo dark:group-focus-within:text-white transition-colors" size={18} />
                 <select 
                   value={cargo} 
                   onChange={(e) => setCargo(e.target.value)} 
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 dark:focus:ring-white/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   required
                 >
                   <option value="" disabled className="dark:bg-slate-900">Selecione o Cargo</option>
@@ -327,9 +327,9 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-latam-indigo/60 ml-1">Localização</label>
+              <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-latam-indigo/60 dark:text-slate-400 ml-1">Localização</label>
               <div className="relative" ref={dropdownRef}>
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40" size={18} />
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 dark:text-slate-500" size={18} />
                 <input 
                   type="text"
                   placeholder="Selecione sua Base (ex: JPA, REC...)"
@@ -348,7 +348,7 @@ export default function RegisterPage() {
                       setBaseSearch('');
                     }
                   }}
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400 cursor-pointer"
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 dark:focus:ring-white/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500 cursor-pointer"
                   required
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-latam-indigo/40">
@@ -361,7 +361,7 @@ export default function RegisterPage() {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="absolute z-50 left-0 right-0 mt-3 glass rounded-2xl shadow-2xl max-h-60 overflow-y-auto p-2"
+                      className="absolute z-50 left-0 right-0 mt-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-white/50 dark:border-slate-700 rounded-2xl shadow-2xl max-h-60 overflow-y-auto p-2"
                     >
                       {filteredBases.length > 0 ? (
                         filteredBases.map(base => (
@@ -373,12 +373,12 @@ export default function RegisterPage() {
                               setShowBaseDropdown(false);
                               setBaseSearch('');
                             }}
-                            className="w-full px-4 py-3 text-left hover:bg-latam-indigo/5 rounded-xl transition-colors flex items-center justify-between group"
+                            className="w-full px-4 py-3 text-left hover:bg-latam-indigo/5 dark:hover:bg-slate-700/50 rounded-xl transition-colors flex items-center justify-between group"
                           >
                             <div>
-                              <span className="font-bold text-latam-indigo">{base.code_iata}</span>
-                              <span className="mx-2 text-slate-300">|</span>
-                              <span className="text-slate-600 font-medium">{base.name}</span>
+                              <span className="font-bold text-latam-indigo dark:text-indigo-400">{base.code_iata}</span>
+                              <span className="mx-2 text-slate-300 dark:text-slate-600">|</span>
+                              <span className="text-slate-600 dark:text-slate-300 font-medium">{base.name}</span>
                             </div>
                             <ArrowRight size={14} className="text-latam-crimson opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
                           </button>
@@ -395,9 +395,9 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-latam-indigo/60 ml-1">Acesso</label>
+              <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-latam-indigo/60 dark:text-slate-400 ml-1">Acesso</label>
               <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 group-focus-within:text-latam-indigo transition-colors" size={18} />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 dark:text-slate-500 group-focus-within:text-latam-indigo dark:group-focus-within:text-white transition-colors" size={18} />
                 <input 
                   type="email" 
                   placeholder="E-mail Corporativo (@latam.com)" 
@@ -411,30 +411,30 @@ export default function RegisterPage() {
                       setEmailError(null);
                     }
                   }}
-                  className={`w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border ${emailError ? 'border-red-500' : 'border-white/50 dark:border-slate-700'} rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400`}
+                  className={`w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border ${emailError ? 'border-red-500' : 'border-white/50 dark:border-slate-700'} rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 dark:focus:ring-white/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500`}
                   required
                 />
                 {emailError && <p className="text-red-500 text-xs mt-1 ml-1">{emailError}</p>}
               </div>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 group-focus-within:text-latam-indigo transition-colors" size={18} />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 dark:text-slate-500 group-focus-within:text-latam-indigo dark:group-focus-within:text-white transition-colors" size={18} />
                 <input 
                   type="password" 
                   placeholder="Senha" 
                   value={password} 
                   onChange={(e) => setPassword(e.target.value)} 
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 dark:focus:ring-white/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   required
                 />
               </div>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 group-focus-within:text-latam-indigo transition-colors" size={18} />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-latam-indigo/40 dark:text-slate-500 group-focus-within:text-latam-indigo dark:group-focus-within:text-white transition-colors" size={18} />
                 <input 
                   type="password" 
                   placeholder="Confirmar Senha" 
                   value={confirmPassword} 
                   onChange={(e) => setConfirmPassword(e.target.value)} 
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-4 bg-white/50 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-latam-indigo/20 dark:focus:ring-white/20 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all text-latam-indigo dark:text-white font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   required
                 />
               </div>
