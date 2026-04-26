@@ -23,8 +23,8 @@ const spaceGrotesk = Space_Grotesk({
 
 export const viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#1B0088' },
-    { media: '(prefers-color-scheme: dark)', color: '#0B1120' },
+    { media: '(prefers-color-scheme: light)', color: '#002169' },
+    { media: '(prefers-color-scheme: dark)', color: '#00123b' },
   ],
   width: 'device-width',
   initialScale: 1,

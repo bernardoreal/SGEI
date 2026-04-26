@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Sistema Automatizado de Gestão de Escalas LATAM Cargo',
     start_url: '/dashboard',
     display: 'standalone',
-    background_color: '#0B1120',
-    theme_color: '#0B1120',
+    background_color: '#002169',
+    theme_color: '#002169',
     icons: [
       {
         src: '/icon',
