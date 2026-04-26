@@ -11,6 +11,7 @@ async function trackUsage(usageData: {
   provider: string;
   prompt_tokens: number;
   completion_tokens: number;
+  system_tokens?: number;
   total_tokens: number;
   cost?: number;
 }) {
@@ -23,6 +24,7 @@ async function trackUsage(usageData: {
       .from('ai_usage_logs')
       .insert([{
         ...usageData,
+        system_tokens: usageData.system_tokens || 0,
         user_id: userId
       }]);
       
@@ -215,6 +217,7 @@ export async function generateWithGemini(prompt: string, model: string, employee
         provider: 'gemini',
         prompt_tokens: usage.promptTokenCount || 0,
         completion_tokens: usage.candidatesTokenCount || 0,
+        system_tokens: usage.cachedContentTokenCount || 0,
         total_tokens: usage.totalTokenCount || 0
       });
     }

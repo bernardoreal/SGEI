@@ -198,6 +198,7 @@ CREATE TABLE IF NOT EXISTS ai_usage_logs (
     provider TEXT NOT NULL,
     prompt_tokens INT DEFAULT 0,
     completion_tokens INT DEFAULT 0,
+    system_tokens INT DEFAULT 0,
     total_tokens INT DEFAULT 0,
     cost DECIMAL(10, 6) DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

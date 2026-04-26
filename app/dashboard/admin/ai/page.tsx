@@ -35,6 +35,7 @@ interface AILog {
   provider: string;
   prompt_tokens: number;
   completion_tokens: number;
+  system_tokens: number;
   total_tokens: number;
   cost: number;
   created_at: string;
@@ -46,6 +47,9 @@ export default function AIDashboard() {
   const [stats, setStats] = useState({
     totalCost: 0,
     totalTokens: 0,
+    totalInput: 0,
+    totalOutput: 0,
+    totalSystem: 0,
     totalRequests: 0,
     geminiDailyRequests: 0
   });
@@ -57,69 +61,95 @@ export default function AIDashboard() {
   const [llmConfig, setLlmConfig] = useState({ provider: 'gemini', model: 'gemini-3-flash-preview' });
   const [savingLlm, setSavingLlm] = useState(false);
 
-  useEffect(() => {
-    const fetchAIData = async () => {
-      try {
-        const [{ data: settingsData }, orInfo, { data: usageData }, { data: evalData }] = await Promise.all([
-          supabase.from('system_settings').select('value').eq('key', 'llm_config').maybeSingle(),
-          getOpenRouterKeyInfo(),
-          supabase.from('ai_usage_logs').select(`*, users(email)`).order('created_at', { ascending: false }).limit(200),
-          supabase.from('ai_evaluations').select(`*, users(name)`).order('created_at', { ascending: false }).limit(10)
-        ]);
+  const fetchAIData = async () => {
+    try {
+      const [{ data: settingsData }, orInfo, { data: usageData }, { data: evalData }] = await Promise.all([
+        supabase.from('system_settings').select('value').eq('key', 'llm_config').maybeSingle(),
+        getOpenRouterKeyInfo(),
+        supabase.from('ai_usage_logs').select(`*, users(email)`).order('created_at', { ascending: false }).limit(200),
+        supabase.from('ai_evaluations').select(`*, users(name)`).order('created_at', { ascending: false }).limit(10)
+      ]);
 
-        if (settingsData) setLlmConfig(settingsData.value);
-        if (orInfo) setOpenRouterInfo(orInfo);
+      if (settingsData) setLlmConfig(settingsData.value);
+      if (orInfo) setOpenRouterInfo(orInfo);
+      
+      if (usageData) {
+        const formattedLogs = usageData.map((log: any) => ({
+          ...log,
+          user_email: log.users?.email || 'Sistema'
+        }));
+        setLogs(formattedLogs);
+        if (evalData) setEvaluations(evalData);
+
+        let tCost = 0;
+        let tTokens = 0;
+        let tInput = 0;
+        let tOutput = 0;
+        let tSystem = 0;
+        let geminiToday = 0;
         
-        if (usageData) {
-          const formattedLogs = usageData.map((log: any) => ({
-            ...log,
-            user_email: log.users?.email || 'Sistema'
-          }));
-          setLogs(formattedLogs);
-          if (evalData) setEvaluations(evalData);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-          let tCost = 0;
-          let tTokens = 0;
-          let geminiToday = 0;
+        formattedLogs.forEach((log: AILog) => {
+          const cost = Number(log.cost) || 0;
+          tCost += cost;
+          tTokens += log.total_tokens || 0;
+          tInput += log.prompt_tokens || 0;
+          tOutput += log.completion_tokens || 0;
+          tSystem += log.system_tokens || 0;
           
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
+          const logDate = new Date(log.created_at);
+          if (log.provider === 'gemini' && logDate >= today) {
+            geminiToday++;
+          }
+        });
 
-          formattedLogs.forEach((log: AILog) => {
-            const cost = Number(log.cost) || 0;
-            tCost += cost;
-            tTokens += log.total_tokens || 0;
-            
-            const logDate = new Date(log.created_at);
-            if (log.provider === 'gemini' && logDate >= today) {
-              geminiToday++;
-            }
-          });
+        setStats({
+          totalCost: tCost,
+          totalTokens: tTokens,
+          totalInput: tInput,
+          totalOutput: tOutput,
+          totalSystem: tSystem,
+          totalRequests: formattedLogs.length,
+          geminiDailyRequests: geminiToday
+        });
 
-          setStats({
-            totalCost: tCost,
-            totalTokens: tTokens,
-            totalRequests: formattedLogs.length,
-            geminiDailyRequests: geminiToday
-          });
-
-          // Generate simple chart data
-          const charGrp: Record<string, number> = {};
-          formattedLogs.forEach((log: AILog) => {
-            const dStr = new Date(log.created_at).toLocaleDateString('pt-BR');
-            charGrp[dStr] = (charGrp[dStr] || 0) + (log.total_tokens || 0);
-          });
-          const cData = Object.entries(charGrp).reverse().map(([date, tokens]) => ({ date, tokens }));
-          setChartData(cData);
-        }
-      } catch (err) {
-        console.error('Error fetching AI data:', err);
-      } finally {
-        setLoading(false);
+        // Generate simple chart data
+        const charGrp: Record<string, number> = {};
+        formattedLogs.forEach((log: AILog) => {
+          const dStr = new Date(log.created_at).toLocaleDateString('pt-BR');
+          charGrp[dStr] = (charGrp[dStr] || 0) + (log.total_tokens || 0);
+        });
+        const cData = Object.entries(charGrp).reverse().map(([date, tokens]) => ({ date, tokens }));
+        setChartData(cData);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching AI data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchAIData();
+
+    // Inscrição em tempo real para novos logs de uso
+    const channel = supabase
+      .channel('ai_logs_realtime')
+      .on(
+        'postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'ai_usage_logs' },
+        () => {
+          console.log('[SGEI-IA] Novo log detectado, atualizando dashboard...');
+          fetchAIData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleUpdateLlmConfig = async (provider: string, model: string, saveToDb = false) => {
@@ -193,9 +223,18 @@ export default function AIDashboard() {
             <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
               <Cpu size={24} />
             </div>
+            <div className="text-right">
+              <div className="text-[10px] font-black text-slate-400 uppercase">Input / Output / Sys</div>
+              <div className="text-[10px] font-bold text-slate-500">
+                {stats.totalInput.toLocaleString()} / {stats.totalOutput.toLocaleString()} / {stats.totalSystem.toLocaleString()}
+              </div>
+            </div>
           </div>
           <div className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-1">Total de Tokens Processados</div>
-          <div className="text-3xl font-black text-slate-900 dark:text-white">{stats.totalTokens.toLocaleString()}</div>
+          <div className="flex items-baseline gap-2">
+            <div className="text-3xl font-black text-slate-900 dark:text-white">{stats.totalTokens.toLocaleString()}</div>
+            <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter">Acumulado</div>
+          </div>
         </div>
 
         <div className="bg-white dark:bg-slate-800 p-6 rounded-[24px] shadow-sm border border-slate-100 dark:border-slate-700">
@@ -208,20 +247,19 @@ export default function AIDashboard() {
           <div className="text-3xl font-black text-slate-900 dark:text-white">{stats.totalRequests.toLocaleString()}</div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-[24px] shadow-sm border border-slate-100 dark:border-slate-700">
-          <div className="flex justify-between items-start mb-4">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-[24px] shadow-sm border border-slate-100 dark:border-slate-700 space-y-1">
+          <div className="flex justify-between items-start mb-2">
             <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400">
               <DollarSign size={24} />
             </div>
-            {openRouterInfo && openRouterInfo.limit && (
-              <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold px-2 py-1 rounded-lg">
-                Lim. ${openRouterInfo.limit}
-              </span>
-            )}
+            <div className="text-right">
+              <div className="text-[10px] font-black text-emerald-600 uppercase">Input Cost</div>
+              <div className="text-[10px] font-bold text-emerald-500">$ {(stats.totalInput * 0.0000001).toFixed(4)}</div>
+            </div>
           </div>
-          <div className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-1">Uso Acumulado</div>
+          <div className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-1">Custo Estimado Gemini</div>
           <div className="text-3xl font-black text-slate-900 dark:text-white">
-            ${llmConfig.provider === 'openrouter' && openRouterInfo ? openRouterInfo.usage.toFixed(4) : stats.totalCost.toFixed(4)}
+            ${stats.totalCost.toFixed(4)}
           </div>
         </div>
 
@@ -231,8 +269,9 @@ export default function AIDashboard() {
               <Settings size={24} />
             </div>
           </div>
-          <div className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-1">LLM {llmConfig.provider}</div>
+          <div className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-1">Modelo de IA (LLM)</div>
           <div className="text-[16px] font-black text-slate-900 dark:text-white truncate" title={llmConfig.model}>{llmConfig.model}</div>
+          <div className="text-[10px] font-bold text-amber-600 uppercase mt-1 tracking-tighter">Provedor: {llmConfig.provider}</div>
         </div>
       </div>
 
@@ -364,10 +403,11 @@ export default function AIDashboard() {
         </div>
 
         {/* Chart */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-[24px] p-6 shadow-sm border border-slate-100 dark:border-slate-700 h-[500px] flex flex-col">
+      <div className="lg:col-span-2 space-y-6">
+        <div className="bg-white dark:bg-slate-800 rounded-[24px] p-6 shadow-sm border border-slate-100 dark:border-slate-700 h-[400px] flex flex-col">
           <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
             <BarChart2 size={18} className="text-indigo-600 dark:text-indigo-400" />
-            Tendência de Consumo de Tokens
+            Tendência de Consumo de Tokens (Total)
           </h3>
           <div className="flex-1 w-full min-h-0">
             {chartData.length > 0 ? (
@@ -394,6 +434,43 @@ export default function AIDashboard() {
             )}
           </div>
         </div>
+
+        {/* Real-time Token Breakdown */}
+        <div className="bg-white dark:bg-slate-800 rounded-[24px] p-6 shadow-sm border border-slate-100 dark:border-slate-700">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+            <Activity size={18} className="text-emerald-600 dark:text-emerald-400" />
+            Distribuição de Tokens em Tempo Real
+          </h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800">
+              <div className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-1">Input (Contexto)</div>
+              <div className="text-2xl font-black text-indigo-700 dark:text-indigo-300">{stats.totalInput.toLocaleString()}</div>
+              <div className="text-[10px] font-bold text-indigo-400 mt-1">Tokens de Prompt</div>
+            </div>
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-800">
+              <div className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">Output (Respostas)</div>
+              <div className="text-2xl font-black text-emerald-700 dark:text-emerald-300">{stats.totalOutput.toLocaleString()}</div>
+              <div className="text-[10px] font-bold text-emerald-400 mt-1">Tokens de Geração</div>
+            </div>
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/20 rounded-2xl border border-slate-100 dark:border-slate-800">
+              <div className="text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest mb-1">System (Cache)</div>
+              <div className="text-2xl font-black text-slate-700 dark:text-slate-300">{stats.totalSystem.toLocaleString()}</div>
+              <div className="text-[10px] font-bold text-slate-400 mt-1">Tokens de Sistema</div>
+            </div>
+          </div>
+          <div className="mt-6">
+            <div className="flex justify-between text-xs font-bold mb-2">
+              <span className="text-slate-500 uppercase">Balanceamento de Carga</span>
+              <span className="text-indigo-600">{((stats.totalInput / (stats.totalTokens || 1)) * 100).toFixed(1)}% Input</span>
+            </div>
+            <div className="h-3 w-full bg-slate-100 dark:bg-slate-700 rounded-full flex overflow-hidden border border-slate-200 dark:border-slate-600">
+              <div className="h-full bg-indigo-500" style={{ width: `${(stats.totalInput / (stats.totalTokens || 1)) * 100}%` }} />
+              <div className="h-full bg-emerald-500" style={{ width: `${(stats.totalOutput / (stats.totalTokens || 1)) * 100}%` }} />
+              <div className="h-full bg-slate-400" style={{ width: `${(stats.totalSystem / (stats.totalTokens || 1)) * 100}%` }} />
+            </div>
+          </div>
+        </div>
+      </div>
       </div>
 
       {/* Avaliações dos Supervisores */}
@@ -437,45 +514,6 @@ export default function AIDashboard() {
       </div>
 
       {/* Logs Table */}
-      <div className="bg-white dark:bg-slate-800 rounded-[24px] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">                
-        <div className="p-6 border-b border-slate-50 dark:border-slate-700/50">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Star size={18} className="text-amber-500" />
-            Últimas Avaliações dos Supervisores
-          </h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-slate-900/50">
-              <tr>
-                <th className="px-6 py-4">Data</th>
-                <th className="px-6 py-4">Supervisor</th>
-                <th className="px-6 py-4">Modelo</th>
-                <th className="px-6 py-4">Avaliação</th>
-                <th className="px-6 py-4">Feedback</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50 text-sm font-medium">
-              {evaluations.map((evalItem: any) => (
-                <tr key={evalItem.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
-                  <td className="px-6 py-4 tabular-nums text-slate-500 dark:text-slate-400">{new Date(evalItem.created_at).toLocaleDateString('pt-BR')}</td>
-                  <td className="px-6 py-4 text-slate-900 dark:text-white">{evalItem.users?.name || 'Supervisor'}</td>
-                  <td className="px-6 py-4 font-mono text-xs dark:text-indigo-300">{evalItem.model_used}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex text-amber-400">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} size={14} fill={i < evalItem.rating ? 'currentColor' : 'none'} />
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-slate-600 dark:text-slate-400 truncate max-w-xs" title={evalItem.feedback}>{evalItem.feedback}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      
       <div className="bg-white dark:bg-slate-800 rounded-[24px] shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
         <div className="p-6 border-b border-slate-50 dark:border-slate-700/50 flex items-center justify-between">
           <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -495,13 +533,14 @@ export default function AIDashboard() {
                 <th className="px-6 py-4">Modelo Utilizado</th>
                 <th className="px-6 py-4">Input (Prompt)</th>
                 <th className="px-6 py-4">Output (Geração)</th>
+                <th className="px-6 py-4">System</th>
                 <th className="px-6 py-4">Total Tokens</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50 text-sm font-medium">
               {logs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400">Ainda não foram geradas escalas pela IA.</td>
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-400">Ainda não foram geradas escalas pela IA.</td>
                 </tr>
               ) : (
                 logs.map(log => (
@@ -519,6 +558,7 @@ export default function AIDashboard() {
                     </td>
                     <td className="px-6 py-4 text-slate-600 dark:text-slate-400 tabular-nums">{log.prompt_tokens}</td>
                     <td className="px-6 py-4 text-slate-600 dark:text-slate-400 tabular-nums">{log.completion_tokens}</td>
+                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400 tabular-nums">{log.system_tokens || 0}</td>
                     <td className="px-6 py-4 font-black text-indigo-600 dark:text-indigo-400 tabular-nums">{log.total_tokens}</td>
                   </tr>
                 ))
