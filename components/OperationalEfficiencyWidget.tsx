@@ -4,34 +4,44 @@ import { useState, useEffect } from 'react';
 import { Target, Clock, ShieldCheck, Zap, TrendingDown, ArrowUpRight } from 'lucide-react';
 
 interface EfficiencyProps {
-  level: 'manager' | 'coordinator';
+  level: 'manager' | 'coordinator' | 'admin';
 }
 
 export default function OperationalEfficiencyWidget({ level }: EfficiencyProps) {
   const [data, setData] = useState<any>(null);
 
   useEffect(() => {
-    // Simulating aggregation of AI savings and operational KPIs
+    let isMounted = true;
+    const loadParams = async () => {
+      // Simulating aggregation of AI savings and operational KPIs
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (isMounted) {
+        setData({
+          roi: {
+            savedOvertime: 'R$ 45.200',
+            savedHours: 850,
+            percentageDrop: 14,
+          },
+          absenteeism: {
+            rate: '3.2%',
+            trend: 'down',
+            benchmark: '5%'
+          },
+          sla: {
+            projected: '98.5%',
+            current: '96.2%',
+            riskEvents: 2
+          },
+          aiInterventions: 142
+        });
+      }
+    };
+    
     setTimeout(() => {
-      setData({
-        roi: {
-          savedOvertime: 'R$ 45.200',
-          savedHours: 850,
-          percentageDrop: 14,
-        },
-        absenteeism: {
-          rate: '3.2%',
-          trend: 'down',
-          benchmark: '5%'
-        },
-        sla: {
-          projected: '98.5%',
-          current: '96.2%',
-          riskEvents: 2
-        },
-        aiInterventions: 142
-      });
-    }, 1000);
+      if (isMounted) loadParams();
+    }, 0);
+
+    return () => { isMounted = false; };
   }, [level]);
 
   if (!data) return (
@@ -51,9 +61,9 @@ export default function OperationalEfficiencyWidget({ level }: EfficiencyProps) 
             </div>
             <div>
               <h3 className="text-xl font-black text-white uppercase tracking-tighter">
-                Impacto da Inteligência Artificial & ROI
+                Impacto da Inteligência Artificial & ROI Global
               </h3>
-              <p className="text-xs font-medium text-slate-400">Acumulado do Mês (Saving em R$ e Melhoria Operacional)</p>
+              <p className="text-xs font-medium text-slate-400">Acumulado da Malha (Saving em R$ e Melhoria Operacional)</p>
             </div>
           </div>
         </div>
@@ -62,7 +72,7 @@ export default function OperationalEfficiencyWidget({ level }: EfficiencyProps) 
           {/* Card 1: ROI HE */}
           <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700/50 flex flex-col justify-between">
             <div className="flex items-start justify-between mb-4">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">Economia (HE) Evitada por A.I.</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">Economia (HE) Evitada</p>
               <div className="bg-emerald-500/20 p-1.5 rounded-lg">
                 <TrendingDown size={14} className="text-emerald-400" />
               </div>
@@ -88,7 +98,7 @@ export default function OperationalEfficiencyWidget({ level }: EfficiencyProps) 
                 <h4 className="text-3xl font-black text-white tracking-tighter">{data.sla.projected}</h4>
                 <p className="text-xs font-bold text-slate-500 mb-1 line-through">{data.sla.current}</p>
               </div>
-              <p className="text-xs font-bold text-indigo-400 mt-1">Escalas otimizadas preventivamente</p>
+              <p className="text-xs font-bold text-indigo-400 mt-1">Escalas otimizadas (Prevenção)</p>
             </div>
           </div>
 
@@ -116,11 +126,11 @@ export default function OperationalEfficiencyWidget({ level }: EfficiencyProps) 
               <Zap size={80} />
             </div>
             <div className="relative z-10 flex items-start justify-between mb-4">
-              <p className="text-[10px] font-black text-indigo-200 uppercase tracking-widest leading-tight">Intervenções Autônomas A.I.</p>
+              <p className="text-[10px] font-black text-indigo-200 uppercase tracking-widest leading-tight">Prevenções Autônomas A.I.</p>
             </div>
             <div className="relative z-10">
               <h4 className="text-4xl font-black text-white tracking-tighter">{data.aiInterventions}</h4>
-              <p className="text-xs font-bold text-indigo-200 mt-1">Gaps e riscos resolvidos este mês</p>
+              <p className="text-xs font-bold text-indigo-200 mt-1">Gaps e riscos resolvidos no mês</p>
             </div>
           </div>
         </div>
