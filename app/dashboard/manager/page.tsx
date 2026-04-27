@@ -16,6 +16,8 @@ import InterimRoleModal from '@/components/InterimRoleModal';
 import Tutorial from '@/components/Tutorial';
 import ExecutiveBriefWidget from '@/components/ExecutiveBriefWidget';
 import CostAnalyticsWidget from '@/components/CostAnalyticsWidget';
+import HeadcountVsVolumeChart from '@/components/HeadcountVsVolumeChart';
+import OperationalEfficiencyWidget from '@/components/OperationalEfficiencyWidget';
 
 export default function ManagerDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -117,12 +119,17 @@ export default function ManagerDashboard() {
       />
       
       {/* Manager Intelligent Tools */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-2">
-          <ExecutiveBriefWidget baseId="GLOBAL" />
+      <div className="mb-8">
+        <OperationalEfficiencyWidget level="manager" />
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+        <div className="xl:col-span-2">
+          <HeadcountVsVolumeChart baseId="GLOBAL" />
         </div>
-        <div className="lg:col-span-1">
+        <div className="xl:col-span-1 flex flex-col gap-6">
           <CostAnalyticsWidget />
+          <ExecutiveBriefWidget baseId="GLOBAL" />
         </div>
       </div>
 

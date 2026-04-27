@@ -26,6 +26,7 @@ import Tutorial from '@/components/Tutorial';
 import RiskAndFatigueAnalytics from '@/components/RiskAndFatigueAnalytics';
 import CostAnalyticsWidget from '@/components/CostAnalyticsWidget';
 import ExecutiveBriefWidget from '@/components/ExecutiveBriefWidget';
+import HeadcountVsVolumeChart from '@/components/HeadcountVsVolumeChart';
 
 export default function CoordinatorDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -673,6 +674,13 @@ export default function CoordinatorDashboard() {
                         <ExecutiveBriefWidget baseId={selectedBase.id} />
                       </div>
                     </div>
+
+                    {/* Malha Volumetria AI Forecast */}
+                    {baseDetails?.schedule && (
+                       <div className="mt-2 border-t border-slate-100 dark:border-slate-700/50 pt-8 mb-4">
+                         <HeadcountVsVolumeChart baseId={selectedBase.id} />
+                       </div>
+                    )}
 
                     {/* Features Inteligentes 1 e 3 em linha */}
                     {baseDetails?.schedule && (
