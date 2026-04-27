@@ -14,6 +14,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import SuggestionSection from '@/components/SuggestionSection';
 import InterimRoleModal from '@/components/InterimRoleModal';
 import Tutorial from '@/components/Tutorial';
+import ExecutiveBriefWidget from '@/components/ExecutiveBriefWidget';
+import CostAnalyticsWidget from '@/components/CostAnalyticsWidget';
 
 export default function ManagerDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -114,7 +116,17 @@ export default function ManagerDashboard() {
         onClose={handleCloseTutorial}
       />
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Manager Intelligent Tools */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="lg:col-span-2">
+          <ExecutiveBriefWidget baseId="GLOBAL" />
+        </div>
+        <div className="lg:col-span-1">
+          <CostAnalyticsWidget />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <StatCard title="Terminais Gerenciados" value={stats.totalBases} icon={<ShieldCheck className="text-emerald-600 dark:text-emerald-400"/>} />
         <StatCard title="Bases Críticas (Sem Sup)" value={stats.basesWithIssues} icon={<AlertCircle className="text-rose-600 dark:text-rose-400"/>} />
         <StatCard title="Compliance Geral" value={`${stats.avgCompliance}%`} icon={<TrendingUp className="text-indigo-600 dark:text-indigo-400"/>} />

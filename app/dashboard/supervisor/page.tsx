@@ -41,6 +41,10 @@ import { logAudit } from '@/lib/audit';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Tutorial from '@/components/Tutorial';
+import RiskAndFatigueAnalytics from '@/components/RiskAndFatigueAnalytics';
+import CostAnalyticsWidget from '@/components/CostAnalyticsWidget';
+import ExecutiveBriefWidget from '@/components/ExecutiveBriefWidget';
+import ShiftReplacementAI from '@/components/ShiftReplacementAI';
 
 const monthNames = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
 
@@ -1540,6 +1544,20 @@ export default function SupervisorDashboard() {
             <div className="mb-6 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/30 text-indigo-700 dark:text-indigo-300 px-4 py-3 rounded-xl flex items-center gap-3 text-sm">
               <Sparkles size={18} className="text-indigo-500 dark:text-indigo-400" />
               <p>Esta escala é uma <strong>sugestão gerada por IA</strong>. Por favor, revise todos os horários e atribuições antes de validar e publicar.</p>
+            </div>
+
+            {/* Supervisor Intelligent Tools */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 no-print">
+              <RiskAndFatigueAnalytics baseId={user?.base_id || 'JPA'} />
+              <div className="space-y-6">
+                <CostAnalyticsWidget scheduleId={editingScheduleId || undefined} />
+                <ShiftReplacementAI 
+                  baseId={user?.base_id || 'JPA'} 
+                  missingEmployeeBp="BP-MISSING" 
+                  missingDate="Hoje" 
+                  onSelectReplacement={(bp) => alert(`Gestão de Ausência acionada para o colaborador ${bp}.`)}
+                />
+              </div>
             </div>
 
             <div className="print-content">

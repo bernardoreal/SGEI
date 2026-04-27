@@ -23,6 +23,9 @@ import SuggestionSection from '@/components/SuggestionSection';
 import InterimRoleModal from '@/components/InterimRoleModal';
 import LATAMScheduleTable from '@/components/LATAMScheduleTable';
 import Tutorial from '@/components/Tutorial';
+import RiskAndFatigueAnalytics from '@/components/RiskAndFatigueAnalytics';
+import CostAnalyticsWidget from '@/components/CostAnalyticsWidget';
+import ExecutiveBriefWidget from '@/components/ExecutiveBriefWidget';
 
 export default function CoordinatorDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -627,38 +630,58 @@ export default function CoordinatorDashboard() {
 
                 {/* Schedule View */}
                 <div className="bg-white dark:bg-slate-800 p-8 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-700">
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Escala Operacional</h3>
+                  <div className="flex flex-col gap-6">
+                    {/* Linha superior: Escala e Briefing de IA (Feature 4) */}
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                      <div className="xl:col-span-2">
+                        <div className="flex items-center justify-between mb-8">
+                          <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Escala Operacional</h3>
+                          {baseDetails?.schedule && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-full">
+                                {baseDetails.schedule.month} {baseDetails.schedule.year}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {loadingDetails ? (
+                          <div className="flex flex-col items-center justify-center py-20 gap-4">
+                            <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                            <p className="text-slate-400 font-medium">Carregando detalhes da base...</p>
+                          </div>
+                        ) : baseDetails?.schedule ? (
+                          <div className="overflow-x-auto custom-scrollbar">
+                            <LATAMScheduleTable 
+                              data={baseDetails.schedule.data}
+                              month={baseDetails.schedule.month}
+                              year={baseDetails.schedule.year}
+                              onDataChange={() => {}}
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700/50">
+                            <Calendar size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
+                            <p className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight text-center px-4">Nenhuma escala publicada para esta base</p>
+                            <p className="text-slate-400 dark:text-slate-500 text-sm mt-1 text-center px-4">O supervisor ainda não publicou a escala do mês.</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* AI Briefing Widget */}
+                      <div className="xl:col-span-1">
+                        <ExecutiveBriefWidget baseId={selectedBase.id} />
+                      </div>
+                    </div>
+
+                    {/* Features Inteligentes 1 e 3 em linha */}
                     {baseDetails?.schedule && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-full">
-                          {baseDetails.schedule.month} {baseDetails.schedule.year}
-                        </span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 pt-6 border-t border-slate-100 dark:border-slate-700/50">
+                        <RiskAndFatigueAnalytics baseId={selectedBase.id} />
+                        <CostAnalyticsWidget scheduleId={baseDetails.schedule.id} />
                       </div>
                     )}
                   </div>
-
-                  {loadingDetails ? (
-                    <div className="flex flex-col items-center justify-center py-20 gap-4">
-                      <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                      <p className="text-slate-400 font-medium">Carregando detalhes da base...</p>
-                    </div>
-                  ) : baseDetails?.schedule ? (
-                    <div className="overflow-x-auto custom-scrollbar">
-                      <LATAMScheduleTable 
-                        data={baseDetails.schedule.data}
-                        month={baseDetails.schedule.month}
-                        year={baseDetails.schedule.year}
-                        onDataChange={() => {}}
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700/50">
-                      <Calendar size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
-                      <p className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight text-center px-4">Nenhuma escala publicada para esta base</p>
-                      <p className="text-slate-400 dark:text-slate-500 text-sm mt-1 text-center px-4">O supervisor ainda não publicou a escala do mês.</p>
-                    </div>
-                  )}
                 </div>
               </motion.div>
             ) : (
