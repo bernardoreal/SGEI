@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Sparkles, CheckCircle2, UserPlus, Clock, Zap, ShieldAlert, HeartPulse, Send, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
