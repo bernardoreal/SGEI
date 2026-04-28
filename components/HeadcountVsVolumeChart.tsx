@@ -2,13 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, ComposedChart, Line, Legend } from 'recharts';
-import { Package, Users, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Package, Users, TrendingUp, AlertTriangle, MapPin } from 'lucide-react';
 
 interface ChartProps {
-  baseId: string;
+  baseId?: string;
 }
 
-export default function HeadcountVsVolumeChart({ baseId }: ChartProps) {
+const BASES = [
+  { id: 'GLOBAL', name: 'Global (Todas)' },
+  { id: 'GRU', name: 'Guarulhos (GRU)' },
+  { id: 'VCP', name: 'Viracopos (VCP)' },
+  { id: 'CGH', name: 'Congonhas (CGH)' },
+  { id: 'GIG', name: 'Galeão (GIG)' },
+  { id: 'MAO', name: 'Manaus (MAO)' },
+  { id: 'MIA', name: 'Miami (MIA)' },
+  { id: 'JFK', name: 'Nova Iorque (JFK)' }
+];
+
+export default function HeadcountVsVolumeChart({ baseId: initialBaseId }: ChartProps) {
+  const [selectedBase, setSelectedBase] = useState(initialBaseId || 'GLOBAL');
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -19,6 +31,9 @@ export default function HeadcountVsVolumeChart({ baseId }: ChartProps) {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       if (isMounted) {
+        // Generate simulated data based on selected base to indicate changes
+        const multiplier = selectedBase === 'GLOBAL' ? 5 : (selectedBase === 'GRU' || selectedBase === 'VCP' ? 2 : 1);
+        
         const mockData = Array.from({ length: 14 }, (_, i) => {
           const date = new Date();
           date.setDate(date.getDate() + i);
@@ -26,14 +41,20 @@ export default function HeadcountVsVolumeChart({ baseId }: ChartProps) {
           
           // Base headcount around 15, with some weekend dips
           const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-          const headcount = isWeekend ? Math.floor(Math.random() * 3) + 8 : Math.floor(Math.random() * 4) + 14;
+          const bgm = Math.floor(Math.random() * 3);
+          const hcRand = Math.floor(Math.random() * 4);
+          
+          const headcount = (isWeekend ? bgm + 8 : hcRand + 14) * multiplier;
           
           // Cargo volume in tons, peaking mid-week and end of month
-          let volume = isWeekend ? Math.floor(Math.random() * 20) + 40 : Math.floor(Math.random() * 40) + 80;
+          const volRandWk = Math.floor(Math.random() * 20);
+          const volRandWd = Math.floor(Math.random() * 40);
+          
+          let volume = (isWeekend ? volRandWk + 40 : volRandWd + 80) * multiplier;
           
           // Create an artificial bottleneck on day 5 (High volume, low headcount)
           if (i === 5) {
-            volume = 120;
+            volume = 120 * multiplier;
           }
 
           const efficiencyRatio = volume / headcount; // Tons per person
@@ -57,14 +78,14 @@ export default function HeadcountVsVolumeChart({ baseId }: ChartProps) {
     }, 0);
 
     return () => { isMounted = false; };
-  }, [baseId]);
+  }, [selectedBase]);
 
   if (loading) {
     return (
       <div className="bg-white dark:bg-slate-800 p-6 rounded-[32px] border border-slate-100 dark:border-slate-700 shadow-sm h-[400px] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Processando Modelo Preditivo (Malha vs Efetivo)...</p>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Processando Modelo Preditivo (Malha vs Efetivo) - {selectedBase}...</p>
         </div>
       </div>
     );
@@ -89,14 +110,32 @@ export default function HeadcountVsVolumeChart({ baseId }: ChartProps) {
           </div>
         </div>
         
-        {bottleneckDay && (
-          <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-900/50 p-2 lg:px-4 rounded-xl flex items-center gap-2">
-            <AlertTriangle size={16} className="text-rose-600 dark:text-rose-400" />
-            <span className="text-[10px] md:text-xs font-bold text-rose-800 dark:text-rose-300">
-              Risco Operacional detectado: {bottleneckDay} (Possível Quebra de SLA)
-            </span>
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
+          {bottleneckDay && (
+            <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-900/50 p-2 px-3 rounded-xl flex items-center gap-2">
+              <AlertTriangle size={16} className="text-rose-600 dark:text-rose-400 shrink-0" />
+              <span className="text-[10px] md:text-xs font-bold text-rose-800 dark:text-rose-300">
+                Risco: {bottleneckDay}
+              </span>
+            </div>
+          )}
+          
+          <div className="relative">
+            <select
+              value={selectedBase}
+              onChange={(e) => setSelectedBase(e.target.value)}
+              className="appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl pl-9 pr-8 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all"
+            >
+              {BASES.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+            <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
       <div className="h-[300px] w-full mt-4">
