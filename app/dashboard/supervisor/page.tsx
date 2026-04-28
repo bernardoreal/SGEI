@@ -45,6 +45,9 @@ import RiskAndFatigueAnalytics from '@/components/RiskAndFatigueAnalytics';
 import CostAnalyticsWidget from '@/components/CostAnalyticsWidget';
 import ExecutiveBriefWidget from '@/components/ExecutiveBriefWidget';
 import ShiftReplacementAI from '@/components/ShiftReplacementAI';
+import ContextAwareAlertsWidget from '@/components/ContextAwareAlertsWidget';
+
+import GanttTimelineScheduler from '@/components/GanttTimelineScheduler';
 
 const monthNames = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
 
@@ -52,6 +55,7 @@ export default function SupervisorDashboard() {
   const { theme, toggleTheme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [viewMode, setViewMode] = useState<'table'|'gantt'>('table');
 
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem('tutorial_seen_supervisor');
@@ -1519,6 +1523,20 @@ export default function SupervisorDashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-4">
+                <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 no-print">
+                  <button 
+                    onClick={() => setViewMode('table')}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors ${viewMode === 'table' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
+                  >
+                    <Calendar size={16} /> Tabela
+                  </button>
+                  <button 
+                    onClick={() => setViewMode('gantt')}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors ${viewMode === 'gantt' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
+                  >
+                    <Clock size={16} /> Timeline
+                  </button>
+                </div>
                 {!feedbackGiven && (
                   <div className="flex items-center gap-2 bg-slate-50 dark:bg-[#0B1120]/60 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
                     <span className="text-xs font-bold text-slate-400 dark:text-slate-500 px-2 uppercase">Avaliar:</span>
@@ -1550,13 +1568,14 @@ export default function SupervisorDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 no-print">
               <RiskAndFatigueAnalytics baseId={user?.base_id || 'JPA'} />
               <div className="space-y-6">
-                <CostAnalyticsWidget scheduleId={editingScheduleId || undefined} />
+                <ContextAwareAlertsWidget baseId={user?.base_id || 'JPA'} />
                 <ShiftReplacementAI 
                   baseId={user?.base_id || 'JPA'} 
                   missingEmployeeBp="BP-MISSING" 
                   missingDate="Hoje" 
                   onSelectReplacement={(bp) => alert(`Gestão de Ausência acionada para o colaborador ${bp}.`)}
                 />
+                <CostAnalyticsWidget scheduleId={editingScheduleId || undefined} />
               </div>
             </div>
 
@@ -1664,18 +1683,22 @@ export default function SupervisorDashboard() {
                 </div>
               )}
 
-              <LATAMScheduleTable 
-                month={aiSchedules[currentScheduleIndex].month} 
-                year={aiSchedules[currentScheduleIndex].year} 
-                data={aiSchedules[currentScheduleIndex].data} 
-                validationErrors={validationErrors}
-                onDataChange={(newData) => {
-                  const updatedSchedules = [...aiSchedules];
-                  updatedSchedules[currentScheduleIndex] = { ...updatedSchedules[currentScheduleIndex], data: newData };
-                  setAiSchedules(updatedSchedules);
-                  validateSchedule(updatedSchedules[currentScheduleIndex]);
-                }}
-              />
+              {viewMode === 'table' ? (
+                <LATAMScheduleTable 
+                  month={aiSchedules[currentScheduleIndex].month} 
+                  year={aiSchedules[currentScheduleIndex].year} 
+                  data={aiSchedules[currentScheduleIndex].data} 
+                  validationErrors={validationErrors}
+                  onDataChange={(newData) => {
+                    const updatedSchedules = [...aiSchedules];
+                    updatedSchedules[currentScheduleIndex] = { ...updatedSchedules[currentScheduleIndex], data: newData };
+                    setAiSchedules(updatedSchedules);
+                    validateSchedule(updatedSchedules[currentScheduleIndex]);
+                  }}
+                />
+              ) : (
+                <GanttTimelineScheduler />
+              )}
 
               {/* Sistema de Feedback Detalhado */}
               {!feedbackGiven && (

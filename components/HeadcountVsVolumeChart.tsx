@@ -13,40 +13,50 @@ export default function HeadcountVsVolumeChart({ baseId }: ChartProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulated data fetching - correlating scheduled staff with forecasted cargo volume
-    setLoading(true);
-    setTimeout(() => {
-      const mockData = Array.from({ length: 14 }, (_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() + i);
-        const dayStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-        
-        // Base headcount around 15, with some weekend dips
-        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-        const headcount = isWeekend ? Math.floor(Math.random() * 3) + 8 : Math.floor(Math.random() * 4) + 14;
-        
-        // Cargo volume in tons, peaking mid-week and end of month
-        let volume = isWeekend ? Math.floor(Math.random() * 20) + 40 : Math.floor(Math.random() * 40) + 80;
-        
-        // Create an artificial bottleneck on day 5 (High volume, low headcount)
-        if (i === 5) {
-          volume = 120;
-        }
-
-        const efficiencyRatio = volume / headcount; // Tons per person
-
-        return {
-          date: dayStr,
-          headcount: headcount,
-          volume: volume,
-          efficiency: efficiencyRatio.toFixed(1),
-          bottleneck: i === 5,
-        };
-      });
+    let isMounted = true;
+    const loadParams = async () => {
+      setLoading(true);
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      setData(mockData);
-      setLoading(false);
-    }, 1500);
+      if (isMounted) {
+        const mockData = Array.from({ length: 14 }, (_, i) => {
+          const date = new Date();
+          date.setDate(date.getDate() + i);
+          const dayStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+          
+          // Base headcount around 15, with some weekend dips
+          const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+          const headcount = isWeekend ? Math.floor(Math.random() * 3) + 8 : Math.floor(Math.random() * 4) + 14;
+          
+          // Cargo volume in tons, peaking mid-week and end of month
+          let volume = isWeekend ? Math.floor(Math.random() * 20) + 40 : Math.floor(Math.random() * 40) + 80;
+          
+          // Create an artificial bottleneck on day 5 (High volume, low headcount)
+          if (i === 5) {
+            volume = 120;
+          }
+
+          const efficiencyRatio = volume / headcount; // Tons per person
+
+          return {
+            date: dayStr,
+            headcount: headcount,
+            volume: volume,
+            efficiency: efficiencyRatio.toFixed(1),
+            bottleneck: i === 5,
+          };
+        });
+        
+        setData(mockData);
+        setLoading(false);
+      }
+    };
+    
+    setTimeout(() => {
+      if (isMounted) loadParams();
+    }, 0);
+
+    return () => { isMounted = false; };
   }, [baseId]);
 
   if (loading) {
@@ -141,7 +151,7 @@ export default function HeadcountVsVolumeChart({ baseId }: ChartProps) {
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-sky-500"></div>
-          <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Pico Malha: > 100 Ton</span>
+          <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Pico Malha: &gt; 100 Ton</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-emerald-500"></div>

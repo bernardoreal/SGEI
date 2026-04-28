@@ -60,6 +60,14 @@ import CoordinatorDashboard from '../coordinator/page';
 import SupervisorDashboard from '../supervisor/page';
 import EmployeeDashboard from '../employee/page';
 
+import RiskAndFatigueAnalytics from '@/components/RiskAndFatigueAnalytics';
+import CostAnalyticsWidget from '@/components/CostAnalyticsWidget';
+import ExecutiveBriefWidget from '@/components/ExecutiveBriefWidget';
+import HeadcountVsVolumeChart from '@/components/HeadcountVsVolumeChart';
+import OperationalEfficiencyWidget from '@/components/OperationalEfficiencyWidget';
+import WhatIfSimulator from '@/components/WhatIfSimulator';
+import ForensicAuditLog from '@/components/ForensicAuditLog';
+
 interface User {
   id: string;
   bp: string;
@@ -1176,6 +1184,23 @@ export default function AdminDashboard() {
           <p>Last Fetch: {new Date().toLocaleTimeString()}</p>
         </div>
       )}
+
+      {/* Admin Intelligent Tools */}
+      <div className="mb-6">
+        <OperationalEfficiencyWidget level="admin" />
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+        <div className="xl:col-span-2 flex flex-col gap-6">
+          <HeadcountVsVolumeChart baseId="GLOBAL" />
+          <WhatIfSimulator />
+        </div>
+        <div className="xl:col-span-1 flex flex-col gap-6">
+          <ExecutiveBriefWidget baseId="GLOBAL_ADMIN" />
+          <ForensicAuditLog />
+          <CostAnalyticsWidget />
+        </div>
+      </div>
 
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

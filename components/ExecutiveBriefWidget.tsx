@@ -16,14 +16,25 @@ export default function ExecutiveBriefWidget({ baseId }: { baseId: string }) {
         // Simulate Gemini API call generating an executive summary
         await new Promise(r => setTimeout(r, 3000));
         if (isMounted) {
-          setBrief(`
+          if (baseId === 'GLOBAL_ADMIN') {
+            setBrief(`
+**SGEI - System Status & Governance Brief**
+
+- **Saúde do Sistema:** Ativo e Otimizado. Algoritmos rodando em 12 terminais (TECA).
+- **Adoção e Conformidade:** 98.5% dos coordenadores validaram as sugestões de AI. Houve zero violações às normativas RBAC no último ciclo mensal.
+- **Ponto de Atenção:** Volume de logs de auditoria crescente na base \`GRU\`. Múltiplas trocas manuais após publicação da escala. Desvio padrão de produtividade aumentou 4% no último trimestre.
+- **Ação Estratégica:** Acionar Gerência de GRU para entender fricção no chão de fábrica e ajustar o modelo de predição do TECA local.
+            `);
+          } else {
+            setBrief(`
 **Resumo Executivo Diário - Operação TECA**
 
 - **Status Geral:** Operação nominal. A base possui \`14\` colaboradores ativos no turno atual.
 - **Eficiência Financeira:** Houve uma redução de \`12%\` em horas extras previstas para essa semana devido à realocação inteligente.
 - **Ponto Crítico:** Fique atento à sexta-feira (15/05). Devido a um pico de cargas aguardado e 2 férias aprovadas, a cobertura CAT-6 no \`Turno NOITE\` está trabalhando na margem mínima de segurança (1 colaborador).
 - **Ação Recomendada:** Considere abrir uma *Shift Request* proativa para antecipar a cobertura de sexta-feira.
-          `);
+            `);
+          }
           setLoading(false);
         }
       };
