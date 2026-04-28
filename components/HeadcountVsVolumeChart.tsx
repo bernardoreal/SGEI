@@ -32,7 +32,7 @@ export default function HeadcountVsVolumeChart({ baseId: initialBaseId }: ChartP
       if (supabase) {
         const { data: dbBases, error } = await supabase.from('bases').select('id, code_iata, name').order('name');
         if (!error && dbBases && isMounted) {
-          const formattedBases = dbBases.map(b => ({
+          const formattedBases = dbBases.map((b: any) => ({
             id: b.id,
             name: `${b.name} (${b.code_iata})`,
           }));
