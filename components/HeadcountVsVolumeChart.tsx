@@ -4,25 +4,48 @@ import { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, ComposedChart, Line, Legend } from 'recharts';
 import { Package, Users, TrendingUp, AlertTriangle, MapPin } from 'lucide-react';
 
+import { supabase } from '@/lib/supabase';
+
 interface ChartProps {
   baseId?: string;
 }
 
-const BASES = [
-  { id: 'GLOBAL', name: 'Global (Todas)' },
-  { id: 'GRU', name: 'Guarulhos (GRU)' },
-  { id: 'VCP', name: 'Viracopos (VCP)' },
-  { id: 'CGH', name: 'Congonhas (CGH)' },
-  { id: 'GIG', name: 'Galeão (GIG)' },
-  { id: 'MAO', name: 'Manaus (MAO)' },
-  { id: 'MIA', name: 'Miami (MIA)' },
-  { id: 'JFK', name: 'Nova Iorque (JFK)' }
-];
-
 export default function HeadcountVsVolumeChart({ baseId: initialBaseId }: ChartProps) {
   const [selectedBase, setSelectedBase] = useState(initialBaseId || 'GLOBAL');
+  const [basesList, setBasesList] = useState<{id: string, name: string}[]>([
+    { id: 'GLOBAL', name: 'Global (Todas)' }
+  ]);
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Synchronize state if parent changes baseId
+  useEffect(() => {
+    if (initialBaseId && initialBaseId !== 'GLOBAL') {
+      setTimeout(() => setSelectedBase(initialBaseId), 0);
+    }
+  }, [initialBaseId]);
+
+  // Load bases from Supabase
+  useEffect(() => {
+    let isMounted = true;
+    const fetchBases = async () => {
+      if (supabase) {
+        const { data: dbBases, error } = await supabase.from('bases').select('id, code_iata, name').order('name');
+        if (!error && dbBases && isMounted) {
+          const formattedBases = dbBases.map(b => ({
+            id: b.id,
+            name: `${b.name} (${b.code_iata})`,
+          }));
+          setBasesList([
+            { id: 'GLOBAL', name: 'Global (Todas)' },
+            ...formattedBases
+          ]);
+        }
+      }
+    };
+    fetchBases();
+    return () => { isMounted = false; };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -31,8 +54,11 @@ export default function HeadcountVsVolumeChart({ baseId: initialBaseId }: ChartP
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       if (isMounted) {
-        // Generate simulated data based on selected base to indicate changes
-        const multiplier = selectedBase === 'GLOBAL' ? 5 : (selectedBase === 'GRU' || selectedBase === 'VCP' ? 2 : 1);
+        // Identify base and multiplier
+        const currentBaseObj = basesList.find(b => b.id === selectedBase);
+        const codeMatcher = currentBaseObj?.name.match(/\(([^)]+)\)/);
+        const code = codeMatcher ? codeMatcher[1] : '';
+        const multiplier = selectedBase === 'GLOBAL' ? 5 : (code === 'GRU' || code === 'VCP' ? 2 : 1);
         
         const mockData = Array.from({ length: 14 }, (_, i) => {
           const date = new Date();
@@ -78,7 +104,7 @@ export default function HeadcountVsVolumeChart({ baseId: initialBaseId }: ChartP
     }, 0);
 
     return () => { isMounted = false; };
-  }, [selectedBase]);
+  }, [selectedBase, basesList]);
 
   if (loading) {
     return (
@@ -126,7 +152,7 @@ export default function HeadcountVsVolumeChart({ baseId: initialBaseId }: ChartP
               onChange={(e) => setSelectedBase(e.target.value)}
               className="appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl pl-9 pr-8 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition-all"
             >
-              {BASES.map(b => (
+              {basesList.map(b => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>
