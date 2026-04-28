@@ -6,6 +6,7 @@ import CommandPalette from '@/components/CommandPalette';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import AppleSplash from '@/components/AppleSplash';
 import { Toaster } from 'sonner';
+import PWAInstaller from '@/components/PWAInstaller';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -73,9 +74,11 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
             <Toaster position="top-center" richColors theme="system" />
             {children}
             <CommandPalette />
+            <PWAInstaller />
           </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
   );
 }
+

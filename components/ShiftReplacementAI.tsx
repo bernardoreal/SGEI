@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles, CheckCircle2, UserPlus, Clock, Zap, ShieldAlert, HeartPulse, Send } from 'lucide-react';
+import { Sparkles, CheckCircle2, UserPlus, Clock, Zap, ShieldAlert, HeartPulse, Send, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface ShiftReplacementProps {
@@ -60,14 +60,26 @@ export default function ShiftReplacementAI({ missingEmployeeBp, missingDate, bas
       className: 'bg-indigo-600 text-white border-indigo-700',
     });
 
-    // Request OS native push notification
-    if ('Notification' in window) {
+    // Request OS native push notification via Service Worker (Works on Mobile iOS/Android as PWA)
+    if ('Notification' in window && 'serviceWorker' in navigator) {
+      const showNativePush = () => {
+        navigator.serviceWorker.ready.then(registration => {
+          registration.showNotification(notificationTitle, { 
+            body: notificationBody, 
+            icon: '/favicon.ico',
+            vibrate: [200, 100, 200, 500, 200, 100, 200],
+            requireInteraction: true,
+            badge: '/favicon.ico'
+          });
+        });
+      };
+
       if (Notification.permission === 'granted') {
-        new Notification(notificationTitle, { body: notificationBody, icon: '/favicon.ico' });
+        showNativePush();
       } else if (Notification.permission !== 'denied') {
         Notification.requestPermission().then(permission => {
           if (permission === 'granted') {
-            new Notification(notificationTitle, { body: notificationBody, icon: '/favicon.ico' });
+            showNativePush();
           }
         });
       }

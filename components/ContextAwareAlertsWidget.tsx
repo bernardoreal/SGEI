@@ -79,14 +79,26 @@ export default function ContextAwareAlertsWidget({ baseId = 'JPA' }: ContextAwar
       className: 'bg-emerald-600 text-white border-emerald-700',
     });
 
-    // Request OS native push notification
-    if ('Notification' in window) {
+    // Request OS native push notification via Service Worker (Works on Mobile iOS/Android as PWA)
+    if ('Notification' in window && 'serviceWorker' in navigator) {
+      const showNativePush = () => {
+        navigator.serviceWorker.ready.then(registration => {
+          registration.showNotification(title, { 
+            body: body, 
+            icon: '/favicon.ico',
+            vibrate: [200, 100, 200, 100, 200, 100, 200],
+            requireInteraction: true,
+            badge: '/favicon.ico'
+          });
+        });
+      };
+
       if (Notification.permission === 'granted') {
-        new Notification(title, { body: body, icon: '/favicon.ico' });
+        showNativePush();
       } else if (Notification.permission !== 'denied') {
         Notification.requestPermission().then(permission => {
           if (permission === 'granted') {
-            new Notification(title, { body: body, icon: '/favicon.ico' });
+            showNativePush();
           }
         });
       }
