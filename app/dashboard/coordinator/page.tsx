@@ -27,6 +27,7 @@ import RiskAndFatigueAnalytics from '@/components/RiskAndFatigueAnalytics';
 import CostAnalyticsWidget from '@/components/CostAnalyticsWidget';
 import ExecutiveBriefWidget from '@/components/ExecutiveBriefWidget';
 import HeadcountVsVolumeChart from '@/components/HeadcountVsVolumeChart';
+import WhatIfSimulator from '@/components/WhatIfSimulator';
 
 export default function CoordinatorDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -679,6 +680,9 @@ export default function CoordinatorDashboard() {
                     {baseDetails?.schedule && (
                        <div className="mt-2 border-t border-slate-100 dark:border-slate-700/50 pt-8 mb-4">
                          <HeadcountVsVolumeChart baseId={selectedBase.id} />
+                         <div className="mt-6">
+                           <WhatIfSimulator />
+                         </div>
                        </div>
                     )}
 

@@ -65,7 +65,6 @@ import CostAnalyticsWidget from '@/components/CostAnalyticsWidget';
 import ExecutiveBriefWidget from '@/components/ExecutiveBriefWidget';
 import HeadcountVsVolumeChart from '@/components/HeadcountVsVolumeChart';
 import OperationalEfficiencyWidget from '@/components/OperationalEfficiencyWidget';
-import WhatIfSimulator from '@/components/WhatIfSimulator';
 import ForensicAuditLog from '@/components/ForensicAuditLog';
 
 interface User {
@@ -1193,7 +1192,6 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
         <div className="xl:col-span-2 flex flex-col gap-6">
           <HeadcountVsVolumeChart baseId="GLOBAL" />
-          <WhatIfSimulator />
         </div>
         <div className="xl:col-span-1 flex flex-col gap-6">
           <ExecutiveBriefWidget baseId="GLOBAL_ADMIN" />

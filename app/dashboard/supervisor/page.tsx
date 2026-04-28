@@ -46,6 +46,7 @@ import CostAnalyticsWidget from '@/components/CostAnalyticsWidget';
 import ExecutiveBriefWidget from '@/components/ExecutiveBriefWidget';
 import ShiftReplacementAI from '@/components/ShiftReplacementAI';
 import ContextAwareAlertsWidget from '@/components/ContextAwareAlertsWidget';
+import WhatIfSimulator from '@/components/WhatIfSimulator';
 
 import GanttTimelineScheduler from '@/components/GanttTimelineScheduler';
 
@@ -2445,6 +2446,10 @@ export default function SupervisorDashboard() {
           </div>
         )}
       </AnimatePresence>
+
+      <div className="mb-8 no-print">
+        <WhatIfSimulator />
+      </div>
 
       {/* Sugestões de Melhoria */}
       <SuggestionSection 
