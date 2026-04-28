@@ -70,7 +70,7 @@ export default function ShiftReplacementAI({ missingEmployeeBp, missingDate, bas
             vibrate: [200, 100, 200, 500, 200, 100, 200],
             requireInteraction: true,
             badge: '/favicon.ico'
-          });
+          } as any);
         });
       };
 

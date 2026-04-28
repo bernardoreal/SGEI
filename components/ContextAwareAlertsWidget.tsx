@@ -89,7 +89,7 @@ export default function ContextAwareAlertsWidget({ baseId = 'JPA' }: ContextAwar
             vibrate: [200, 100, 200, 100, 200, 100, 200],
             requireInteraction: true,
             badge: '/favicon.ico'
-          });
+          } as any);
         });
       };
 
