@@ -1,66 +1,41 @@
-import { ImageResponse } from 'next/og'
+import { ImageResponse } from 'next/og';
 
-export const runtime = 'edge'
+// Route segment config
+export const runtime = 'edge';
 
+// Image metadata
 export const size = {
-  width: 512,
-  height: 512,
-}
+  width: 180,
+  height: 180,
+};
+export const contentType = 'image/png';
 
-export const contentType = 'image/png'
-
-export default function AppleIcon() {
+// Image generation
+export default function Icon() {
   return new ImageResponse(
     (
+      // ImageResponse JSX element
       <div
         style={{
-          background: 'linear-gradient(135deg, #002169 0%, #00123b 100%)',
+          fontSize: 100,
+          background: '#002169',
           width: '100%',
           height: '100%',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          color: 'white',
+          fontWeight: 800,
+          borderRadius: '22%',
+          border: '8px solid #E60000',
         }}
       >
-        <div
-          style={{
-            fontSize: 100,
-            color: 'white',
-            fontFamily: 'sans-serif',
-            fontWeight: 900,
-            letterSpacing: '5px',
-            textShadow: '0 10px 20px rgba(0,0,0,0.5)',
-          }}
-        >
-          LATAM
-        </div>
-        <div
-          style={{
-            marginTop: 20,
-            fontSize: 35,
-            color: '#E60000', // LATAM Crimson
-            fontFamily: 'sans-serif',
-            fontWeight: 800,
-            letterSpacing: '10px',
-            textShadow: '0 5px 10px rgba(0,0,0,0.5)',
-            textTransform: 'uppercase'
-          }}
-        >
-          Cargo
-        </div>
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            width: '100%',
-            height: '24px',
-            backgroundColor: '#E60000',
-          }}
-        />
+        L
       </div>
     ),
-    { ...size }
-  )
+    // ImageResponse options
+    {
+      ...size,
+    }
+  );
 }

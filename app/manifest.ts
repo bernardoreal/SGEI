@@ -1,26 +1,25 @@
-import { MetadataRoute } from 'next'
- 
+import { MetadataRoute } from 'next';
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Gestão de Escalas LATAM',
-    short_name: 'SGEI',
-    description: 'Sistema Automatizado de Gestão de Escalas LATAM Cargo',
-    start_url: '/dashboard',
+    name: 'LATAM SGEI - Gestão de Escalas',
+    short_name: 'LATAM SGEI',
+    description: 'Sistema de Gestão de Escalas Integrada - LATAM Cargo',
+    start_url: '/',
     display: 'standalone',
-    background_color: '#002169',
+    background_color: '#ffffff',
     theme_color: '#002169',
     icons: [
       {
         src: '/icon',
-        sizes: '512x512',
+        sizes: 'any',
         type: 'image/png',
       },
       {
         src: '/apple-icon',
-        sizes: '512x512',
+        sizes: 'any',
         type: 'image/png',
-        purpose: 'maskable',
       },
     ],
-  }
+  };
 }
